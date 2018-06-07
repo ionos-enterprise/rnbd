@@ -1,0 +1,26 @@
+Source: ibnbd-tool
+Maintainer: Storage Team <storage@profitbricks.com>
+Section: admin
+Priority: optional
+Build-Depends: debhelper (>= 7),
+               exuberant-ctags,
+               uuid-dev,
+               bash-completion,
+Standards-Version: 3.9.5
+Homepage: https://gitlab.pb.local/dkipnis/ibnbd-tool.git
+
+Package: ibnbd-tool
+Architecture: any
+Depends: patch,
+         lsb-base (>= 3.0-6),
+         ${misc:Depends}, ${shlibs:Depends}
+Description: Command line tool for IBNBD
+ This package contains ibnbd tool to manage IBTRS connections
+ and IBNBD devices.
+
+Package: ibnbd-tool-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends: ibnbd-tool (= ${binary:Version}), ${misc:Depends}
+Description: Debug symbols for ibnbd-tool package
