@@ -16,7 +16,7 @@ OBJ = $(SRC:.c=.o)
 TARGETS_OBJ = ibnbd.o
 TARGETS = $(TARGETS_OBJ:.o=)
 
-      ibnbd_OBJ = levenshtein.o
+      ibnbd_OBJ = levenshtein.o table.o
 
 .PHONY: all
 all: $(TARGETS)
