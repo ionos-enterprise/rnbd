@@ -91,51 +91,49 @@ static const char * const colors[] = {
 int clr_print(enum color trm, enum color clr, const char *format, ...);
 
 int table_row_stringify(void *s, struct table_fld *flds,
-			       struct table_column **cs, int humanize,
-			       int pre_len);
+			struct table_column **cs, int humanize,
+			int pre_len);
 
 int table_get_max_h_width(struct table_column **cs);
 
 
 void table_entry_print_term(const char *prefix, struct table_fld *flds,
-				   struct table_column **cs, int hdr_width,
-				   int clr);
+			    struct table_column **cs, int hdr_width, int clr);
 
 
-int table_fld_print_as_str(struct table_fld *fld,
-				   struct table_column *cs,
-				   int clr);
+int table_fld_print_as_str(struct table_fld *fld, struct table_column *cs,
+			   int clr);
 
 int table_flds_print_term(const char *pre, struct table_fld *flds,
-				 struct table_column **cs, int clr, int pwidth);
+			  struct table_column **cs, int clr, int pwidth);
 
 int table_flds_print_csv(struct table_fld *flds,
-				struct table_column **cs, int clr);
+			 struct table_column **cs, int clr);
 
 int table_flds_print_json(const char *prefix, struct table_fld *flds,
-				 struct table_column **cs, int clr);
+			  struct table_column **cs, int clr);
 
 int table_flds_print_xml(const char *prefix, struct table_fld *flds,
-				struct table_column **cs, int clr);
+			 struct table_column **cs, int clr);
 
 int table_flds_print(enum fmt_type fmt, const char *prefix,
-			    struct table_fld *flds, struct table_column **cs,
-			    int clr, int pwidth);
+		     struct table_fld *flds, struct table_column **cs,
+		     int clr, int pwidth);
 
 int table_row_print(void *v, enum fmt_type fmt, const char *pre,
-			   struct table_column **cs, int clr, int humanize,
-			   size_t pre_len);
+		    struct table_column **cs, int clr, int humanize,
+		    size_t pre_len);
 
 size_t print_line(char *str, size_t len, int width);
 
 int table_row_print_line(const char *pre, struct table_column **clms,
-				int clr, int humanize, size_t pre_len);
+			 int clr, int humanize, size_t pre_len);
 
 void table_flds_del_not_num(struct table_fld *flds,
-				   struct table_column **cs);
+			    struct table_column **cs);
 
 int table_header_print_term(const char *prefix, struct table_column **cs,
-				   int clr, char align);
+			    int clr, char align);
 
 void table_header_print_csv(struct table_column **cs);
 /*
@@ -143,7 +141,7 @@ void table_header_print_csv(struct table_column **cs);
  * of columns @clms
  */
 struct table_column *table_find_column(const char *name,
-					      struct table_column **clms);
+				       struct table_column **clms);
 /*
  * remove all spaces from the string @s in place
  */
