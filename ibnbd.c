@@ -383,7 +383,15 @@ static int size_to_str(char *str, size_t len, enum color *clr, void *v,
 	CLM(ibnbd_dev, m_name, m_header, m_type, tostr, align, color, \
 	    m_descr, sizeof(m_header) - 1, offsetof(struct ibnbd_sess_dev, dev))
 
-CLM_SD(mapping_path, "Mapping Path", FLD_STR, NULL, 'l', CBLD,
+static int name_to_str(char *str, size_t len, enum color *clr, void *v,
+		       int humanize)
+{
+	*clr = CBLD;
+
+	return snprintf(str, len, "%s", (char *)v);
+}
+
+CLM_SD(mapping_path, "Mapping Path", FLD_STR, name_to_str, 'l', CNRM,
        "Mapping name of the remote device");
 
 static int sd_access_mode_to_str(char *str, size_t len, enum color *clr,
@@ -425,22 +433,22 @@ static int sdd_iomode_to_str(char *str, size_t len, enum color *clr, void *v,
 	}
 }
 
-CLM_SD(access_mode, "Access Mode", FLD_STR, sd_access_mode_to_str, 'l', CBLD,
+CLM_SD(access_mode, "Access Mode", FLD_STR, sd_access_mode_to_str, 'l', CNRM,
        "Mode of access to the remote device: ro, rw or migration");
 
-CLM_SDD(devname, "Device", FLD_STR, NULL, 'l', CBLD,
+CLM_SDD(devname, "Device", FLD_STR, NULL, 'l', CNRM,
 	"Device name under /dev/. I.e. ibnbd0");
 
-CLM_SDD(devpath, "Device Path", FLD_STR, NULL, 'l', CBLD,
+CLM_SDD(devpath, "Device Path", FLD_STR, NULL, 'l', CNRM,
 	"Device path under /dev/. I.e. /dev/ibnbd0");
 
-CLM_SDD(iomode, "IO Mode", FLD_STR, sdd_iomode_to_str, 'l', CBLD,
+CLM_SDD(iomode, "IO Mode", FLD_STR, sdd_iomode_to_str, 'l', CNRM,
 	"The way target device is accessed on server: fileio/blockio");
 
-CLM_SDD(rx_sect, "RX", FLD_NUM, size_to_str, 'l', CBLD,
+CLM_SDD(rx_sect, "RX", FLD_NUM, size_to_str, 'l', CNRM,
 	"Amount of data read from the device");
 
-CLM_SDD(tx_sect, "TX", FLD_NUM, size_to_str, 'l', CBLD,
+CLM_SDD(tx_sect, "TX", FLD_NUM, size_to_str, 'l', CNRM,
 	"Amount of data written to the device");
 
 static int dev_sessname_to_str(char *str, size_t len, enum color *clr,
@@ -453,7 +461,7 @@ static int dev_sessname_to_str(char *str, size_t len, enum color *clr,
 
 static struct table_column clm_ibnbd_sess_dev_sessname =
 	_CLM_SD("sessname", sess, "Session", FLD_STR, dev_sessname_to_str, 'l',
-		CBLD, "Name of the IBTRS session of the device");
+		CNRM, "Name of the IBTRS session of the device");
 
 static struct table_column *all_clms_sd[] = {
 	&clm_ibnbd_sess_dev_sessname,
@@ -465,20 +473,6 @@ static struct table_column *all_clms_sd[] = {
 	&clm_ibnbd_dev_tx_sect,
 	NULL
 };
-
-static int clm_lst_term(const char *prefix, struct table_column **clm,
-			struct table_column **cs)
-{
-	int row = 0;
-
-	table_header_print_term(prefix, cs, trm, 'a');
-	while (clm[row]) {
-		table_row_print(clm[row], FMT_TERM, prefix, cs, trm, 1, 0);
-		row++;
-	}
-
-	return 0;
-}
 
 static void print_clms_list(struct table_column **clms)
 {
