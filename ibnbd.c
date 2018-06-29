@@ -311,27 +311,13 @@ static void cmd_print_usage(struct cmd *cmd, const char *a)
 	printf("\n%s\n", cmd->long_d);
 }
 
-static void help_list(struct cmd *cmd)
-{
-	cmd_print_usage(cmd, "");
-
-	printf("\nOptions:\n");
-	//help_fields(default_clms, all_clms);
-	print_opt("{mode}", "Information to print: devices|sessions|paths. Default: devices");
-	print_opt("{format}", "Output format: csv|json|xml");
-	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
-	print_sarg_descr("noheaders");
-	print_sarg_descr("nototals");
-	print_sarg_descr("help");
-}
-
 struct ibnbd_sess s = {
-	.sessname = "clt@srv",
+	.sessname = "ps401a-3@st401b-3",
 	.active_path_cnt = 2
 };
 
 struct ibnbd_sess_dev sd[] = {
-	{.mapping_path = "1213-12312-3123-123231",
+	{.mapping_path = "112b5fc0-91f5-4157-8603-777f8e733f1f",
 	 .access_mode = IBNBD_RW,
 	 .sess = &s,
 	 .dev = {.devname = "ibnbd0",
@@ -341,7 +327,7 @@ struct ibnbd_sess_dev sd[] = {
 		 .tx_sect = 2342,
 	 	 .state = "open"}},
 
-	{.mapping_path = "sdfsdfsdf-asdf-3123-123231",
+	{.mapping_path = "8f749d51-c7c2-41cc-a55e-4fca8b97de73",
 	 .access_mode = IBNBD_RO,
 	 .sess = &s,
 	 .dev = {.devname = "ibnbd1",
@@ -351,7 +337,7 @@ struct ibnbd_sess_dev sd[] = {
 		 .tx_sect = 2342,
 	 	 .state = "open"}},
 
-	{.mapping_path = "123231",
+	{.mapping_path = "ecf6bfd0-3dae-46a3-9a1b-e61225920185",
 	 .access_mode = IBNBD_MIGRATION,
 	 .sess = &s,
 	 .dev = {.devname = "ibnbd2",
@@ -403,7 +389,6 @@ CLM_SD(mapping_path, "Mapping Path", FLD_STR, NULL, 'l', CBLD,
 static int sd_access_mode_to_str(char *str, size_t len, enum color *clr,
 				  void *v, int humanize)
 {
-
 	enum ibnbd_access_mode mode = *(enum ibnbd_access_mode *)v;
 
 	switch (mode) {
@@ -425,7 +410,6 @@ static int sd_access_mode_to_str(char *str, size_t len, enum color *clr,
 static int sdd_iomode_to_str(char *str, size_t len, enum color *clr, void *v,
 			     int humanize)
 {
-
 	enum ibnbd_iomode mode = *(enum ibnbd_iomode *)v;
 
 	switch (mode) {
@@ -481,6 +465,58 @@ static struct table_column *all_clms_sd[] = {
 	&clm_ibnbd_dev_tx_sect,
 	NULL
 };
+
+static int clm_lst_term(const char *prefix, struct table_column **clm,
+			struct table_column **cs)
+{
+	int row = 0;
+
+	table_header_print_term(prefix, cs, trm, 'a');
+	while (clm[row]) {
+		table_row_print(clm[row], FMT_TERM, prefix, cs, trm, 1, 0);
+		row++;
+	}
+
+	return 0;
+}
+
+static void print_clms_list(struct table_column **clms)
+{
+	if (*clms)
+		printf("%s", (*clms)->m_name);
+
+	while (*++clms)
+		printf(",%s", (*clms)->m_name);
+
+	printf("\n");
+}
+
+static void help_fields(struct table_column **def, struct table_column **all)
+{
+	print_opt("{fields}",
+		  "Comma separated list of fields to be printed.");
+	printf("%sThe list can be prefixed with '+' or '-' to add or remove fields\n", HPRE);
+	printf("%sfrom the default selection.\n", HPRE);
+	printf("%sDefault: ", HPRE);
+	print_clms_list(def);
+	printf("\n%s%s\n", HPRE, "Available fields:");
+	table_tbl_print_term(HPRE, all, trm);
+	printf("\n%sProvide 'all' to print all available fields\n", HPRE);
+}
+
+static void help_list(struct cmd *cmd)
+{
+	cmd_print_usage(cmd, "");
+
+	printf("\nOptions:\n");
+	help_fields(all_clms_sd, all_clms_sd);
+	print_opt("{mode}", "Information to print: devices|sessions|paths. Default: devices");
+	print_opt("{format}", "Output format: csv|json|xml");
+	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
+	print_sarg_descr("noheaders");
+	print_sarg_descr("nototals");
+	print_sarg_descr("help");
+}
 
 static int clm_cnt(struct table_column **cs)
 {
@@ -687,8 +723,6 @@ int main(int argc, char **argv)
 		if (!sarg) {
 			/*if (!parse_size(argv[i]) ||
 			    !parse_columns(argv[i]) ||
-			    !parse_andbd_id(argv[i]) ||
-			    !parse_usage_columns(argv[i]) ||
 			    !parse_format(argv[i]) ||
 			    !parse_precision(argv[i])) {
 				i++;

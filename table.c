@@ -422,3 +422,39 @@ int table_extend_columns(const char *arg, const char *delim,
 
 	return 0;
 }
+
+#define CLM_LST(m_name, m_header, m_width, m_type, tostr, align, color, \
+		m_descr) \
+	CLM(table_column, m_name, m_header, m_type, tostr, \
+	    align, color, m_descr, m_width, 0)
+
+static int pstr_to_str(char *str, size_t len, enum color *clr, void *v,
+		int humanize)
+{
+	*clr = 0;
+	return snprintf(str, len, "%s", *(char **)v);
+}
+
+CLM_LST(m_name, "Field", 14, FLD_STR, pstr_to_str, 'l', CBLD, "");
+CLM_LST(m_header, "Header", 13, FLD_STR, NULL, 'l', CBLD, "");
+CLM_LST(m_descr, "Description", 50, FLD_STR, pstr_to_str, 'l', CBLD, "");
+
+static struct table_column *l_clmns[] = {
+	&clm_table_column_m_name,
+	&clm_table_column_m_header,
+	&clm_table_column_m_descr,
+	NULL
+};
+
+int table_tbl_print_term(const char *prefix, struct table_column **clm, int clr)
+{
+	int row = 0;
+
+	table_header_print_term(prefix, l_clmns, clr, 'a');
+	while (clm[row]) {
+		table_row_print(clm[row], FMT_TERM, prefix, l_clmns, clr, 1, 0);
+		row++;
+	}
+
+	return 0;
+}

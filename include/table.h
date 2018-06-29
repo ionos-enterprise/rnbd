@@ -44,6 +44,14 @@ struct table_column {
 	unsigned long	s_off;	/* TODO: ugly move to an embedding struct */
 };
 
+#ifndef offsetof
+#ifdef __compiler_offsetof
+#define offsetof(TYPE,MEMBER) __compiler_offsetof(TYPE,MEMBER)
+#else
+#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+#endif
+#endif
+
 #define _CLM(str, s_name, name, header, type, tostr, align, color, descr, width, off) \
 	{ \
 		.m_name		= s_name, \
@@ -165,4 +173,6 @@ int table_extend_columns(const char *names, const char *delim,
 			 struct table_column **cs,
 			 int sub_len);
 
+int table_tbl_print_term(const char *prefix, struct table_column **clm,
+			 int clr);
 #endif /* __H_TABLE */
