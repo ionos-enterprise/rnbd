@@ -57,7 +57,7 @@ struct ibnbd_sess {
 struct ibnbd_sess_dev {
 	struct ibnbd_sess	*sess;			/* session */
 	char			mapping_path[NAME_MAX]; /* name for mapping */
-	enum access_mode	access_mode; 		/* ro/rw/migration */
+	enum ibnbd_access_mode	access_mode; 		/* ro/rw/migration */
 	struct ibnbd_tgtdev	*tgtdev;		/* target device*/
 	struct ibnbd_dev	dev;			/* ibnbd block device */
 };

@@ -9,6 +9,7 @@
 #include <unistd.h>	/* for isatty() */
 #include "table.h"
 #include "misc.h"
+#include "list.h"
 #include <assert.h>
 
 #include "ibnbd-sysfs.h"
@@ -97,11 +98,6 @@ static int parse_fmt(int argc, char **argv, int i, const struct sarg *sarg)
 	return i + 1;
 }
 
-enum ibnbd_iomode {
-	IBNBD_BLOCKIO,
-	IBNBD_FILEIO
-};
-
 static int parse_iomode(int argc, char **argv, int i, const struct sarg *sarg)
 {
 	if (!strcasecmp(argv[i], "blockio"))
@@ -136,12 +132,6 @@ static int parse_lst(int argc, char **argv, int i, const struct sarg *sarg)
 	args.lstmode_set = 1;
 
 	return i + 1;
-}
-
-enum ibnbd_access_mode {
-	IBNBD_RO,
-	IBNBD_RW,
-	IBNBD_MIGRATION
 }
 
 static int parse_rw(int argc, char **argv, int i, const struct sarg *sarg)
@@ -347,8 +337,8 @@ struct ibnbd_sess_dev sd[] = {
 	 .dev = {.devname = "ibnbd0",
 	 	 .devpath = "/dev/ibnbd0",
 	 	 .iomode = IBNBD_FILEIO,
-		 .rx_bytes = 190,
-		 .tx_bytes = 2342,
+		 .rx_sect = 190,
+		 .tx_sect = 2342,
 	 	 .state = "open"}},
 
 	{.mapping_path = "sdfsdfsdf-asdf-3123-123231",
@@ -357,8 +347,8 @@ struct ibnbd_sess_dev sd[] = {
 	 .dev = {.devname = "ibnbd1",
 	 	 .devpath = "/dev/ibnbd1",
 	 	 .iomode = IBNBD_BLOCKIO,
-		 .rx_bytes = 190,
-		 .tx_bytes = 2342,
+		 .rx_sect = 190,
+		 .tx_sect = 2342,
 	 	 .state = "open"}},
 
 	{.mapping_path = "123231",
@@ -367,25 +357,30 @@ struct ibnbd_sess_dev sd[] = {
 	 .dev = {.devname = "ibnbd2",
 	 	 .devpath = "/dev/ibnbd2",
 	 	 .iomode = IBNBD_BLOCKIO,
-		 .rx_bytes = 190,
-		 .tx_bytes = 2342,
+		 .rx_sect = 190,
+		 .tx_sect = 2342,
 	 	 .state = "closed"}},
 };
 
-static int bytes_to_str(char *str, size_t len, enum color *clr, void *v,
-			int humanize)
+static int sect_to_byte_unit(char *str, size_t len, uint64_t v, int humanize)
+{
+	if (humanize)
+		if (args.unit_set)
+			return i_to_str_unit(v << 9, str, len, args.unit_id,
+					     args.prec);
+
+		else
+			return i_to_str(v << 9, str, len, args.prec);
+	else
+		return snprintf(str, len, "%" PRIu64, v << 9);
+}
+
+static int size_to_str(char *str, size_t len, enum color *clr, void *v,
+		       int humanize)
 {
 	*clr = CNRM;
 
-	if (humanize)
-		if (args.unit_set)
-			return i_to_str_unit(*(uint64_t *)v, str, len,
-					     args.unit_id, args.prec);
-
-		else
-			return i_to_str(*(uint64_t *)v, str, len, args.prec);
-	else
-		return snprintf(str, len, "%" PRIu64, *(uint64_t *)v);
+	return sect_to_byte_unit(str, len, *(int *)v, humanize);
 }
 
 #define CLM_SD(m_name, m_header, m_type, tostr, align, color, m_descr) \
@@ -405,33 +400,48 @@ static int bytes_to_str(char *str, size_t len, enum color *clr, void *v,
 CLM_SD(mapping_path, "Mapping Path", FLD_STR, NULL, 'l', CBLD,
        "Mapping name of the remote device");
 
-static int dev_access_mode_to_str(char *str, size_t len, enum color *clr,
+static int sd_access_mode_to_str(char *str, size_t len, enum color *clr,
 				  void *v, int humanize)
 {
-/*	struct andbd_dev *dev = container_of(v, struct andbd_dev, io_mode);
-	struct vol *vol = container_of(dev, struct vol, adev);
 
-	*clr = CNRM;
-	if (!vol->adev_rc)
-		switch (dev->io_mode) {
-		case ANDBD_DEV_BIO:
-			*clr = CMAG;
-			return snprintf(str, len, "bio");
-		case ANDBD_DEV_RQ:
-			*clr = CGRN;
-			return snprintf(str, len, "rq");
-		case ANDBD_DEV_MQ:
-			*clr = CBLU;
-			return snprintf(str, len, "mq");
-		default:
-			*clr = CUND;
-			return snprintf(str, len, "%d", dev->io_mode);
-		}
-	else
-		return snprintf(str, len, "%s", "");*/
+	enum ibnbd_access_mode mode = *(enum ibnbd_access_mode *)v;
+
+	switch (mode) {
+	case IBNBD_RO:
+		*clr = CGRN;
+		return snprintf(str, len, "ro");
+	case IBNBD_RW:
+		*clr = CNRM;
+		return snprintf(str, len, "rw");
+	case IBNBD_MIGRATION:
+		*clr = CBLU;
+		return snprintf(str, len, "migration");
+	default:
+		*clr = CUND;
+		return snprintf(str, len, "%d", mode);
+	}
 }
 
-CLM_SD(access_mode, "Access Mode", FLD_STR, dev_acess_mode_to_str, 'l', CBLD,
+static int sdd_iomode_to_str(char *str, size_t len, enum color *clr, void *v,
+			     int humanize)
+{
+
+	enum ibnbd_iomode mode = *(enum ibnbd_iomode *)v;
+
+	switch (mode) {
+	case IBNBD_FILEIO:
+		*clr = CBLU;
+		return snprintf(str, len, "fileio");
+	case IBNBD_BLOCKIO:
+		*clr = CNRM;
+		return snprintf(str, len, "blockio");
+	default:
+		*clr = CUND;
+		return snprintf(str, len, "%d", mode);
+	}
+}
+
+CLM_SD(access_mode, "Access Mode", FLD_STR, sd_access_mode_to_str, 'l', CBLD,
        "Mode of access to the remote device: ro, rw or migration");
 
 CLM_SDD(devname, "Device", FLD_STR, NULL, 'l', CBLD,
@@ -440,62 +450,97 @@ CLM_SDD(devname, "Device", FLD_STR, NULL, 'l', CBLD,
 CLM_SDD(devpath, "Device Path", FLD_STR, NULL, 'l', CBLD,
 	"Device path under /dev/. I.e. /dev/ibnbd0");
 
-CLM_SDD(rx_bytes, "RX", FLD_NUM, bytes_to_str, 'l', CBLD,
+CLM_SDD(iomode, "IO Mode", FLD_STR, sdd_iomode_to_str, 'l', CBLD,
+	"The way target device is accessed on server: fileio/blockio");
+
+CLM_SDD(rx_sect, "RX", FLD_NUM, size_to_str, 'l', CBLD,
 	"Amount of data read from the device");
 
-CLM_SDD(tx_bytes, "TX", FLD_NUM, bytes_to_str, 'l', CBLD,
+CLM_SDD(tx_sect, "TX", FLD_NUM, size_to_str, 'l', CBLD,
 	"Amount of data written to the device");
 
-CLM_SDD(devpath, "Device Path", FLD_STR, NULL, 'l', CBLD,
-	"Device path under /dev/. I.e. /dev/ibnbd0");
-
 static int dev_sessname_to_str(char *str, size_t len, enum color *clr,
-				  void *v, int humanize)
+			       void *v, int humanize)
 {
-	return 0;
+	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev, sess);
+
+	return snprintf(str, len, "%s", sd->sess->sessname);
 }
 
 static struct table_column clm_ibnbd_sess_dev_sessname =
-	_CLM_SD("sessname", sess, "Session", FLD_STR, dev_sess_to_str, 'l',
-		CNRM, "Name of the IBTRS session of the device");
+	_CLM_SD("sessname", sess, "Session", FLD_STR, dev_sessname_to_str, 'l',
+		CBLD, "Name of the IBTRS session of the device");
 
 static struct table_column *all_clms_sd[] = {
+	&clm_ibnbd_sess_dev_sessname,
 	&clm_ibnbd_sess_dev_mapping_path,
 	&clm_ibnbd_sess_dev_access_mode,
+	&clm_ibnbd_dev_iomode,
 	&clm_ibnbd_dev_devname,
-	&clm_ibnbd_dev_rx_bytes,
-	&clm_ibnbd_dev_tx_bytes,
-	&clm_ibnbd_sess_dev_sessname,
+	&clm_ibnbd_dev_rx_sect,
+	&clm_ibnbd_dev_tx_sect,
 	NULL
 };
+
+static int clm_cnt(struct table_column **cs)
+{
+	int i = 0;
+
+	while (cs[i])
+		i++;
+
+	return i;
+}
 
 static int cmd_list(void)
 {
 	struct table_column **cs = all_clms_sd;
 	struct ibnbd_sess_dev total = {
-		.rx_bytes = 0,
-		.tx_bytes = 0,
+		.dev = {
+			.rx_sect = 0,
+			.tx_sect = 0
+		},
 		.mapping_path = ""
 	};
 	struct table_fld *flds;
-	int i, cs_cnt;
+	int i, cs_cnt, dev_num;
 
 	cs_cnt = clm_cnt(cs);
 
-	flds = calloc((ARRSIZE(sd) + 1) * cs_cnt, sizeof(*flds));
+	dev_num = ARRSIZE(sd);
+
+	flds = calloc((dev_num + 1) * cs_cnt, sizeof(*flds));
 	if (!flds) {
 		ERR("not enough memory\n");
 		return -ENOMEM;
 	}
 
+	for (i = 0; i < dev_num; i++) {
+		table_row_stringify(&sd[i], flds + i * cs_cnt, cs, 1, 0);
+		total.dev.rx_sect += sd[i].dev.rx_sect;
+		total.dev.tx_sect += sd[i].dev.tx_sect;
+	}
+
+	if (!args.nototals_set)
+		table_row_stringify(&total, flds + i * cs_cnt,
+				    cs, 1, 0);
+
 	if (!args.noheaders_set)
 		table_header_print_term("", cs, trm, 'a');
 
-	for (i = 0; i < ARRSIZE(sd), i++) {
-		table_row_stringify(&sd[i], flds + i * cs_cnt, cs, 1, 0);
-		total.rx_bytes += sd[i].dev.rx_bytes;
-		total.tx_bytes += sd[i].dev.tx_bytes;
+	for (i = 0; i < dev_num; i++)
+		table_flds_print_term("", flds + i * cs_cnt,
+				      cs, trm, 0);
+
+	if (!args.nototals_set) {
+		table_row_print_line("", cs, trm, 1, 0);
+		table_flds_del_not_num(flds + i * cs_cnt, cs);
+		table_flds_print_term("", flds + i * cs_cnt,
+				      cs, trm, 0);
 	}
+
+	free(flds);
+
 
 	return 0;
 }
