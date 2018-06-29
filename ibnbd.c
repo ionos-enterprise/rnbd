@@ -88,6 +88,9 @@ struct args {
 	unsigned lstmode;
 	short lstmode_set;
 
+	unsigned ibnbdmode;
+	short ibnbdmode_set;
+
 	short ro;
 	short ro_set;
 
@@ -324,6 +327,28 @@ static int parse_lst(int argc, char **argv, int i, const struct sarg *sarg)
 	return i + 1;
 }
 
+enum ibnbdmode {
+	IBNBD_CLIENT,
+	IBNBD_SERVER,
+	IBNBD_BOTH,
+};
+
+static int parse_mode(int argc, char **argv, int i, const struct sarg *sarg)
+{
+	if (!strcasecmp(argv[i], "client"))
+		args.ibnbdmode = IBNBD_CLIENT;
+	else if (!strcasecmp(argv[i], "server"))
+		args.ibnbdmode = IBNBD_SERVER;
+	else if (!strcasecmp(argv[i], "both"))
+		args.ibnbdmode = IBNBD_BOTH;
+	else
+		assert(0);
+
+	args.ibnbdmode_set = 1;
+
+	return i + 1;
+}
+
 static int parse_rw(int argc, char **argv, int i, const struct sarg *sarg)
 {
 	if (!strcasecmp(argv[i], "ro"))
@@ -393,6 +418,9 @@ static int parse_flag(int argc, char **argv, int i, const struct sarg *sarg)
 }
 
 static struct sarg sargs[] = {
+	{"client", "Information for client", parse_mode, NULL},
+	{"server", "Information for server", parse_mode, NULL},
+	{"bot", "Information for bit", parse_mode, NULL},
 	{"devices", "List mapped devices", parse_lst, NULL},
 	{"sessions", "List sessions", parse_lst, NULL},
 	{"paths", "List paths", parse_lst, NULL},
@@ -562,9 +590,8 @@ static int has_num(struct table_column **cs)
 	return 0;
 }
 
-static int cmd_list(void)
+static int list_devices_term(struct table_column **cs)
 {
-	struct table_column **cs = args.clms;
 	struct ibnbd_sess_dev total = {
 		.dev = {
 			.rx_sect = 0,
@@ -617,16 +644,46 @@ static int cmd_list(void)
 
 	return 0;
 }
-/*
-static cmd_list(void)
+
+static int list_devices()
+{
+	int rc;
+
+	switch (args.fmt) {
+	case FMT_CSV:
+	case FMT_JSON:
+	case FMT_XML:
+		printf("TODO\n");
+		rc = -ENOENT;
+		break;
+	case FMT_TERM:
+	default:
+		rc = list_devices_term(args.clms);
+		break;
+	}
+
+	return rc;
+}
+
+static int cmd_list(void)
 {
 	int rc;
 
 	switch (args.lstmode) {
 	case LST_DEVICES:
-		rc = list_devices(
+	default:
+		rc = list_devices();
+		break;
+	case LST_SESSIONS:
+	case LST_PATHS:
+		printf("TODO\n");
+		rc = -ENOENT;
+		break;
+	}
+
+	return rc;
 }
-*/
+
 static struct cmd cmds[] = {
 	{"list", "List ibnbd block- and transport information",
 		 "List ibnbd block- and transport information: "
@@ -759,6 +816,11 @@ static void default_args(void)
 	if (!args.prec_set)
 		args.prec = 3;
 
+	if (!args.ibnbdmode_set) {
+		/* TODO detect client, server or what */
+		args.ibnbdmode = IBNBD_BOTH;
+		args.ibnbdmode_set = 1;
+	}
 }
 
 int main(int argc, char **argv)
