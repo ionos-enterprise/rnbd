@@ -97,9 +97,12 @@ int table_flds_print_term(const char *pre, struct table_fld *flds,
 	int clm = 0;
 	struct table_column *c = *cs;
 
-	clr_print(clr, flds[clm].clr, (c->clm_align == 'l') ?
-			  "%s%-*s" CLM_DLM : "%s%*s" CLM_DLM, pre,
-			  c->m_width - pwidth, flds[clm].str);
+	if (!c)
+		return 0;
+
+	clr_print(clr, flds[clm].clr,
+		  (c->clm_align == 'l') ? "%s%-*s" CLM_DLM : "%s%*s" CLM_DLM,
+		  pre, c->m_width - pwidth, flds[clm].str);
 
 	for (c = *++cs, clm = 1; c; c = *++cs, clm++)
 		clr_print(clr, flds[clm].clr, (c->clm_align == 'l') ?
@@ -362,3 +365,60 @@ int table_select_columns(const char *names, const char *delim,
 	return 0;
 }
 
+static int clm_cnt(struct table_column **cs)
+{
+	int i = 0;
+
+	while (cs[i])
+		i++;
+
+	return i;
+}
+
+static int contains(struct table_column *s, struct table_column **cs)
+{
+	int i = 0;
+
+	while (cs[i]) {
+		if (s == cs[i])
+			return 1;
+		i++;
+	}
+
+	return 0;
+}
+
+int table_extend_columns(const char *arg, const char *delim,
+			 struct table_column **all,
+			 struct table_column **cs,
+			 int sub_len)
+{
+	struct table_column *sub[CLM_MAX_CNT];
+	const char *names = arg;
+	int rc, i;
+
+	if (*arg == '+' || *arg == '-')
+		names = arg + 1;
+
+	rc = table_select_columns(names, delim, all, sub, sub_len);
+	if (rc)
+		return rc;
+
+	if (*arg == '-') {
+		int k = 0;
+
+		for (i = 0; cs[i]; i++)
+			if (!contains(cs[i], sub))
+				cs[k++] = cs[i];
+		cs[k] = NULL;
+	} else {
+		if (*arg == '+')
+			cs = &cs[clm_cnt(cs)];
+
+		for (i = 0; sub[i]; i++)
+			cs[i] = sub[i];
+		cs[i] = NULL;
+	}
+
+	return 0;
+}

@@ -160,4 +160,9 @@ int table_select_columns(const char *names, const char *delim,
 			 struct table_column **all,
 			 struct table_column **sub,
 			 int sub_len);
+int table_extend_columns(const char *names, const char *delim,
+			 struct table_column **all,
+			 struct table_column **cs,
+			 int sub_len);
+
 #endif /* __H_TABLE */
