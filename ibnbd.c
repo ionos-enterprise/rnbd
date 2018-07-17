@@ -590,6 +590,61 @@ static int has_num(struct table_column **cs)
 	return 0;
 }
 
+static int list_devices_xml(struct table_column **cs)
+{
+	int i, dev_num;
+
+	dev_num = ARRSIZE(sd);
+
+	printf("<devices>\n");
+
+	for (i = 0; i < dev_num; i++) {
+		printf("\t<device>\n");
+		table_row_print(&sd[i], FMT_XML, "\t\t", cs, 0, 0, 0);
+		printf("\t</device>\n");
+	}
+
+	printf("</devices>\n");
+
+	return 0;
+}
+
+static int list_devices_json(struct table_column **cs)
+{
+	int i, dev_num;
+
+	dev_num = ARRSIZE(sd);
+
+	printf("{ \"devices\": [\n");
+
+	for (i = 0; i < dev_num; i++) {
+		if (i)
+			printf(",\n");
+
+		table_row_print(&sd[i], FMT_JSON, "\t", cs, 0, 0, 0);
+	}
+
+	printf("\n] }\n");
+
+	return 0;
+}
+
+static int list_devices_csv(struct table_column **cs)
+{
+	int i, dev_num;
+
+	dev_num = ARRSIZE(sd);
+
+	if (!args.noheaders_set)
+		table_header_print_csv(cs);
+
+	for (i = 0; i < dev_num; i++) {
+		table_row_print(&sd[i], FMT_CSV, "", cs, 0, 0, 0);
+	}
+
+	return 0;
+}
+
 static int list_devices_term(struct table_column **cs)
 {
 	struct ibnbd_sess_dev total = {
@@ -651,10 +706,13 @@ static int list_devices()
 
 	switch (args.fmt) {
 	case FMT_CSV:
+		rc = list_devices_csv(args.clms);
+		break;
 	case FMT_JSON:
+		rc = list_devices_json(args.clms);
+		break;
 	case FMT_XML:
-		printf("TODO\n");
-		rc = -ENOENT;
+		rc = list_devices_xml(args.clms);
 		break;
 	case FMT_TERM:
 	default:
