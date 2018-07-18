@@ -1,16 +1,16 @@
 #include <stdio.h>
 #include <errno.h>
-
-#include "levenshtein.h"
-#include <stdlib.h>
 #include <inttypes.h>
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>	/* for isatty() */
+#include <assert.h>
+#include <dirent.h>
+
+#include "levenshtein.h"
 #include "table.h"
 #include "misc.h"
 #include "list.h"
-#include <assert.h>
 
 #include "ibnbd-sysfs.h"
 
@@ -328,9 +328,10 @@ static int parse_lst(int argc, char **argv, int i, const struct sarg *sarg)
 }
 
 enum ibnbdmode {
-	IBNBD_CLIENT,
-	IBNBD_SERVER,
-	IBNBD_BOTH,
+	IBNBD_NONE = 0,
+	IBNBD_CLIENT = 1,
+	IBNBD_SERVER = 1 << 1,
+	IBNBD_BOTH = IBNBD_CLIENT | IBNBD_SERVER,
 };
 
 static int parse_mode(int argc, char **argv, int i, const struct sarg *sarg)
@@ -420,7 +421,7 @@ static int parse_flag(int argc, char **argv, int i, const struct sarg *sarg)
 static struct sarg sargs[] = {
 	{"client", "Information for client", parse_mode, NULL},
 	{"server", "Information for server", parse_mode, NULL},
-	{"bot", "Information for bit", parse_mode, NULL},
+	{"both", "Information for bit", parse_mode, NULL},
 	{"devices", "List mapped devices", parse_lst, NULL},
 	{"sessions", "List sessions", parse_lst, NULL},
 	{"paths", "List paths", parse_lst, NULL},
@@ -863,6 +864,8 @@ static void init_args(void)
 	       DEFAULT_CLMS_SD_CNT * sizeof(all_clms_sd[0]));
 }
 
+
+
 static void default_args(void)
 {
 	if (!args.lstmode_set)
@@ -875,9 +878,20 @@ static void default_args(void)
 		args.prec = 3;
 
 	if (!args.ibnbdmode_set) {
-		/* TODO detect client, server or what */
-		args.ibnbdmode = IBNBD_BOTH;
-		args.ibnbdmode_set = 1;
+		DIR* dir;
+
+		dir = opendir("/sys/module/ibnbd_client");
+		if (dir) {
+			args.ibnbdmode |= IBNBD_CLIENT;
+			args.ibnbdmode_set = 1;
+			closedir(dir);
+		}
+		dir = opendir("/sys/module/ibnbd_server");
+		if (dir) {
+			args.ibnbdmode |= IBNBD_SERVER;
+			args.ibnbdmode_set = 1;
+			closedir(dir);
+		}
 	}
 }
 
@@ -966,8 +980,14 @@ int main(int argc, char **argv)
 	ret = 0;
 	if (args.help_set && cmd->help)
 		cmd->help(cmd);
-	else if (cmd->func)
+	else if (cmd->func) {
+		if (args.ibnbdmode == IBNBD_NONE) {
+			ERR("ibnbd modules not loaded\n");
+			ret = -ENOENT;
+			goto out;
+		}
 		ret = cmd->func();
+	}
 
 out:
 	return ret;
