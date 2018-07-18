@@ -74,6 +74,7 @@ static int trm;
 
 struct args {
 	char pname[65];
+	char name[NAME_MAX];
 
 	uint64_t size_sect;
 	short size_set;
@@ -88,6 +89,9 @@ struct args {
 	unsigned lstmode;
 	short lstmode_set;
 
+	unsigned showmode;
+	short showmode_set;
+
 	unsigned ibnbdmode;
 	short ibnbdmode_set;
 
@@ -100,6 +104,9 @@ struct args {
 	short noterm_set;
 	short help_set;
 	short verbose_set;
+
+	short port_set;
+	short path_set;
 
 	int unit_id;
 	short unit_set;
@@ -321,18 +328,33 @@ enum lstmode {
 	LST_PATHS
 };
 
+enum showmode {
+	SHOW_DEVICE,
+	SHOW_SESSION,
+	SHOW_PATH
+};
+
 static int parse_lst(int argc, char **argv, int i, const struct sarg *sarg)
 {
-	if (!strcasecmp(argv[i], "devices"))
+	if (!strcasecmp(argv[i], "devices") ||
+	    !strcasecmp(argv[i], "device") ||
+	    !strcasecmp(argv[i], "dev")) {
 		args.lstmode = LST_DEVICES;
-	else if (!strcasecmp(argv[i], "sessions"))
+		args.showmode = SHOW_DEVICE;
+	} else if (!strcasecmp(argv[i], "sessions") ||
+		 !strcasecmp(argv[i], "session") ||
+		 !strcasecmp(argv[i], "sess")) {
 		args.lstmode = LST_SESSIONS;
-	else if (!strcasecmp(argv[i], "paths"))
+		args.showmode = SHOW_SESSION;
+	} else if (!strcasecmp(argv[i], "paths") ||
+		 !strcasecmp(argv[i], "path")) {
 		args.lstmode = LST_PATHS;
-	else
+		args.showmode = SHOW_PATH;
+	} else
 		assert(0);
 
 	args.lstmode_set = 1;
+	args.showmode_set = 1;
 
 	return i + 1;
 }
@@ -436,10 +458,15 @@ static struct sarg sargs[] = {
 	{"clt", "Information for client", parse_mode, NULL},
 	{"server", "Information for server", parse_mode, NULL},
 	{"srv", "Information for server", parse_mode, NULL},
-	{"both", "Information for bit", parse_mode, NULL},
+	{"both", "Information for both", parse_mode, NULL},
 	{"devices", "List mapped devices", parse_lst, NULL},
+	{"device", "", parse_lst, NULL},
+	{"dev", "", parse_lst, NULL},
 	{"sessions", "List sessions", parse_lst, NULL},
+	{"session", "", parse_lst, NULL},
+	{"sess", "", parse_lst, NULL},
 	{"paths", "List paths", parse_lst, NULL},
+	{"path", "", parse_lst, NULL},
 	{"xml", "Print in XML format", parse_fmt, NULL},
 	{"csv", "Print in CSV format", parse_fmt, NULL},
 	{"json", "Print in JSON format", parse_fmt, NULL},
@@ -450,6 +477,7 @@ static struct sarg sargs[] = {
 	{"fileio", "File IO mode", parse_iomode, NULL},
 	{"help", "Display help and exit", parse_flag, &args.help_set},
 	{"verbose", "Verbose output", parse_flag, &args.verbose_set},
+	{"-v", "Verbose output", parse_flag, &args.verbose_set},
 	{"B", "Byte", parse_unit, NULL},
 	{"K", "KiB", parse_unit, NULL},
 	{"M", "MiB", parse_unit, NULL},
@@ -791,10 +819,203 @@ static int cmd_list(void)
 	return rc;
 }
 
+/*
+ * Find an ibnbd device by device name, path or mapping path
+ * TODO
+ */
+static struct ibnbd_sess_dev *find_device(char *name)
+{
+	int i;
+
+	for (i = 0; i < ARRSIZE(sd); i++)
+		if (!strcmp(sd[i].mapping_path, name) ||
+		    !strcmp(sd[i].dev.devname, name) ||
+		    !strcmp(sd[i].dev.devpath, name))
+			return &sd[i];
+
+	return NULL;
+}
+
+static int show_device(char *devname)
+{
+	struct table_fld flds[CLM_MAX_CNT];
+	struct ibnbd_sess_dev *dev;
+	struct table_column **cs;
+
+	dev = find_device(devname);
+
+	if (!dev) {
+		ERR("Device %s not found\n", devname);
+		return -ENOENT;
+	}
+
+	switch (args.ibnbdmode) {
+	case IBNBD_CLIENT:
+	case IBNBD_BOTH:
+		cs = args.clms_devices_clt;
+		break;
+	case IBNBD_SERVER:
+		cs = args.clms_devices_srv;
+		break;
+	default:
+		assert(0);
+	}
+
+	switch (args.fmt) {
+	case FMT_CSV:
+		if (!args.noheaders_set)
+			table_header_print_csv(cs);
+		table_row_print(dev, FMT_CSV, "", cs, 0, 0, 0);
+		break;
+	case FMT_JSON:
+		table_row_print(dev, FMT_JSON, "", cs, 0, 0, 0);
+		printf("\n");
+		break;
+	case FMT_XML:
+		table_row_print(dev, FMT_XML, "", cs, 0, 0, 0);
+		break;
+	case FMT_TERM:
+	default:
+		table_row_stringify(dev, flds, cs, 1, 0);
+		table_entry_print_term("", flds, cs,
+				       table_get_max_h_width(cs), trm);
+		break;
+	}
+
+	return 0;
+}
+
+/*
+ * Find a session by name or hostname
+ * TODO
+ */
+static struct ibnbd_sess *find_session(char *name)
+{
+	char *at;
+
+	if (!strcmp(name, s.sessname))
+		return &s;
+
+	at = strchr(s.sessname, '@');
+	if (*at) {
+		if (!strncmp(name, s.sessname, at - s.sessname) ||
+		    !strcmp(name, at + 1))
+			return &s;
+	}
+
+	return NULL;
+}
+
+static int get_showmode(char *name, enum showmode *mode)
+{
+	if (find_device(name))
+		*mode = SHOW_DEVICE;
+	else if (find_session(name))
+		*mode = SHOW_SESSION;
+	else
+		return -ENOENT;
+
+	return 0;
+}
+
+static int show_path(char *pathname)
+{
+	return 0;
+}
+
+static int show_session(char *sessname)
+{
+	return 0;
+}
+
+static int cmd_show(void)
+{
+	int rc;
+
+	if (!args.showmode_set) {
+		if (get_showmode(args.name, &args.showmode)) {
+			ERR("'%s' is neither device nor session\n", args.name);
+			return -ENOENT;
+		}
+		args.showmode_set = 1;
+	}
+
+	switch (args.showmode) {
+	case SHOW_DEVICE:
+		rc = show_device(args.name);
+		break;
+	case SHOW_SESSION:
+		if (args.port_set || args.path_set)
+			rc = show_path(args.name);
+		else
+			rc = show_session(args.name);
+		break;
+	case SHOW_PATH:
+		rc = show_path(args.name);
+		break;
+	default:
+		assert(0);
+		break;
+	}
+
+	return rc;
+}
+
+static int parse_name(int argc, char **argv, int i)
+{
+	int j = i + 1;
+
+	if (j >= argc) {
+		ERR("please specify device or session to display\n");
+		return i;
+	}
+
+	snprintf(args.name, sizeof(args.name), "%s", argv[j]);
+	return j + 1;
+}
+
+static void help_show(struct cmd *cmd)
+{
+	cmd_print_usage(cmd, "<name> [path] ");
+
+	printf("\nArguments:\n");
+	print_opt("<name>", "Name of the local or remote block device, session name ");
+	print_opt("", "or remote hostname. I.e. ibnbd0, /dev/ibnbd0, ");
+	print_opt("", "d12aef94-4110-4321-9373-3be8494a557b, ps401a-1@st401b-2, st401b-2");
+	print_opt("", "In order to display path information, path or port parameter ");
+	print_opt("", "has to be provided. I.e. ibnbd show st401b-2 port=1.");
+
+	printf("\nOptions:\n");
+	print_opt("{path}", "Path name (<addr>@<addr>) or address (<addr>),");
+	print_opt("", "where addr can be of the form [ip:]<ipv4>, ip:<ipv6>, gid:<gid>");
+	print_opt("{port}", "HCA port in the format \"port=<n>\"");
+	help_fields();
+
+	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "Device fields:"));
+	print_fields(def_clms_devices_clt, def_clms_devices_srv, all_clms_devices);
+
+	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "Paths fields:"));
+	print_opt("", "TODO\n");
+
+	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "Sessions fields:"));
+	print_opt("", "TODO\n");
+
+	printf("\n%sProvide 'all' to print all available fields\n", HPRE);
+
+	print_opt("{format}", "Output format: csv|json|xml");
+	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
+	print_opt("{mode}", "Information to print: device|session|path. Default: device.");
+
+	print_sarg_descr("help");
+}
+
 static struct cmd cmds[] = {
 	{"list", "List ibnbd block- and transport information",
 		 "List ibnbd block- and transport information: "
 		 "devices, sessions, paths, etc.", cmd_list, NULL, help_list},
+	{"show", "Show information about a device, a session or a path",
+		 "Show information about an ibnbd block- or transport- item: "
+		 "device, session or path.", cmd_show, parse_name, help_show},
 	{"help", "Display help", "Display help message and exit.",
 		cmd_help, NULL, NULL},
 
