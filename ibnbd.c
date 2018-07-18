@@ -94,8 +94,8 @@ struct args {
 	short ro;
 	short ro_set;
 
-	struct table_column *clms[CLM_MAX_CNT];
-	short clms_set;
+	struct table_column *clms_devices_clt[CLM_MAX_CNT];
+	struct table_column *clms_devices_srv[CLM_MAX_CNT];
 
 	short noterm_set;
 	short help_set;
@@ -211,7 +211,7 @@ static int sdd_iomode_to_str(char *str, size_t len, enum color *clr, void *v,
 }
 
 CLM_SD(access_mode, "Access Mode", FLD_STR, sd_access_mode_to_str, 'l', CNRM,
-       "Mode of access to the remote device: ro, rw or migration");
+       "RW mode of the device: ro, rw or migration");
 
 CLM_SDD(devname, "Device", FLD_STR, NULL, 'l', CNRM,
 	"Device name under /dev/. I.e. ibnbd0");
@@ -220,7 +220,7 @@ CLM_SDD(devpath, "Device Path", FLD_STR, NULL, 'l', CNRM,
 	"Device path under /dev/. I.e. /dev/ibnbd0");
 
 CLM_SDD(iomode, "IO Mode", FLD_STR, sdd_iomode_to_str, 'l', CNRM,
-	"The way target device is accessed on server: fileio/blockio");
+	"Access mode of the target device: fileio/blockio");
 
 CLM_SDD(rx_sect, "RX", FLD_NUM, size_to_str, 'l', CNRM,
 	"Amount of data read from the device");
@@ -229,7 +229,7 @@ CLM_SDD(tx_sect, "TX", FLD_NUM, size_to_str, 'l', CNRM,
 	"Amount of data written to the device");
 
 CLM_SDD(state, "State", FLD_STR, state_to_str, 'l', CNRM,
-	"State of the IBNBD device");
+	"State of the IBNBD device. (client only)");
 
 static int dev_sessname_to_str(char *str, size_t len, enum color *clr,
 			       void *v, int humanize)
@@ -243,7 +243,7 @@ static struct table_column clm_ibnbd_sess_dev_sessname =
 	_CLM_SD("sessname", sess, "Session", FLD_STR, dev_sessname_to_str, 'l',
 		CNRM, "Name of the IBTRS session of the device");
 
-static struct table_column *all_clms_sd[] = {
+static struct table_column *all_clms_devices[] = {
 	&clm_ibnbd_sess_dev_sessname,
 	&clm_ibnbd_sess_dev_mapping_path,
 	&clm_ibnbd_dev_devname,
@@ -254,9 +254,9 @@ static struct table_column *all_clms_sd[] = {
 	&clm_ibnbd_dev_tx_sect,
 	NULL
 };
-#define ALL_CLMS_SD_CNT (ARRSIZE(all_clms_sd) - 1)
+#define ALL_CLMS_DEVICES_CNT (ARRSIZE(all_clms_devices) - 1)
 
-static struct table_column *default_clms_sd[] = {
+static struct table_column *def_clms_devices_clt[] = {
 	&clm_ibnbd_sess_dev_sessname,
 	&clm_ibnbd_sess_dev_mapping_path,
 	&clm_ibnbd_dev_devname,
@@ -265,7 +265,17 @@ static struct table_column *default_clms_sd[] = {
 	&clm_ibnbd_dev_iomode,
 	NULL
 };
-#define DEFAULT_CLMS_SD_CNT (ARRSIZE(default_clms_sd) - 1)
+#define DEF_CLMS_DEVICES_CLT_CNT (ARRSIZE(def_clms_devices_clt) - 1)
+
+static struct table_column *def_clms_devices_srv[] = {
+	&clm_ibnbd_sess_dev_sessname,
+	&clm_ibnbd_sess_dev_mapping_path,
+	&clm_ibnbd_dev_devname,
+	&clm_ibnbd_sess_dev_access_mode,
+	&clm_ibnbd_dev_iomode,
+	NULL
+};
+#define DEF_CLMS_DEVICES_SRV_CNT (ARRSIZE(def_clms_devices_srv) - 1)
 
 struct sarg {
 	const char *str;
@@ -336,9 +346,9 @@ enum ibnbdmode {
 
 static int parse_mode(int argc, char **argv, int i, const struct sarg *sarg)
 {
-	if (!strcasecmp(argv[i], "client"))
+	if (!strcasecmp(argv[i], "client") || !strcasecmp(argv[i], "clt"))
 		args.ibnbdmode = IBNBD_CLIENT;
-	else if (!strcasecmp(argv[i], "server"))
+	else if (!strcasecmp(argv[i], "server") || !strcasecmp(argv[i], "srv"))
 		args.ibnbdmode = IBNBD_SERVER;
 	else if (!strcasecmp(argv[i], "both"))
 		args.ibnbdmode = IBNBD_BOTH;
@@ -400,8 +410,11 @@ static int parse_unit(int argc, char **argv, int i, const struct sarg *sarg)
 
 static int parse_all(int argc, char **argv, int i, const struct sarg *sarg)
 {
-	memcpy(&args.clms, &all_clms_sd, ALL_CLMS_SD_CNT * sizeof(all_clms_sd[0]));
-	args.clms_set = 1;
+	memcpy(&args.clms_devices_clt, &all_clms_devices,
+	       ALL_CLMS_DEVICES_CNT * sizeof(all_clms_devices[0]));
+	memcpy(&args.clms_devices_srv, &all_clms_devices,
+	       ALL_CLMS_DEVICES_CNT * sizeof(all_clms_devices[0]));
+
 	/*memcpy(&args.info_clms, &u_clmns, CLM_DISK_USAGE_CNT * sizeof(u_clmns[0]));
 	args.info_clms_set = 1;
 	memcpy(&args.usage_clms, &st_usage_clmns,
@@ -420,7 +433,9 @@ static int parse_flag(int argc, char **argv, int i, const struct sarg *sarg)
 
 static struct sarg sargs[] = {
 	{"client", "Information for client", parse_mode, NULL},
+	{"clt", "Information for client", parse_mode, NULL},
 	{"server", "Information for server", parse_mode, NULL},
+	{"srv", "Information for server", parse_mode, NULL},
 	{"both", "Information for bit", parse_mode, NULL},
 	{"devices", "List mapped devices", parse_lst, NULL},
 	{"sessions", "List sessions", parse_lst, NULL},
@@ -541,17 +556,26 @@ static void print_clms_list(struct table_column **clms)
 	printf("\n");
 }
 
-static void help_fields(struct table_column **def, struct table_column **all)
+static void help_fields(void)
 {
 	print_opt("{fields}",
-		  "Comma separated list of fields to be printed.");
-	printf("%sThe list can be prefixed with '+' or '-' to add or remove fields\n", HPRE);
-	printf("%sfrom the default selection.\n", HPRE);
-	printf("%sDefault: ", HPRE);
-	print_clms_list(def);
-	printf("\n%s%s\n", HPRE, "Available fields:");
+		  "Comma separated list of fields to be printed."
+		  " The list can be");
+	print_opt("", "prefixed with '+' or '-' to add or remove fields"
+		      " from the ");
+	print_opt("", "default selection.\n");
+}
+
+static void print_fields(struct table_column **def_clt,
+			 struct table_column **def_srv,
+			 struct table_column **all)
+{
 	table_tbl_print_term(HPRE, all, trm);
-	printf("\n%sProvide 'all' to print all available fields\n", HPRE);
+	printf("\n%sDefault client: ", HPRE);
+	print_clms_list(def_clt);
+	printf("%sDefault server: ", HPRE);
+	print_clms_list(def_srv);
+	printf("\n");
 }
 
 static void help_list(struct cmd *cmd)
@@ -559,8 +583,21 @@ static void help_list(struct cmd *cmd)
 	cmd_print_usage(cmd, "");
 
 	printf("\nOptions:\n");
-	help_fields(default_clms_sd, all_clms_sd);
-	print_opt("{mode}", "Information to print: devices|sessions|paths. Default: devices");
+	print_opt("{mode}", "Information to print: devices|sessions|paths.");
+	print_opt("", "Default: devices.");
+	help_fields();
+
+	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "List of devices:"));
+	print_fields(def_clms_devices_clt, def_clms_devices_srv, all_clms_devices);
+
+	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "List of paths:"));
+	print_opt("", "TODO\n");
+
+	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "List of sessions:"));
+	print_opt("", "TODO\n");
+
+	printf("\n%sProvide 'all' to print all available fields\n", HPRE);
+
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
 	print_sarg_descr("noheaders");
@@ -591,11 +628,10 @@ static int has_num(struct table_column **cs)
 	return 0;
 }
 
-static int list_devices_xml(struct table_column **cs)
+static int list_devices_xml(struct ibnbd_sess_dev *sd, int dev_num,
+			    struct table_column **cs)
 {
-	int i, dev_num;
-
-	dev_num = ARRSIZE(sd);
+	int i;
 
 	printf("<devices>\n");
 
@@ -610,11 +646,10 @@ static int list_devices_xml(struct table_column **cs)
 	return 0;
 }
 
-static int list_devices_json(struct table_column **cs)
+static int list_devices_json(struct ibnbd_sess_dev *sd, int dev_num,
+			     struct table_column **cs)
 {
-	int i, dev_num;
-
-	dev_num = ARRSIZE(sd);
+	int i;
 
 	printf("{ \"devices\": [\n");
 
@@ -630,11 +665,10 @@ static int list_devices_json(struct table_column **cs)
 	return 0;
 }
 
-static int list_devices_csv(struct table_column **cs)
+static int list_devices_csv(struct ibnbd_sess_dev *sd, int dev_num,
+			    struct table_column **cs)
 {
-	int i, dev_num;
-
-	dev_num = ARRSIZE(sd);
+	int i;
 
 	if (!args.noheaders_set)
 		table_header_print_csv(cs);
@@ -646,7 +680,8 @@ static int list_devices_csv(struct table_column **cs)
 	return 0;
 }
 
-static int list_devices_term(struct table_column **cs)
+static int list_devices_term(struct ibnbd_sess_dev *sd, int dev_num,
+			     struct table_column **cs)
 {
 	struct ibnbd_sess_dev total = {
 		.dev = {
@@ -656,11 +691,9 @@ static int list_devices_term(struct table_column **cs)
 		.mapping_path = ""
 	};
 	struct table_fld *flds;
-	int i, cs_cnt, dev_num;
+	int i, cs_cnt;
 
 	cs_cnt = clm_cnt(cs);
-
-	dev_num = ARRSIZE(sd);
 
 	if (!has_num(cs))
 		args.nototals_set = 1;
@@ -703,21 +736,36 @@ static int list_devices_term(struct table_column **cs)
 
 static int list_devices()
 {
-	int rc;
+	struct table_column **cs;
+	int rc, dev_num;
+
+	switch (args.ibnbdmode) {
+	case IBNBD_CLIENT:
+	case IBNBD_BOTH:
+		cs = args.clms_devices_clt;
+		break;
+	case IBNBD_SERVER:
+		cs = args.clms_devices_srv;
+		break;
+	default:
+		assert(0);
+	}
+
+	dev_num = ARRSIZE(sd);
 
 	switch (args.fmt) {
 	case FMT_CSV:
-		rc = list_devices_csv(args.clms);
+		rc = list_devices_csv(sd, dev_num, cs);
 		break;
 	case FMT_JSON:
-		rc = list_devices_json(args.clms);
+		rc = list_devices_json(sd, dev_num, cs);
 		break;
 	case FMT_XML:
-		rc = list_devices_xml(args.clms);
+		rc = list_devices_xml(sd, dev_num, cs);
 		break;
 	case FMT_TERM:
 	default:
-		rc = list_devices_term(args.clms);
+		rc = list_devices_term(sd, dev_num, cs);
 		break;
 	}
 
@@ -847,24 +895,26 @@ static int parse_precision(char *str)
 	return 0;
 }
 
-static int parse_sd_columns(const char *arg)
+static int parse_devices_clms(const char *arg)
 {
-	int rc;
+	int rc_clt, rc_srv;
 
-	rc = table_extend_columns(arg, ",", all_clms_sd, args.clms, CLM_MAX_CNT);
-	if (rc)
-		return rc;
+	rc_clt = table_extend_columns(arg, ",", all_clms_devices,
+				      args.clms_devices_clt, CLM_MAX_CNT);
 
-	return 0;
+	rc_srv = table_extend_columns(arg, ",", all_clms_devices,
+				      args.clms_devices_srv, CLM_MAX_CNT);
+
+	return rc_clt && rc_srv;
 }
 
 static void init_args(void)
 {
-	memcpy(&args.clms, &default_clms_sd,
-	       DEFAULT_CLMS_SD_CNT * sizeof(all_clms_sd[0]));
+	memcpy(&args.clms_devices_clt, &def_clms_devices_clt,
+	       DEF_CLMS_DEVICES_CLT_CNT * sizeof(all_clms_devices[0]));
+	memcpy(&args.clms_devices_srv, &def_clms_devices_srv,
+	       DEF_CLMS_DEVICES_SRV_CNT * sizeof(all_clms_devices[0]));
 }
-
-
 
 static void default_args(void)
 {
@@ -949,7 +999,7 @@ int main(int argc, char **argv)
 	while (i < argc) {
 		sarg = find_sarg(argv[i], sargs);
 		if (!sarg) {
-			if (!parse_sd_columns(argv[i]) ||
+			if (!parse_devices_clms(argv[i]) ||
 			    !parse_precision(argv[i])) {
 				i++;
 				continue;
