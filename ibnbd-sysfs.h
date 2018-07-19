@@ -51,7 +51,7 @@ struct ibnbd_sess {
 	char sessname[NAME_MAX];	/* session name */
 	int active_path_cnt;		/* active path count */
 	int path_cnt;			/* path count */
-	struct ibnbd_path *paths;	/* paths */
+	struct ibnbd_path paths[];	/* paths */
 };
 
 struct ibnbd_sess_dev {

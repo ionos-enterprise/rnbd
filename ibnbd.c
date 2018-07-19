@@ -16,7 +16,35 @@
 
 struct ibnbd_sess s = {
 	.sessname = "ps401a-3@st401b-3",
-	.active_path_cnt = 2
+	.active_path_cnt = 2,
+	.path_cnt = 2,
+	.paths = {
+		{.sess = &s,
+		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5@gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
+		 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5",
+		 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
+		 .hca_name = "mlx4_0",
+		 .hca_port = 1,
+		 .state = "connected",
+		 .tx_bytes = 0,
+		 .rx_bytes = 377000,
+		 .inflights = 0},
+		{.sess = &s,
+		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6@gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
+		 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
+		 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
+		 .hca_name = "mlx4_0",
+		 .hca_port = 2,
+		 .state = "connected",
+		 .tx_bytes = 0,
+		 .rx_bytes = 84000,
+		 .inflights = 0}
+	}
+};
+
+struct ibnbd_sess *sessions = {
+	&s,
+	NULL
 };
 
 struct ibnbd_sess_dev sd[] = {
@@ -254,6 +282,7 @@ static struct table_column *all_clms_devices[] = {
 	&clm_ibnbd_sess_dev_sessname,
 	&clm_ibnbd_sess_dev_mapping_path,
 	&clm_ibnbd_dev_devname,
+	&clm_ibnbd_dev_devpath,
 	&clm_ibnbd_dev_state,
 	&clm_ibnbd_sess_dev_access_mode,
 	&clm_ibnbd_dev_iomode,
