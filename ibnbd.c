@@ -29,7 +29,8 @@ struct ibnbd_sess s = {
 		 .state = "connected",
 		 .tx_bytes = 0,
 		 .rx_bytes = 377000,
-		 .inflights = 0
+		 .inflights = 0,
+		 .reconnects = 1
 		},
 		{.sess = &s,
 		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6@"
@@ -41,7 +42,8 @@ struct ibnbd_sess s = {
 		 .state = "connected",
 		 .tx_bytes = 0,
 		 .rx_bytes = 84000,
-		 .inflights = 0
+		 .inflights = 0,
+		 .reconnects = 0
 		}
 	}
 };
@@ -184,22 +186,14 @@ static int size_to_str(char *str, size_t len, enum color *clr, void *v,
 	return sect_to_byte_unit(str, len, *(int *)v, humanize);
 }
 
-#define CLM_SD(m_name, m_header, m_type, tostr, align, color, m_descr) \
-	CLM(ibnbd_sess_dev, m_name, m_header, m_type, tostr, align, color, \
-	    m_descr, sizeof(m_header) - 1, 0)
+#define CLM_SD(m_name, m_header, m_type, tostr, align, h_clr, c_clr, m_descr) \
+	CLM(ibnbd_sess_dev, m_name, m_header, m_type, tostr, align, h_clr,\
+	    c_clr, m_descr, sizeof(m_header) - 1, 0)
 
-#define _CLM_SD(s_name, m_name, m_header, m_type, tostr, align, color, \
+#define _CLM_SD(s_name, m_name, m_header, m_type, tostr, align, h_clr, c_clr, \
 		m_descr) \
 	_CLM(ibnbd_sess_dev, s_name, m_name, m_header, m_type, tostr, \
-	    align, color, m_descr, sizeof(m_header) - 1, 0)
-
-static int name_to_str(char *str, size_t len, enum color *clr, void *v,
-		       int humanize)
-{
-	*clr = CBLD;
-
-	return snprintf(str, len, "%s", (char *)v);
-}
+	    align, h_clr, c_clr, m_descr, sizeof(m_header) - 1, 0)
 
 static int sd_state_to_str(char *str, size_t len, enum color *clr, void *v,
 		           int humanize)
@@ -214,7 +208,7 @@ static int sd_state_to_str(char *str, size_t len, enum color *clr, void *v,
 	return snprintf(str, len, "%s", sd->dev->state);
 }
 
-CLM_SD(mapping_path, "Mapping Path", FLD_STR, name_to_str, 'l', CNRM,
+CLM_SD(mapping_path, "Mapping Path", FLD_STR, NULL, 'l', CNRM, CBLD,
        "Mapping name of the remote device");
 
 static int sd_access_mode_to_str(char *str, size_t len, enum color *clr,
@@ -257,7 +251,7 @@ static int sdd_iomode_to_str(char *str, size_t len, enum color *clr, void *v,
 	}
 }
 
-CLM_SD(access_mode, "Access Mode", FLD_STR, sd_access_mode_to_str, 'l', CNRM,
+CLM_SD(access_mode, "Access Mode", FLD_STR, sd_access_mode_to_str, 'l', CNRM, CNRM,
        "RW mode of the device: ro, rw or migration");
 
 static int sd_devname_to_str(char *str, size_t len, enum color *clr,
@@ -270,7 +264,7 @@ static int sd_devname_to_str(char *str, size_t len, enum color *clr,
 
 static struct table_column clm_ibnbd_dev_devname =
 	_CLM_SD("devname", sess, "Device", FLD_STR, sd_devname_to_str, 'l',
-		CNRM, "Device name under /dev/. I.e. ibnbd0");
+		CNRM, CNRM, "Device name under /dev/. I.e. ibnbd0");
 
 static int sd_devpath_to_str(char *str, size_t len, enum color *clr,
 			     void *v, int humanize)
@@ -282,11 +276,11 @@ static int sd_devpath_to_str(char *str, size_t len, enum color *clr,
 
 static struct table_column clm_ibnbd_dev_devpath =
 	_CLM_SD("devpath", sess, "Device path", FLD_STR, sd_devpath_to_str, 'l',
-		CNRM, "Device path under /dev/. I.e. /dev/ibnbd0");
+		CNRM, CNRM, "Device path under /dev/. I.e. /dev/ibnbd0");
 
 static struct table_column clm_ibnbd_dev_iomode =
 	_CLM_SD("iomode", sess, "IO mode", FLD_STR, sdd_iomode_to_str, 'l',
-		CNRM, "IO submission mode of the target device: file/block");
+		CNRM, CNRM, "IO submission mode of the target device: file/block");
 
 static int sd_rx_to_str(char *str, size_t len, enum color *clr, void *v,
 		       int humanize)
@@ -299,7 +293,7 @@ static int sd_rx_to_str(char *str, size_t len, enum color *clr, void *v,
 }
 
 static struct table_column clm_ibnbd_dev_rx_sect =
-	_CLM_SD("rx_sect", sess, "RX", FLD_NUM, sd_rx_to_str, 'l', CNRM,
+	_CLM_SD("rx_sect", sess, "RX", FLD_NUM, sd_rx_to_str, 'l', CNRM, CNRM,
 	"Amount of data read from the device");
 
 static int sd_tx_to_str(char *str, size_t len, enum color *clr, void *v,
@@ -313,12 +307,12 @@ static int sd_tx_to_str(char *str, size_t len, enum color *clr, void *v,
 }
 
 static struct table_column clm_ibnbd_dev_tx_sect =
-	_CLM_SD("tx_sect", sess, "TX", FLD_NUM, sd_tx_to_str, 'l', CNRM,
+	_CLM_SD("tx_sect", sess, "TX", FLD_NUM, sd_tx_to_str, 'l', CNRM, CNRM,
 	"Amount of data written to the device");
 
 
 static struct table_column clm_ibnbd_dev_state =
-	_CLM_SD("state", sess, "State", FLD_STR, sd_state_to_str, 'l', CNRM,
+	_CLM_SD("state", sess, "State", FLD_STR, sd_state_to_str, 'l', CNRM, CNRM,
 	"State of the IBNBD device. (client only)");
 
 static int dev_sessname_to_str(char *str, size_t len, enum color *clr,
@@ -331,7 +325,7 @@ static int dev_sessname_to_str(char *str, size_t len, enum color *clr,
 
 static struct table_column clm_ibnbd_sess_dev_sessname =
 	_CLM_SD("sessname", sess, "Session", FLD_STR, dev_sessname_to_str, 'l',
-		CNRM, "Name of the IBTRS session of the device");
+		CNRM, CNRM, "Name of the IBTRS session of the device");
 
 static struct table_column *all_clms_devices[] = {
 	&clm_ibnbd_sess_dev_sessname,
@@ -367,6 +361,19 @@ static struct table_column *def_clms_devices_srv[] = {
 	NULL
 };
 #define DEF_CLMS_DEVICES_SRV_CNT (ARRSIZE(def_clms_devices_srv) - 1)
+
+#define CLM_S(m_name, m_header, m_type, tostr, align, h_clr, c_clr, m_descr) \
+	CLM(ibnbd_sess, m_name, m_header, m_type, tostr, align, h_clr, c_clr, \
+	    m_descr, sizeof(m_header) - 1, 0)
+
+CLM_S(sessname, "Session name", FLD_STR, NULL, 'l', CNRM, CBLD,
+       "Name of the session");
+
+CLM_S(path_cnt, "Path count", FLD_NUM, NULL, 'l', CNRM, CNRM,
+       "Number of paths");
+
+CLM_S(active_path_cnt, "Active path cnt", FLD_NUM, NULL, 'l', CNRM, CNRM,
+       "Number of active paths");
 
 struct sarg {
 	const char *str;

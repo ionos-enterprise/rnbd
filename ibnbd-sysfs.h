@@ -36,12 +36,21 @@ struct ibnbd_path {
 	unsigned long	  rx_bytes;
 	unsigned long	  tx_bytes;
 	int		  inflights;
+	int		  reconnects;
 };
 
 struct ibnbd_sess {
-	char sessname[NAME_MAX];	/* session name */
-	int active_path_cnt;		/* active path count */
-	int path_cnt;			/* path count */
+	char		  sessname[NAME_MAX];	/* session name */
+
+	/* fields calsulated from the list of paths */
+	int		  active_path_cnt;	/* active path count */
+	unsigned long	  rx_bytes;
+	unsigned long	  tx_bytes;
+	int		  inflights;
+	int		  reconnects;
+
+	/* paths */
+	int 		  path_cnt;	/* path count */
 	struct ibnbd_path paths[];	/* paths */
 };
 
