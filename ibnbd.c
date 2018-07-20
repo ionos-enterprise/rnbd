@@ -20,7 +20,8 @@ struct ibnbd_sess s = {
 	.path_cnt = 2,
 	.paths = {
 		{.sess = &s,
-		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5@gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
+		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5@"
+			     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
 		 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5",
 		 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
 		 .hca_name = "mlx4_0",
@@ -28,9 +29,11 @@ struct ibnbd_sess s = {
 		 .state = "connected",
 		 .tx_bytes = 0,
 		 .rx_bytes = 377000,
-		 .inflights = 0},
+		 .inflights = 0
+		},
 		{.sess = &s,
-		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6@gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
+		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6@"
+			     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
 		 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
 		 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
 		 .hca_name = "mlx4_0",
@@ -38,7 +41,8 @@ struct ibnbd_sess s = {
 		 .state = "connected",
 		 .tx_bytes = 0,
 		 .rx_bytes = 84000,
-		 .inflights = 0}
+		 .inflights = 0
+		}
 	}
 };
 
@@ -47,36 +51,46 @@ struct ibnbd_sess *sessions = {
 	NULL
 };
 
+struct ibnbd_dev d[] = {
+	{.devname = "ibnbd0",
+	 .devpath = "/dev/ibnbd0",
+	 .iomode = IBNBD_FILEIO,
+	 .rx_sect = 190,
+	 .tx_sect = 2342,
+	 .state = "open"
+	},
+	{.devname = "ibnbd1",
+	 .devpath = "/dev/ibnbd1",
+	 .iomode = IBNBD_BLOCKIO,
+	 .rx_sect = 190,
+	 .tx_sect = 2342,
+	 .state = "open"
+	},
+	{.devname = "ibnbd2",
+	 .devpath = "/dev/ibnbd2",
+	 .iomode = IBNBD_BLOCKIO,
+	 .rx_sect = 190,
+	 .tx_sect = 2342,
+	 .state = "closed"
+	},
+};
+
 struct ibnbd_sess_dev sd[] = {
 	{.mapping_path = "112b5fc0-91f5-4157-8603-777f8e733f1f",
 	 .access_mode = IBNBD_RW,
 	 .sess = &s,
-	 .dev = {.devname = "ibnbd0",
-	 	 .devpath = "/dev/ibnbd0",
-	 	 .iomode = IBNBD_FILEIO,
-		 .rx_sect = 190,
-		 .tx_sect = 2342,
-	 	 .state = "open"}},
-
+	 .dev = &d[0]
+	},
 	{.mapping_path = "8f749d51-c7c2-41cc-a55e-4fca8b97de73",
 	 .access_mode = IBNBD_RO,
 	 .sess = &s,
-	 .dev = {.devname = "ibnbd1",
-	 	 .devpath = "/dev/ibnbd1",
-	 	 .iomode = IBNBD_BLOCKIO,
-		 .rx_sect = 190,
-		 .tx_sect = 2342,
-	 	 .state = "open"}},
-
+	 .dev = &d[1]
+	},
 	{.mapping_path = "ecf6bfd0-3dae-46a3-9a1b-e61225920185",
 	 .access_mode = IBNBD_MIGRATION,
 	 .sess = &s,
-	 .dev = {.devname = "ibnbd2",
-	 	 .devpath = "/dev/ibnbd2",
-	 	 .iomode = IBNBD_BLOCKIO,
-		 .rx_sect = 190,
-		 .tx_sect = 2342,
-	 	 .state = "closed"}},
+	 .dev = &d[2]
+	},
 };
 
 #define ERR(fmt, ...) \
@@ -179,11 +193,6 @@ static int size_to_str(char *str, size_t len, enum color *clr, void *v,
 	_CLM(ibnbd_sess_dev, s_name, m_name, m_header, m_type, tostr, \
 	    align, color, m_descr, sizeof(m_header) - 1, 0)
 
-#define CLM_SDD(m_name, m_header, m_type, tostr, align, color, \
-		m_descr) \
-	CLM(ibnbd_dev, m_name, m_header, m_type, tostr, align, color, \
-	    m_descr, sizeof(m_header) - 1, offsetof(struct ibnbd_sess_dev, dev))
-
 static int name_to_str(char *str, size_t len, enum color *clr, void *v,
 		       int humanize)
 {
@@ -192,15 +201,17 @@ static int name_to_str(char *str, size_t len, enum color *clr, void *v,
 	return snprintf(str, len, "%s", (char *)v);
 }
 
-static int state_to_str(char *str, size_t len, enum color *clr, void *v,
-		        int humanize)
+static int sd_state_to_str(char *str, size_t len, enum color *clr, void *v,
+		           int humanize)
 {
-	if (!strcmp("open", (char *)v))
+	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev, sess);
+
+	if (!strcmp("open", sd->dev->state))
 		*clr = CGRN;
 	else
 		*clr = CRED;
 
-	return snprintf(str, len, "%s", (char *)v);
+	return snprintf(str, len, "%s", sd->dev->state);
 }
 
 CLM_SD(mapping_path, "Mapping Path", FLD_STR, name_to_str, 'l', CNRM,
@@ -230,7 +241,8 @@ static int sd_access_mode_to_str(char *str, size_t len, enum color *clr,
 static int sdd_iomode_to_str(char *str, size_t len, enum color *clr, void *v,
 			     int humanize)
 {
-	enum ibnbd_iomode mode = *(enum ibnbd_iomode *)v;
+	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev, sess);
+	enum ibnbd_iomode mode = sd->dev->iomode;
 
 	*clr = CNRM;
 
@@ -248,22 +260,65 @@ static int sdd_iomode_to_str(char *str, size_t len, enum color *clr, void *v,
 CLM_SD(access_mode, "Access Mode", FLD_STR, sd_access_mode_to_str, 'l', CNRM,
        "RW mode of the device: ro, rw or migration");
 
-CLM_SDD(devname, "Device", FLD_STR, NULL, 'l', CNRM,
-	"Device name under /dev/. I.e. ibnbd0");
+static int sd_devname_to_str(char *str, size_t len, enum color *clr,
+			     void *v, int humanize)
+{
+	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev, sess);
 
-CLM_SDD(devpath, "Device Path", FLD_STR, NULL, 'l', CNRM,
-	"Device path under /dev/. I.e. /dev/ibnbd0");
+	return snprintf(str, len, "%s", sd->dev->devname);
+}
 
-CLM_SDD(iomode, "IO Mode", FLD_STR, sdd_iomode_to_str, 'l', CNRM,
-	"Access mode of the target device: fileio/blockio");
+static struct table_column clm_ibnbd_dev_devname =
+	_CLM_SD("devname", sess, "Device", FLD_STR, sd_devname_to_str, 'l',
+		CNRM, "Device name under /dev/. I.e. ibnbd0");
 
-CLM_SDD(rx_sect, "RX", FLD_NUM, size_to_str, 'l', CNRM,
+static int sd_devpath_to_str(char *str, size_t len, enum color *clr,
+			     void *v, int humanize)
+{
+	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev, sess);
+
+	return snprintf(str, len, "%s", sd->dev->devpath);
+}
+
+static struct table_column clm_ibnbd_dev_devpath =
+	_CLM_SD("devpath", sess, "Device path", FLD_STR, sd_devpath_to_str, 'l',
+		CNRM, "Device path under /dev/. I.e. /dev/ibnbd0");
+
+static struct table_column clm_ibnbd_dev_iomode =
+	_CLM_SD("iomode", sess, "IO mode", FLD_STR, sdd_iomode_to_str, 'l',
+		CNRM, "IO submission mode of the target device: file/block");
+
+static int sd_rx_to_str(char *str, size_t len, enum color *clr, void *v,
+		       int humanize)
+{
+	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev, sess);
+
+	*clr = CNRM;
+
+	return sect_to_byte_unit(str, len, sd->dev->rx_sect, humanize);
+}
+
+static struct table_column clm_ibnbd_dev_rx_sect =
+	_CLM_SD("rx_sect", sess, "RX", FLD_NUM, sd_rx_to_str, 'l', CNRM,
 	"Amount of data read from the device");
 
-CLM_SDD(tx_sect, "TX", FLD_NUM, size_to_str, 'l', CNRM,
+static int sd_tx_to_str(char *str, size_t len, enum color *clr, void *v,
+		       int humanize)
+{
+	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev, sess);
+
+	*clr = CNRM;
+
+	return sect_to_byte_unit(str, len, sd->dev->tx_sect, humanize);
+}
+
+static struct table_column clm_ibnbd_dev_tx_sect =
+	_CLM_SD("tx_sect", sess, "TX", FLD_NUM, sd_tx_to_str, 'l', CNRM,
 	"Amount of data written to the device");
 
-CLM_SDD(state, "State", FLD_STR, state_to_str, 'l', CNRM,
+
+static struct table_column clm_ibnbd_dev_state =
+	_CLM_SD("state", sess, "State", FLD_STR, sd_state_to_str, 'l', CNRM,
 	"State of the IBNBD device. (client only)");
 
 static int dev_sessname_to_str(char *str, size_t len, enum color *clr,
@@ -740,11 +795,12 @@ static int list_devices_csv(struct ibnbd_sess_dev *sd, int dev_num,
 static int list_devices_term(struct ibnbd_sess_dev *sd, int dev_num,
 			     struct table_column **cs)
 {
+	struct ibnbd_dev d_total = {
+		.rx_sect = 0,
+		.tx_sect = 0
+	};
 	struct ibnbd_sess_dev total = {
-		.dev = {
-			.rx_sect = 0,
-			.tx_sect = 0
-		},
+		.dev = &d_total,
 		.mapping_path = ""
 	};
 	struct table_fld *flds;
@@ -763,8 +819,8 @@ static int list_devices_term(struct ibnbd_sess_dev *sd, int dev_num,
 
 	for (i = 0; i < dev_num; i++) {
 		table_row_stringify(&sd[i], flds + i * cs_cnt, cs, 1, 0);
-		total.dev.rx_sect += sd[i].dev.rx_sect;
-		total.dev.tx_sect += sd[i].dev.tx_sect;
+		total.dev->rx_sect += sd[i].dev->rx_sect;
+		total.dev->tx_sect += sd[i].dev->tx_sect;
 	}
 
 	if (!args.nototals_set)
@@ -858,8 +914,8 @@ static struct ibnbd_sess_dev *find_device(char *name)
 
 	for (i = 0; i < ARRSIZE(sd); i++)
 		if (!strcmp(sd[i].mapping_path, name) ||
-		    !strcmp(sd[i].dev.devname, name) ||
-		    !strcmp(sd[i].dev.devpath, name))
+		    !strcmp(sd[i].dev->devname, name) ||
+		    !strcmp(sd[i].dev->devpath, name))
 			return &sd[i];
 
 	return NULL;

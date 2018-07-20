@@ -24,15 +24,6 @@ struct ibnbd_dev {
 	char		  state[NAME_MAX];   /* ../ibnbd/state sysfs entry */
 };
 
-/*
- * Target block device, server side.
- */
-struct ibnbd_tgtdev {
-	char 		  devname[NAME_MAX]; /* file under /dev/ */
-	char 		  devpath[NAME_MAX]; /* /dev/ibnbd<x> */
-	enum ibnbd_iomode iomode;	     /* access file/block */
-};
-
 struct ibnbd_path {
 	struct ibnbd_sess *sess;	      /* parent session */
 	char		  pathname[NAME_MAX]; /* path appears in sysfs */
@@ -54,11 +45,16 @@ struct ibnbd_sess {
 	struct ibnbd_path paths[];	/* paths */
 };
 
+enum ibnbd_exp_imp {
+	IBNBD_EXPORT,
+	IBNBD_IMPORT
+};
+
 struct ibnbd_sess_dev {
 	struct ibnbd_sess	*sess;			/* session */
 	char			mapping_path[NAME_MAX]; /* name for mapping */
 	enum ibnbd_access_mode	access_mode; 		/* ro/rw/migration */
-	struct ibnbd_tgtdev	*tgtdev;		/* target device*/
-	struct ibnbd_dev	dev;			/* ibnbd block device */
+	struct ibnbd_dev	*dev;			/* ibnbd block device */
+	enum ibnbd_exp_imp	dir;			/* is it src or dst ? */
 };
 
