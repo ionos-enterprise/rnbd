@@ -40,11 +40,11 @@ int table_row_stringify(void *s, struct table_fld *flds,
 		} else {
 			if (c->m_type == FLD_NUM)
 				len = snprintf(flds[clm].str, CLM_MAX_WIDTH,
-					       "%d", (int *)v);
+					       "%d", *(int *)v);
 			else
 				len = snprintf(flds[clm].str, CLM_MAX_WIDTH,
 					       "%s", (char *)v);
-			flds[clm].clr = 0;
+			flds[clm].clr = c->clm_color;
 		}
 
 		if (!clm)
@@ -427,10 +427,10 @@ int table_extend_columns(const char *arg, const char *delim,
 	return 0;
 }
 
-#define CLM_LST(m_name, m_header, m_width, m_type, tostr, align, color, \
+#define CLM_LST(m_name, m_header, m_width, m_type, tostr, align, h_clr, c_clr,\
 		m_descr) \
 	CLM(table_column, m_name, m_header, m_type, tostr, \
-	    align, color, m_descr, m_width, 0)
+	    align, h_clr, c_clr, m_descr, m_width, 0)
 
 static int pstr_to_str(char *str, size_t len, enum color *clr, void *v,
 		int humanize)
@@ -439,9 +439,9 @@ static int pstr_to_str(char *str, size_t len, enum color *clr, void *v,
 	return snprintf(str, len, "%s", *(char **)v);
 }
 
-CLM_LST(m_name, "Field", 14, FLD_STR, pstr_to_str, 'l', CBLD, "");
-CLM_LST(m_header, "Header", 13, FLD_STR, NULL, 'l', CBLD, "");
-CLM_LST(m_descr, "Description", 50, FLD_STR, pstr_to_str, 'l', CBLD, "");
+CLM_LST(m_name, "Field", 14, FLD_STR, pstr_to_str, 'l', CBLD, CNRM, "");
+CLM_LST(m_header, "Header", 13, FLD_STR, NULL, 'l', CBLD, CNRM, "");
+CLM_LST(m_descr, "Description", 50, FLD_STR, pstr_to_str, 'l', CBLD, CNRM, "");
 
 static struct table_column *l_clmns[] = {
 	&clm_table_column_m_name,

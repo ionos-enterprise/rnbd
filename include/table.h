@@ -41,6 +41,7 @@ struct table_column {
 				   void *v, int humanize);
 	char		clm_align;
 	enum color	hdr_color;
+	enum color	clm_color;
 	unsigned long	s_off;	/* TODO: ugly move to an embedding struct */
 };
 
@@ -52,7 +53,7 @@ struct table_column {
 #endif
 #endif
 
-#define _CLM(str, s_name, name, header, type, tostr, align, color, descr, width, off) \
+#define _CLM(str, s_name, name, header, type, tostr, align, h_clr, c_clr, descr, width, off) \
 	{ \
 		.m_name		= s_name, \
 		.m_header	= header, \
@@ -63,13 +64,14 @@ struct table_column {
 		.m_offset	= offsetof(struct str, name), \
 		.m_tostr	= tostr, \
 		.clm_align	= align, \
-		.hdr_color	= color, \
+		.hdr_color	= h_clr, \
+		.clm_color	= c_clr, \
 		.s_off		= off \
 	}
 
-#define CLM(str, name, header, type, tostr, align, color, descr, width, off) \
+#define CLM(str, name, header, type, tostr, align, h_clr, c_clr, descr, width, off) \
 struct table_column clm_ ## str ## _ ## name = \
-	_CLM(str, #name, name, header, type, tostr, align, color, descr, width, off)
+	_CLM(str, #name, name, header, type, tostr, align, h_clr, c_clr, descr, width, off)
 
 #define CLM_MAX_WIDTH 128
 #define CLM_MAX_CNT 50
