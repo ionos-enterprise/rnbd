@@ -38,8 +38,12 @@ int table_row_stringify(void *s, struct table_fld *flds,
 			len = c->m_tostr(flds[clm].str, CLM_MAX_WIDTH,
 					 &flds[clm].clr, v, humanize);
 		} else {
-			len = snprintf(flds[clm].str, CLM_MAX_WIDTH, "%s",
-				       (char *)v);
+			if (c->m_type == FLD_NUM)
+				len = snprintf(flds[clm].str, CLM_MAX_WIDTH,
+					       "%d", (int *)v);
+			else
+				len = snprintf(flds[clm].str, CLM_MAX_WIDTH,
+					       "%s", (char *)v);
 			flds[clm].clr = 0;
 		}
 
@@ -70,29 +74,29 @@ int table_get_max_h_width(struct table_column **cs)
 
 void table_entry_print_term(const char *prefix, struct table_fld *flds,
 				   struct table_column **cs, int hdr_width,
-				   int clr)
+				   int trm)
 {
 	int clm;
 	struct table_column *c;
 
 	for (c = *cs, clm = 0; c; c = *++cs, clm++) {
 		printf("%s%-*s" CLM_DLM, prefix, hdr_width, c->m_header);
-		clr_print(clr, flds[clm].clr, "%s\n", flds[clm].str);
+		clr_print(trm, flds[clm].clr, "%s\n", flds[clm].str);
 	}
 }
 
 int table_fld_print_as_str(struct table_fld *fld,
 				   struct table_column *cs,
-				   int clr)
+				   int trm)
 {
 	if (cs->m_type == FLD_STR)
-		return clr_print(clr, fld->clr, "\"%s\"", fld->str);
+		return clr_print(trm, fld->clr, "\"%s\"", fld->str);
 	else
-		return clr_print(clr, fld->clr, "%s", fld->str);
+		return clr_print(trm, fld->clr, "%s", fld->str);
 }
 
 int table_flds_print_term(const char *pre, struct table_fld *flds,
-				 struct table_column **cs, int clr, int pwidth)
+				 struct table_column **cs, int trm, int pwidth)
 {
 	int clm = 0;
 	struct table_column *c = *cs;
@@ -100,12 +104,12 @@ int table_flds_print_term(const char *pre, struct table_fld *flds,
 	if (!c)
 		return 0;
 
-	clr_print(clr, flds[clm].clr,
+	clr_print(trm, flds[clm].clr,
 		  (c->clm_align == 'l') ? "%s%-*s" CLM_DLM : "%s%*s" CLM_DLM,
 		  pre, c->m_width - pwidth, flds[clm].str);
 
 	for (c = *++cs, clm = 1; c; c = *++cs, clm++)
-		clr_print(clr, flds[clm].clr, (c->clm_align == 'l') ?
+		clr_print(trm, flds[clm].clr, (c->clm_align == 'l') ?
 			  "%-*s" CLM_DLM : "%*s" CLM_DLM,
 			  c->m_width, flds[clm].str);
 	printf("\n");
@@ -115,17 +119,17 @@ int table_flds_print_term(const char *pre, struct table_fld *flds,
 
 /* FIXME: escape ',' in strings */
 int table_flds_print_csv(struct table_fld *flds,
-				struct table_column **cs, int clr)
+				struct table_column **cs, int trm)
 {
 	int clm;
 	struct table_column *c = *cs;
 
 	if (c)
-		table_fld_print_as_str(&flds[0], c, clr);
+		table_fld_print_as_str(&flds[0], c, trm);
 
 	for (c = *++cs, clm = 1; c; c = *++cs, clm++) {
 		printf(",");
-		table_fld_print_as_str(&flds[clm], c, clr);
+		table_fld_print_as_str(&flds[clm], c, trm);
 	}
 
 	printf("\n");
@@ -135,7 +139,7 @@ int table_flds_print_csv(struct table_fld *flds,
 
 /*FIXME: escape '"' in strings */
 int table_flds_print_json(const char *prefix, struct table_fld *flds,
-				 struct table_column **cs, int clr)
+				 struct table_column **cs, int trm)
 {
 	int clm;
 	struct table_column *c = *cs;
@@ -144,14 +148,14 @@ int table_flds_print_json(const char *prefix, struct table_fld *flds,
 
 	if (c) {
 		printf("\n%s\t\"%s\": ", prefix, c->m_name);
-		if (!table_fld_print_as_str(&flds[0], c, clr))
-			clr_print(clr, flds[0].clr, "null");
+		if (!table_fld_print_as_str(&flds[0], c, trm))
+			clr_print(trm, flds[0].clr, "null");
 	}
 
 	for (c = *++cs, clm = 1; c; c = *++cs, clm++) {
 		printf(",\n%s\t\"%s\": ", prefix, c->m_name);
-		if (!table_fld_print_as_str(&flds[clm], c, clr))
-			clr_print(clr, flds[clm].clr, "null");
+		if (!table_fld_print_as_str(&flds[clm], c, trm))
+			clr_print(trm, flds[clm].clr, "null");
 	}
 
 	printf("\n%s}", prefix);
@@ -160,14 +164,14 @@ int table_flds_print_json(const char *prefix, struct table_fld *flds,
 }
 
 int table_flds_print_xml(const char *prefix, struct table_fld *flds,
-				struct table_column **cs, int clr)
+				struct table_column **cs, int trm)
 {
 	int clm;
 	struct table_column *c = *cs;
 
 	for (c = *cs, clm = 0; c; c = *++cs, clm++) {
 		printf("%s<%s>", prefix, c->m_name);
-		table_fld_print_as_str(&flds[clm], c, clr);
+		table_fld_print_as_str(&flds[clm], c, trm);
 		printf("</%s>\n", c->m_name);
 	}
 
@@ -176,30 +180,30 @@ int table_flds_print_xml(const char *prefix, struct table_fld *flds,
 
 int table_flds_print(enum fmt_type fmt, const char *prefix,
 			    struct table_fld *flds, struct table_column **cs,
-			    int clr, int pwidth)
+			    int trm, int pwidth)
 {
 	switch (fmt) {
 	case FMT_TERM:
-		return table_flds_print_term(prefix, flds, cs, clr, pwidth);
+		return table_flds_print_term(prefix, flds, cs, trm, pwidth);
 	case FMT_XML:
-		return table_flds_print_xml(prefix, flds, cs, clr);
+		return table_flds_print_xml(prefix, flds, cs, trm);
 	case FMT_CSV:
-		return table_flds_print_csv(flds, cs, clr);
+		return table_flds_print_csv(flds, cs, trm);
 	case FMT_JSON:
-		return table_flds_print_json(prefix, flds, cs, clr);
+		return table_flds_print_json(prefix, flds, cs, trm);
 	default:
 		return -EINVAL;
 	}
 }
 
 int table_row_print(void *v, enum fmt_type fmt, const char *pre,
-			   struct table_column **cs, int clr, int humanize,
+			   struct table_column **cs, int trm, int humanize,
 			   size_t pre_len)
 {
 	struct table_fld flds[CLM_MAX_CNT];
 
 	table_row_stringify(v, flds, cs, humanize, pre_len);
-	table_flds_print(fmt, pre, flds, cs, clr, pre_len);
+	table_flds_print(fmt, pre, flds, cs, trm, pre_len);
 
 	return 0;
 }
@@ -215,7 +219,7 @@ size_t print_line(char *str, size_t len, int width)
 }
 
 int table_row_print_line(const char *pre, struct table_column **clms,
-				int clr, int humanize, size_t pre_len)
+				int trm, int humanize, size_t pre_len)
 {
 	struct table_fld flds[CLM_MAX_CNT];
 	struct table_column *c;
@@ -230,7 +234,7 @@ int table_row_print_line(const char *pre, struct table_column **clms,
 			flds[clm].str[0] = '\0';
 	}
 
-	table_flds_print(FMT_TERM, pre, flds, clms, clr, pre_len);
+	table_flds_print(FMT_TERM, pre, flds, clms, trm, pre_len);
 
 	return 0;
 }
@@ -249,7 +253,7 @@ void table_flds_del_not_num(struct table_fld *flds,
 }
 
 int table_header_print_term(const char *prefix, struct table_column **cs,
-				   int clr, char align)
+				   int trm, char align)
 {
 	struct table_column *c;
 	char al = align;
@@ -260,14 +264,14 @@ int table_header_print_term(const char *prefix, struct table_column **cs,
 			al = c->clm_align;
 
 		if (al == 'c')
-			clr_print(clr, c->hdr_color, "%*s%*s" CLM_DLM,
+			clr_print(trm, c->hdr_color, "%*s%*s" CLM_DLM,
 				  (c->m_width + c->hdr_width) / 2, c->m_header,
 				  (c->m_width - c->hdr_width + 1) / 2, "");
 		else if (al == 'r')
-			clr_print(clr, c->hdr_color, "%*s" CLM_DLM,
+			clr_print(trm, c->hdr_color, "%*s" CLM_DLM,
 				  c->m_width, c->m_header);
 		else
-			clr_print(clr, c->hdr_color, "%-*s" CLM_DLM,
+			clr_print(trm, c->hdr_color, "%-*s" CLM_DLM,
 				  c->m_width, c->m_header);
 	}
 	printf("\n");
@@ -446,13 +450,13 @@ static struct table_column *l_clmns[] = {
 	NULL
 };
 
-int table_tbl_print_term(const char *prefix, struct table_column **clm, int clr)
+int table_tbl_print_term(const char *prefix, struct table_column **clm, int trm)
 {
 	int row = 0;
 
-	table_header_print_term(prefix, l_clmns, clr, 'a');
+	table_header_print_term(prefix, l_clmns, trm, 'a');
 	while (clm[row]) {
-		table_row_print(clm[row], FMT_TERM, prefix, l_clmns, clr, 1, 0);
+		table_row_print(clm[row], FMT_TERM, prefix, l_clmns, trm, 1, 0);
 		row++;
 	}
 
