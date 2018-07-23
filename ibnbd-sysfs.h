@@ -42,8 +42,8 @@ struct ibnbd_path {
 struct ibnbd_sess {
 	char		  sessname[NAME_MAX];	/* session name */
 
-	/* fields calsulated from the list of paths */
-	int		  active_path_cnt;	/* active path count */
+	/* fields calculated from the list of paths */
+	int		  act_path_cnt;	/* active path count */
 	unsigned long	  rx_bytes;
 	unsigned long	  tx_bytes;
 	int		  inflights;

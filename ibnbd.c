@@ -16,8 +16,12 @@
 
 struct ibnbd_sess s = {
 	.sessname = "ps401a-3@st401b-3",
-	.active_path_cnt = 2,
+	.act_path_cnt = 2,
 	.path_cnt = 2,
+	.tx_bytes = 1023,
+	.rx_bytes = 377000,
+	.inflights = 100500,
+	.reconnects = 5,
 	.paths = {
 		{.sess = &s,
 		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5@"
@@ -40,15 +44,15 @@ struct ibnbd_sess s = {
 		 .hca_name = "mlx4_0",
 		 .hca_port = 2,
 		 .state = "connected",
-		 .tx_bytes = 0,
+		 .tx_bytes = 15,
 		 .rx_bytes = 84000,
-		 .inflights = 0,
+		 .inflights = 5,
 		 .reconnects = 0
 		}
 	}
 };
 
-struct ibnbd_sess *sessions = {
+struct ibnbd_sess *sessions[] = {
 	&s,
 	NULL
 };
@@ -144,6 +148,9 @@ struct args {
 
 	struct table_column *clms_devices_clt[CLM_MAX_CNT];
 	struct table_column *clms_devices_srv[CLM_MAX_CNT];
+
+	struct table_column *clms_sessions_clt[CLM_MAX_CNT];
+	struct table_column *clms_sessions_srv[CLM_MAX_CNT];
 
 	short noterm_set;
 	short help_set;
@@ -366,14 +373,95 @@ static struct table_column *def_clms_devices_srv[] = {
 	CLM(ibnbd_sess, m_name, m_header, m_type, tostr, align, h_clr, c_clr, \
 	    m_descr, sizeof(m_header) - 1, 0)
 
+#define _CLM_S(s_name, m_name, m_header, m_type, tostr, align, h_clr, c_clr, m_descr) \
+	_CLM(ibnbd_sess, s_name, m_name, m_header, m_type, tostr, align, h_clr, c_clr, \
+	    m_descr, sizeof(m_header) - 1, 0)
+
 CLM_S(sessname, "Session name", FLD_STR, NULL, 'l', CNRM, CBLD,
        "Name of the session");
-
-CLM_S(path_cnt, "Path count", FLD_NUM, NULL, 'l', CNRM, CNRM,
+CLM_S(path_cnt, "Path cnt", FLD_NUM, NULL, 'r', CNRM, CNRM,
        "Number of paths");
-
-CLM_S(active_path_cnt, "Active path cnt", FLD_NUM, NULL, 'l', CNRM, CNRM,
+CLM_S(act_path_cnt, "Act path cnt", FLD_NUM, NULL, 'r', CNRM, CNRM,
        "Number of active paths");
+CLM_S(rx_bytes, "RX", FLD_NUM, size_to_str, 'r', CNRM, CNRM, "Bytes received");
+CLM_S(tx_bytes, "TX", FLD_NUM, size_to_str, 'r', CNRM, CNRM, "Bytes send");
+CLM_S(inflights, "Inflights", FLD_NUM, NULL, 'r', CNRM, CNRM, "Inflights");
+CLM_S(reconnects, "Reconnects", FLD_NUM, NULL, 'r', CNRM, CNRM, "Reconnects");
+
+static int sess_path_cnt_to_str(char *str, size_t len, enum color *clr,
+			        void *v, int humanize)
+{
+	struct ibnbd_sess *s = container_of(v, struct ibnbd_sess, act_path_cnt);
+	char uu[NAME_MAX];
+	int i, cnt = 0;
+
+	for (i = 0; i < s->path_cnt; i++)
+		if (!strcmp(s->paths[i].state, "connected"))
+			cnt += snprintf(uu + cnt, sizeof(uu) - cnt, "U");
+		else
+			cnt += snprintf(uu + cnt, sizeof(uu) - cnt, "_");
+
+	return snprintf(str, len, "%s", uu);
+}
+
+static struct table_column clm_ibnbd_sess_path_uu =
+	_CLM_S("path_uu", act_path_cnt, "PS", FLD_STR,
+		sess_path_cnt_to_str, 'l', CNRM, CNRM,
+		"Up (U) or down (_) state of every path");
+
+static int act_path_cnt_to_state(char *str, size_t len, enum color *clr,
+				    void *v, int humanize)
+{
+	if (*(int *)v) {
+		*clr = CGRN;
+		return snprintf(str, len, "connected");
+	} else {
+		*clr = CRED;
+		return snprintf(str, len, "disconnected");
+	}
+}
+
+static struct table_column clm_ibnbd_sess_state =
+	_CLM_S("state", act_path_cnt, "State", FLD_STR,
+		act_path_cnt_to_state, 'l', CNRM, CNRM,
+		"State of the session.");
+
+static struct table_column *all_clms_sessions[] = {
+	&clm_ibnbd_sess_sessname,
+	&clm_ibnbd_sess_path_cnt,
+	&clm_ibnbd_sess_act_path_cnt,
+	&clm_ibnbd_sess_state,
+	&clm_ibnbd_sess_path_uu,
+	&clm_ibnbd_sess_rx_bytes,
+	&clm_ibnbd_sess_tx_bytes,
+	&clm_ibnbd_sess_inflights,
+	&clm_ibnbd_sess_reconnects,
+	NULL
+};
+#define ALL_CLMS_SESSIONS_CNT (ARRSIZE(all_clms_sessions) - 1)
+
+static struct table_column *def_clms_sessions_clt[] = {
+	&clm_ibnbd_sess_sessname,
+	&clm_ibnbd_sess_state,
+	&clm_ibnbd_sess_path_uu,
+	&clm_ibnbd_sess_tx_bytes,
+	&clm_ibnbd_sess_rx_bytes,
+	&clm_ibnbd_sess_inflights,
+	&clm_ibnbd_sess_reconnects,
+	NULL
+};
+#define DEF_CLMS_SESSIONS_CLT_CNT (ARRSIZE(def_clms_sessions_clt) - 1)
+
+static struct table_column *def_clms_sessions_srv[] = {
+	&clm_ibnbd_sess_sessname,
+	&clm_ibnbd_sess_path_uu,
+	&clm_ibnbd_sess_tx_bytes,
+	&clm_ibnbd_sess_rx_bytes,
+	&clm_ibnbd_sess_inflights,
+	&clm_ibnbd_sess_reconnects,
+	NULL
+};
+#define DEF_CLMS_SESSIONS_SRV_CNT (ARRSIZE(def_clms_sessions_srv) - 1)
 
 struct sarg {
 	const char *str;
@@ -527,12 +615,10 @@ static int parse_all(int argc, char **argv, int i, const struct sarg *sarg)
 	       ALL_CLMS_DEVICES_CNT * sizeof(all_clms_devices[0]));
 	memcpy(&args.clms_devices_srv, &all_clms_devices,
 	       ALL_CLMS_DEVICES_CNT * sizeof(all_clms_devices[0]));
-
-	/*memcpy(&args.info_clms, &u_clmns, CLM_DISK_USAGE_CNT * sizeof(u_clmns[0]));
-	args.info_clms_set = 1;
-	memcpy(&args.usage_clms, &st_usage_clmns,
-	       CLM_STORAGE_USAGE_CNT * sizeof(st_usage_clmns[0]));
-	args.usage_clms_set = 1;*/
+	memcpy(&args.clms_sessions_clt, &all_clms_sessions,
+	       ALL_CLMS_SESSIONS_CNT * sizeof(all_clms_sessions[0]));
+	memcpy(&args.clms_sessions_srv, &all_clms_sessions,
+	       ALL_CLMS_SESSIONS_CNT * sizeof(all_clms_sessions[0]));
 
 	return i + 1;
 }
@@ -713,7 +799,8 @@ static void help_list(struct cmd *cmd)
 	print_opt("", "TODO\n");
 
 	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "List of sessions:"));
-	print_opt("", "TODO\n");
+	print_fields(def_clms_sessions_clt, def_clms_sessions_srv,
+		     all_clms_sessions);
 
 	printf("\n%sProvide 'all' to print all available fields\n", HPRE);
 
@@ -742,58 +829,6 @@ static int has_num(struct table_column **cs)
 		if (cs[i]->m_type == FLD_NUM)
 			return 1;
 		i++;
-	}
-
-	return 0;
-}
-
-static int list_devices_xml(struct ibnbd_sess_dev *sd, int dev_num,
-			    struct table_column **cs)
-{
-	int i;
-
-	printf("<devices>\n");
-
-	for (i = 0; i < dev_num; i++) {
-		printf("\t<device>\n");
-		table_row_print(&sd[i], FMT_XML, "\t\t", cs, 0, 0, 0);
-		printf("\t</device>\n");
-	}
-
-	printf("</devices>\n");
-
-	return 0;
-}
-
-static int list_devices_json(struct ibnbd_sess_dev *sd, int dev_num,
-			     struct table_column **cs)
-{
-	int i;
-
-	printf("{ \"devices\": [\n");
-
-	for (i = 0; i < dev_num; i++) {
-		if (i)
-			printf(",\n");
-
-		table_row_print(&sd[i], FMT_JSON, "\t", cs, 0, 0, 0);
-	}
-
-	printf("\n] }\n");
-
-	return 0;
-}
-
-static int list_devices_csv(struct ibnbd_sess_dev *sd, int dev_num,
-			    struct table_column **cs)
-{
-	int i;
-
-	if (!args.noheaders_set)
-		table_header_print_csv(cs);
-
-	for (i = 0; i < dev_num; i++) {
-		table_row_print(&sd[i], FMT_CSV, "", cs, 0, 0, 0);
 	}
 
 	return 0;
@@ -857,7 +892,7 @@ static int list_devices_term(struct ibnbd_sess_dev *sd, int dev_num,
 static int list_devices()
 {
 	struct table_column **cs;
-	int rc, dev_num;
+	int i, rc = 0, dev_num;
 
 	switch (args.ibnbdmode) {
 	case IBNBD_CLIENT:
@@ -875,17 +910,159 @@ static int list_devices()
 
 	switch (args.fmt) {
 	case FMT_CSV:
-		rc = list_devices_csv(sd, dev_num, cs);
+		if (!args.noheaders_set)
+			table_header_print_csv(cs);
+
+		for (i = 0; i < dev_num; i++) {
+			table_row_print(&sd[i], FMT_CSV, "", cs, 0, 0, 0);
+		}
 		break;
 	case FMT_JSON:
-		rc = list_devices_json(sd, dev_num, cs);
+		printf("{ \"devices\": [\n");
+
+		for (i = 0; i < dev_num; i++) {
+			if (i)
+				printf(",\n");
+			table_row_print(&sd[i], FMT_JSON, "\t", cs, 0, 0, 0);
+		}
+
+		printf("\n] }\n");
 		break;
 	case FMT_XML:
-		rc = list_devices_xml(sd, dev_num, cs);
+		printf("<devices>\n");
+
+		for (i = 0; i < dev_num; i++) {
+			printf("\t<device>\n");
+			table_row_print(&sd[i], FMT_XML, "\t\t", cs, 0, 0, 0);
+			printf("\t</device>\n");
+		}
+
+		printf("</devices>\n");
+
 		break;
 	case FMT_TERM:
 	default:
 		rc = list_devices_term(sd, dev_num, cs);
+		break;
+	}
+
+	return rc;
+}
+
+static int list_sessions_term(struct ibnbd_sess **sessions, int sess_num,
+			      struct table_column **cs)
+{
+	struct ibnbd_sess total = {
+		.act_path_cnt = 0,
+		.path_cnt = 0,
+		.rx_bytes = 0,
+		.tx_bytes = 0,
+		.inflights = 0,
+		.reconnects = 0
+	};
+
+	struct table_fld *flds;
+	int i, cs_cnt;
+
+	cs_cnt = clm_cnt(cs);
+
+	if (!has_num(cs))
+		args.nototals_set = 1;
+
+	flds = calloc((sess_num + 1) * cs_cnt, sizeof(*flds));
+	if (!flds) {
+		ERR("not enough memory\n");
+		return -ENOMEM;
+	}
+
+	for (i = 0; i < sess_num; i++) {
+		table_row_stringify(sessions[i], flds + i * cs_cnt, cs, 1, 0);
+
+		total.act_path_cnt += sessions[i]->act_path_cnt;
+		total.path_cnt += sessions[i]->path_cnt;
+		total.rx_bytes += sessions[i]->rx_bytes;
+		total.tx_bytes += sessions[i]->tx_bytes;
+		total.inflights += sessions[i]->inflights;
+		total.reconnects += sessions[i]->reconnects;
+	}
+
+	if (!args.nototals_set)
+		table_row_stringify(&total, flds + i * cs_cnt,
+				    cs, 1, 0);
+
+	if (!args.noheaders_set)
+		table_header_print_term("", cs, trm, 'a');
+
+	for (i = 0; i < sess_num; i++)
+		table_flds_print_term("", flds + i * cs_cnt,
+				      cs, trm, 0);
+
+	if (!args.nototals_set) {
+		table_row_print_line("", cs, trm, 1, 0);
+		table_flds_del_not_num(flds + i * cs_cnt, cs);
+		table_flds_print_term("", flds + i * cs_cnt,
+				      cs, trm, 0);
+	}
+
+	free(flds);
+
+	return 0;
+}
+
+static int list_sessions()
+{
+	struct table_column **cs;
+	int i, rc = 0, sess_num;
+
+	switch (args.ibnbdmode) {
+	case IBNBD_CLIENT:
+	case IBNBD_BOTH:
+		cs = args.clms_sessions_clt;
+		break;
+	case IBNBD_SERVER:
+		cs = args.clms_sessions_srv;
+		break;
+	default:
+		assert(0);
+	}
+
+	sess_num = ARRSIZE(sessions) - 1;
+
+	switch (args.fmt) {
+	case FMT_CSV:
+		if (!args.noheaders_set)
+			table_header_print_csv(cs);
+
+		for (i = 0; i < sess_num; i++) {
+			table_row_print(sessions[i], FMT_CSV, "", cs, 0, 0, 0);
+		}
+		break;
+	case FMT_JSON:
+		printf("{ \"sessions\": [\n");
+
+		for (i = 0; i < sess_num; i++) {
+			if (i)
+				printf(",\n");
+			table_row_print(sessions[i], FMT_JSON, "\t", cs, 0, 0, 0);
+		}
+
+		printf("\n] }\n");
+		break;
+	case FMT_XML:
+		printf("<sessions>\n");
+
+		for (i = 0; i < sess_num; i++) {
+			printf("\t<session>\n");
+			table_row_print(sessions[i], FMT_XML, "\t\t", cs, 0, 0, 0);
+			printf("\t</session>\n");
+		}
+
+		printf("</sessions>\n");
+
+		break;
+	case FMT_TERM:
+	default:
+		rc = list_sessions_term(sessions, sess_num, cs);
 		break;
 	}
 
@@ -902,6 +1079,8 @@ static int cmd_list(void)
 		rc = list_devices();
 		break;
 	case LST_SESSIONS:
+		rc = list_sessions();
+		break;
 	case LST_PATHS:
 		printf("TODO\n");
 		rc = -ENOENT;
@@ -983,16 +1162,20 @@ static int show_device(char *devname)
  */
 static struct ibnbd_sess *find_session(char *name)
 {
+	struct ibnbd_sess *s;
+	int i = 0;
 	char *at;
 
-	if (!strcmp(name, s.sessname))
-		return &s;
+	while ((s = sessions[i++])) {
+		if (!strcmp(name, s->sessname))
+			return s;
 
-	at = strchr(s.sessname, '@');
-	if (*at) {
-		if (!strncmp(name, s.sessname, at - s.sessname) ||
-		    !strcmp(name, at + 1))
-			return &s;
+		at = strchr(s->sessname, '@');
+		if (*at) {
+			if (!strncmp(name, s->sessname, at - s->sessname) ||
+			    !strcmp(name, at + 1))
+				return s;
+		}
 	}
 
 	return NULL;
@@ -1017,6 +1200,50 @@ static int show_path(char *pathname)
 
 static int show_session(char *sessname)
 {
+	struct table_fld flds[CLM_MAX_CNT];
+	struct ibnbd_sess *sess;
+	struct table_column **cs;
+
+	sess = find_session(sessname);
+
+	if (!sess) {
+		ERR("Sessions %s not found\n", sessname);
+		return -ENOENT;
+	}
+
+	switch (args.ibnbdmode) {
+	case IBNBD_CLIENT:
+	case IBNBD_BOTH:
+		cs = args.clms_sessions_clt;
+		break;
+	case IBNBD_SERVER:
+		cs = args.clms_sessions_srv;
+		break;
+	default:
+		assert(0);
+	}
+
+	switch (args.fmt) {
+	case FMT_CSV:
+		if (!args.noheaders_set)
+			table_header_print_csv(cs);
+		table_row_print(sess, FMT_CSV, "", cs, 0, 0, 0);
+		break;
+	case FMT_JSON:
+		table_row_print(sess, FMT_JSON, "", cs, 0, 0, 0);
+		printf("\n");
+		break;
+	case FMT_XML:
+		table_row_print(sess, FMT_XML, "", cs, 0, 0, 0);
+		break;
+	case FMT_TERM:
+	default:
+		table_row_stringify(sess, flds, cs, 1, 0);
+		table_entry_print_term("", flds, cs,
+				       table_get_max_h_width(cs), trm);
+		break;
+	}
+
 	return 0;
 }
 
@@ -1090,7 +1317,7 @@ static void help_show(struct cmd *cmd)
 	print_opt("", "TODO\n");
 
 	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "Sessions fields:"));
-	print_opt("", "TODO\n");
+	print_fields(def_clms_sessions_clt, def_clms_sessions_srv, all_clms_sessions);
 
 	printf("\n%sProvide 'all' to print all available fields\n", HPRE);
 
@@ -1221,12 +1448,30 @@ static int parse_devices_clms(const char *arg)
 	return rc_clt && rc_srv;
 }
 
+static int parse_sessions_clms(const char *arg)
+{
+	int rc_clt, rc_srv;
+
+	rc_clt = table_extend_columns(arg, ",", all_clms_sessions,
+				      args.clms_sessions_clt, CLM_MAX_CNT);
+
+	rc_srv = table_extend_columns(arg, ",", all_clms_sessions,
+				      args.clms_sessions_srv, CLM_MAX_CNT);
+
+	return rc_clt && rc_srv;
+}
+
 static void init_args(void)
 {
 	memcpy(&args.clms_devices_clt, &def_clms_devices_clt,
 	       DEF_CLMS_DEVICES_CLT_CNT * sizeof(all_clms_devices[0]));
 	memcpy(&args.clms_devices_srv, &def_clms_devices_srv,
 	       DEF_CLMS_DEVICES_SRV_CNT * sizeof(all_clms_devices[0]));
+
+	memcpy(&args.clms_sessions_clt, &def_clms_sessions_clt,
+	       DEF_CLMS_SESSIONS_CLT_CNT * sizeof(all_clms_sessions[0]));
+	memcpy(&args.clms_sessions_srv, &def_clms_sessions_srv,
+	       DEF_CLMS_SESSIONS_SRV_CNT * sizeof(all_clms_sessions[0]));
 }
 
 static void default_args(void)
@@ -1313,7 +1558,8 @@ int main(int argc, char **argv)
 		sarg = find_sarg(argv[i], sargs);
 		if (!sarg) {
 			if (!parse_devices_clms(argv[i]) ||
-			    !parse_precision(argv[i])) {
+			    !parse_precision(argv[i]) ||
+			    !parse_sessions_clms(argv[i])) {
 				i++;
 				continue;
 			}
