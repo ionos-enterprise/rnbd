@@ -1546,6 +1546,10 @@ static void default_args(void)
 			args.ibnbdmode_set = 1;
 			closedir(dir);
 		}
+		if (!args.ibnbdmode) {
+			args.ibnbdmode |= IBNBD_BOTH;
+			args.ibnbdmode_set = 1;
+		}
 	}
 }
 
