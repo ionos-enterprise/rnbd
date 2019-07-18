@@ -38,7 +38,7 @@ int table_row_stringify(void *s, struct table_fld *flds,
 			len = c->m_tostr(flds[clm].str, CLM_MAX_WIDTH,
 					 &flds[clm].clr, v, humanize);
 		} else {
-			if (c->m_type == FLD_NUM)
+			if (c->m_type == FLD_NUM || c->m_type == FLD_VAL)
 				len = snprintf(flds[clm].str, CLM_MAX_WIDTH,
 					       "%d", *(int *)v);
 			else

@@ -32,10 +32,10 @@ struct ibnbd_sess s = {
 		 .hca_name = "mlx4_0",
 		 .hca_port = 1,
 		 .state = "connected",
-		 .tx_bytes = 0,
+		 .tx_bytes = 1023,
 		 .rx_bytes = 377000,
-		 .inflights = 0,
-		 .reconnects = 1
+		 .inflights = 100500,
+		 .reconnects = 2
 		},
 		{.sess = &s,
 		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6@"
@@ -45,10 +45,10 @@ struct ibnbd_sess s = {
 		 .hca_name = "mlx4_0",
 		 .hca_port = 2,
 		 .state = "connected",
-		 .tx_bytes = 15,
-		 .rx_bytes = 84000,
-		 .inflights = 5,
-		 .reconnects = 0
+		 .tx_bytes = 0,
+		 .rx_bytes = 0,
+		 .inflights = 0,
+		 .reconnects = 3
 		}
 	}
 };
@@ -63,7 +63,7 @@ struct ibnbd_sess s1 = {
 	.reconnects = 5,
 	.path_uu = "_U",
 	.paths = {
-		{.sess = &s,
+		{.sess = &s1,
 		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5@"
 			     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
 		 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5",
@@ -76,7 +76,7 @@ struct ibnbd_sess s1 = {
 		 .inflights = 0,
 		 .reconnects = 1
 		},
-		{.sess = &s,
+		{.sess = &s1,
 		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6@"
 			     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
 		 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
@@ -84,10 +84,10 @@ struct ibnbd_sess s1 = {
 		 .hca_name = "mlx4_0",
 		 .hca_port = 2,
 		 .state = "connected",
-		 .tx_bytes = 15,
-		 .rx_bytes = 84000,
-		 .inflights = 5,
-		 .reconnects = 0
+		 .tx_bytes = 1023,
+		 .rx_bytes = 0,
+		 .inflights = 100500,
+		 .reconnects = 4
 		}
 	}
 };
@@ -521,7 +521,7 @@ CLM_P(cltaddr, "Clt Addr", FLD_STR, NULL, 'l', CNRM, CNRM,
 CLM_P(srvaddr, "Srv Addr", FLD_STR, NULL, 'l', CNRM, CNRM,
       "Server address");
 CLM_P(hca_name, "HCA", FLD_STR, NULL, 'l', CNRM, CNRM, "HCA name");
-CLM_P(hca_port, "Port", FLD_NUM, NULL, 'r', CNRM, CNRM, "HCA port");
+CLM_P(hca_port, "Port", FLD_VAL, NULL, 'r', CNRM, CNRM, "HCA port");
 CLM_P(rx_bytes, "RX", FLD_NUM, size_to_str, 'r', CNRM, CNRM, "Bytes received");
 CLM_P(tx_bytes, "TX", FLD_NUM, size_to_str, 'r', CNRM, CNRM, "Bytes send");
 CLM_P(inflights, "Inflights", FLD_NUM, NULL, 'r', CNRM, CNRM, "Inflights");
@@ -570,6 +570,7 @@ static struct table_column *def_clms_paths_clt[] = {
 	&clm_ibnbd_path_state,
 	&clm_ibnbd_path_tx_bytes,
 	&clm_ibnbd_path_rx_bytes,
+	&clm_ibnbd_path_inflights,
 	&clm_ibnbd_path_reconnects,
 	NULL
 };
@@ -1195,6 +1196,141 @@ static int list_sessions()
 	return rc;
 }
 
+static int list_paths_term(struct ibnbd_sess **sessions, int sess_num,
+			   struct table_column **cs)
+{
+	struct ibnbd_path total = {
+		.rx_bytes = 0,
+		.tx_bytes = 0,
+		.inflights = 0,
+		.reconnects = 0
+	};
+
+	struct table_fld *flds;
+	int i, j, cs_cnt, path_cnt = 0, fld_cnt = 0;
+
+	cs_cnt = clm_cnt(cs);
+
+	if (!has_num(cs))
+		args.nototals_set = 1;
+
+	for (i = 0; i < sess_num; i++)
+		path_cnt += sessions[i]->path_cnt;
+
+	flds = calloc((path_cnt + 1) * cs_cnt, sizeof(*flds));
+	if (!flds) {
+		ERR("not enough memory\n");
+		return -ENOMEM;
+	}
+
+	for (i = 0; i < sess_num; i++) {
+		for (j = 0; j < sessions[i]->path_cnt; j++) {
+			table_row_stringify(&sessions[i]->paths[j],
+					    flds + fld_cnt, cs, 1, 0);
+
+			fld_cnt += cs_cnt;
+
+			total.rx_bytes += sessions[i]->paths[j].rx_bytes;
+			total.tx_bytes += sessions[i]->paths[j].tx_bytes;
+			total.inflights += sessions[i]->paths[j].inflights;
+			total.reconnects += sessions[i]->paths[j].reconnects;
+		}
+	}
+
+	if (!args.nototals_set) {
+		table_row_stringify(&total, flds + fld_cnt, cs, 1, 0);
+	}
+
+	if (!args.noheaders_set)
+		table_header_print_term("", cs, trm, 'a');
+
+	fld_cnt = 0;
+	for (i = 0; i < sess_num; i++) {
+		for (j = 0; j < sessions[i]->path_cnt; j++) {
+			table_flds_print_term("", flds + fld_cnt, cs, trm, 0);
+			fld_cnt += cs_cnt;
+		}
+	}
+
+	if (!args.nototals_set) {
+		table_row_print_line("", cs, trm, 1, 0);
+		table_flds_del_not_num(flds + fld_cnt, cs);
+		table_flds_print_term("", flds + fld_cnt, cs, trm, 0);
+	}
+
+	free(flds);
+
+	return 0;
+}
+
+static int list_paths()
+{
+	struct table_column **cs;
+	int i, j, rc = 0, sess_num;
+
+	switch (args.ibnbdmode) {
+	case IBNBD_CLIENT:
+	case IBNBD_BOTH:
+		cs = args.clms_paths_clt;
+		break;
+	case IBNBD_SERVER:
+		cs = args.clms_paths_srv;
+		break;
+	default:
+		assert(0);
+	}
+
+	sess_num = ARRSIZE(sessions) - 1;
+
+	switch (args.fmt) {
+	case FMT_CSV:
+		if (!args.noheaders_set)
+			table_header_print_csv(cs);
+
+		for (i = 0; i < sess_num; i++)
+			for (j = 0; j < sessions[i]->path_cnt; j++)
+				table_row_print(&sessions[i]->paths[j], FMT_CSV,
+						"", cs, 0, 0, 0);
+
+		break;
+	case FMT_JSON:
+		printf("{ \"paths\": [\n");
+
+		for (i = 0; i < sess_num; i++) {
+			for (j = 0; j < sessions[i]->path_cnt; j++) {
+				if (i)
+					printf(",\n");
+				table_row_print(&sessions[i]->paths[j], FMT_JSON,
+						"\t", cs, 0, 0, 0);
+			}
+		}
+
+		printf("\n] }\n");
+		break;
+	case FMT_XML:
+		printf("<paths>\n");
+
+		for (i = 0; i < sess_num; i++) {
+			for (j = 0; j < sessions[i]->path_cnt; j++) {
+				printf("\t<path>\n");
+				table_row_print(&sessions[i]->paths[j], FMT_XML,
+						"\t\t", cs, 0, 0, 0);
+				printf("\t</path>\n");
+			}
+		}
+
+		printf("</paths>\n");
+
+		break;
+	case FMT_TERM:
+	default:
+		rc = list_paths_term(sessions, sess_num, cs);
+		break;
+	}
+
+	return rc;
+}
+
 static int cmd_list(void)
 {
 	int rc;
@@ -1208,8 +1344,7 @@ static int cmd_list(void)
 		rc = list_sessions();
 		break;
 	case LST_PATHS:
-		printf("TODO\n");
-		rc = -ENOENT;
+		rc = list_paths();
 		break;
 	}
 
