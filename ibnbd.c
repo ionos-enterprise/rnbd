@@ -200,6 +200,9 @@ struct args {
 	struct table_column *clms_sessions_clt[CLM_MAX_CNT];
 	struct table_column *clms_sessions_srv[CLM_MAX_CNT];
 
+	struct table_column *clms_paths_clt[CLM_MAX_CNT];
+	struct table_column *clms_paths_srv[CLM_MAX_CNT];
+
 	short noterm_set;
 	short help_set;
 	short verbose_set;
@@ -513,9 +516,9 @@ CLM_P(state, "State", FLD_STR, ibnbd_path_state_to_str, 'l', CNRM, CBLD,
        "Name of the path");
 CLM_P(pathname, "Path name", FLD_STR, NULL, 'l', CNRM, CNRM,
       "Path name");
-CLM_P(cltaddr, "Client Address", FLD_STR, NULL, 'l', CNRM, CNRM,
+CLM_P(cltaddr, "Clt Addr", FLD_STR, NULL, 'l', CNRM, CNRM,
       "Client address");
-CLM_P(srvaddr, "Server Address", FLD_STR, NULL, 'l', CNRM, CNRM,
+CLM_P(srvaddr, "Srv Addr", FLD_STR, NULL, 'l', CNRM, CNRM,
       "Server address");
 CLM_P(hca_name, "HCA", FLD_STR, NULL, 'l', CNRM, CNRM, "HCA name");
 CLM_P(hca_port, "Port", FLD_NUM, NULL, 'r', CNRM, CNRM, "HCA port");
@@ -736,6 +739,11 @@ static int parse_all(int argc, char **argv, int i, const struct sarg *sarg)
 	       ALL_CLMS_SESSIONS_CNT * sizeof(all_clms_sessions[0]));
 	memcpy(&args.clms_sessions_srv, &all_clms_sessions,
 	       ALL_CLMS_SESSIONS_CNT * sizeof(all_clms_sessions[0]));
+	memcpy(&args.clms_paths_clt, &all_clms_paths,
+	       ALL_CLMS_PATHS_CNT * sizeof(all_clms_paths[0]));
+	memcpy(&args.clms_paths_srv, &all_clms_paths,
+	       ALL_CLMS_PATHS_CNT * sizeof(all_clms_paths[0]));
+
 
 	return i + 1;
 }
@@ -910,14 +918,15 @@ static void help_list(struct cmd *cmd)
 	help_fields();
 
 	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "List of devices:"));
-	print_fields(def_clms_devices_clt, def_clms_devices_srv, all_clms_devices);
-
-	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "List of paths:"));
-	print_opt("", "TODO\n");
+	print_fields(def_clms_devices_clt, def_clms_devices_srv,
+		     all_clms_devices);
 
 	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "List of sessions:"));
 	print_fields(def_clms_sessions_clt, def_clms_sessions_srv,
 		     all_clms_sessions);
+
+	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "List of paths:"));
+	print_fields(def_clms_paths_clt, def_clms_paths_srv, all_clms_paths);
 
 	printf("\n%sProvide 'all' to print all available fields\n", HPRE);
 
@@ -1430,11 +1439,11 @@ static void help_show(struct cmd *cmd)
 	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "Device fields:"));
 	print_fields(def_clms_devices_clt, def_clms_devices_srv, all_clms_devices);
 
-	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "Paths fields:"));
-	print_opt("", "TODO\n");
-
 	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "Sessions fields:"));
 	print_fields(def_clms_sessions_clt, def_clms_sessions_srv, all_clms_sessions);
+
+	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "Paths fields:"));
+	print_fields(def_clms_paths_clt, def_clms_paths_srv, all_clms_paths);
 
 	printf("\n%sProvide 'all' to print all available fields\n", HPRE);
 
@@ -1577,6 +1586,18 @@ static int parse_sessions_clms(const char *arg)
 	return rc_clt && rc_srv;
 }
 
+static int parse_paths_clms(const char *arg)
+{
+	int rc_clt, rc_srv;
+
+	rc_clt = table_extend_columns(arg, ",", all_clms_paths,
+				      args.clms_paths_clt, CLM_MAX_CNT);
+
+	rc_srv = table_extend_columns(arg, ",", all_clms_paths,
+				      args.clms_paths_srv, CLM_MAX_CNT);
+	return rc_clt && rc_srv;
+}
+
 static void init_args(void)
 {
 	memcpy(&args.clms_devices_clt, &def_clms_devices_clt,
@@ -1588,6 +1609,11 @@ static void init_args(void)
 	       DEF_CLMS_SESSIONS_CLT_CNT * sizeof(all_clms_sessions[0]));
 	memcpy(&args.clms_sessions_srv, &def_clms_sessions_srv,
 	       DEF_CLMS_SESSIONS_SRV_CNT * sizeof(all_clms_sessions[0]));
+
+	memcpy(&args.clms_paths_clt, &def_clms_paths_clt,
+	       DEF_CLMS_PATHS_CLT_CNT * sizeof(all_clms_paths[0]));
+	memcpy(&args.clms_paths_srv, &def_clms_paths_srv,
+	       DEF_CLMS_PATHS_SRV_CNT * sizeof(all_clms_paths[0]));
 }
 
 static void default_args(void)
@@ -1679,9 +1705,9 @@ int main(int argc, char **argv)
 		if (!sarg) {
 			rcd = parse_devices_clms(argv[i]);
 			rcs = parse_sessions_clms(argv[i]);
-			//rcp = parse_path_clms(argv[i]);
+			rcp = parse_paths_clms(argv[i]);
 			if (!parse_precision(argv[i]) ||
-			    !(rcd && rcs)) {
+			    !(rcd && rcs && rcp)) {
 				i++;
 				continue;
 			}
