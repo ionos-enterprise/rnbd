@@ -643,6 +643,7 @@ static int parse_lst(int argc, char **argv, int i, const struct sarg *sarg)
 {
 	if (!strcasecmp(argv[i], "devices") ||
 	    !strcasecmp(argv[i], "device") ||
+	    !strcasecmp(argv[i], "devs") ||
 	    !strcasecmp(argv[i], "dev")) {
 		args.lstmode = LST_DEVICES;
 		args.showmode = SHOW_DEVICE;
@@ -768,6 +769,7 @@ static struct sarg sargs[] = {
 	{"both", "Information for both", parse_mode, NULL},
 	{"devices", "List mapped devices", parse_lst, NULL},
 	{"device", "", parse_lst, NULL},
+	{"devs", "", parse_lst, NULL},
 	{"dev", "", parse_lst, NULL},
 	{"sessions", "List sessions", parse_lst, NULL},
 	{"session", "", parse_lst, NULL},
