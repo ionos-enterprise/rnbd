@@ -492,6 +492,99 @@ static struct table_column *def_clms_sessions_srv[] = {
 };
 #define DEF_CLMS_SESSIONS_SRV_CNT (ARRSIZE(def_clms_sessions_srv) - 1)
 
+#define CLM_P(m_name, m_header, m_type, tostr, align, h_clr, c_clr, m_descr) \
+	CLM(ibnbd_path, m_name, m_header, m_type, tostr, align, h_clr, c_clr, \
+	    m_descr, sizeof(m_header) - 1, 0)
+
+static int ibnbd_path_state_to_str(char *str, size_t len, enum color *clr,
+				   void *v, int humanize)
+{
+	struct ibnbd_path *p = container_of(v, struct ibnbd_path, state);
+
+	if (!strcmp(p->state, "connected"))
+		*clr = CGRN;
+	else
+		*clr = CRED;
+
+	return snprintf(str, len, "%s", p->state);
+}
+
+CLM_P(state, "State", FLD_STR, ibnbd_path_state_to_str, 'l', CNRM, CBLD,
+       "Name of the path");
+CLM_P(pathname, "Path name", FLD_STR, NULL, 'l', CNRM, CNRM,
+      "Path name");
+CLM_P(cltaddr, "Client Address", FLD_STR, NULL, 'l', CNRM, CNRM,
+      "Client address");
+CLM_P(srvaddr, "Server Address", FLD_STR, NULL, 'l', CNRM, CNRM,
+      "Server address");
+CLM_P(hca_name, "HCA", FLD_STR, NULL, 'l', CNRM, CNRM, "HCA name");
+CLM_P(hca_port, "Port", FLD_NUM, NULL, 'r', CNRM, CNRM, "HCA port");
+CLM_P(rx_bytes, "RX", FLD_NUM, size_to_str, 'r', CNRM, CNRM, "Bytes received");
+CLM_P(tx_bytes, "TX", FLD_NUM, size_to_str, 'r', CNRM, CNRM, "Bytes send");
+CLM_P(inflights, "Inflights", FLD_NUM, NULL, 'r', CNRM, CNRM, "Inflights");
+CLM_P(reconnects, "Reconnects", FLD_NUM, NULL, 'r', CNRM, CNRM, "Reconnects");
+
+static int path_to_sessname(char *str, size_t len, enum color *clr,
+			    void *v, int humanize)
+{
+	struct ibnbd_path *p = container_of(v, struct ibnbd_path, sess);
+
+	if (p->sess)
+		return snprintf(str, len, "%s", p->sess->sessname);
+	else
+		return snprintf(str, len, "%s", "");
+}
+
+#define _CLM_P(s_name, m_name, m_header, m_type, tostr, align, h_clr, c_clr, m_descr) \
+	_CLM(ibnbd_path, s_name, m_name, m_header, m_type, tostr, align, h_clr, c_clr, \
+	    m_descr, sizeof(m_header) - 1, 0)
+
+static struct table_column clm_ibnbd_path_sessname =
+	_CLM_P("sessname", sess, "Sessname", FLD_STR, path_to_sessname, 'l',
+	      CNRM, CNRM, "Name of the session.");
+
+static struct table_column *all_clms_paths[] = {
+	&clm_ibnbd_path_sessname,
+	&clm_ibnbd_path_pathname,
+	&clm_ibnbd_path_cltaddr,
+	&clm_ibnbd_path_srvaddr,
+	&clm_ibnbd_path_hca_name,
+	&clm_ibnbd_path_hca_port,
+	&clm_ibnbd_path_state,
+	&clm_ibnbd_path_rx_bytes,
+	&clm_ibnbd_path_tx_bytes,
+	&clm_ibnbd_path_inflights,
+	&clm_ibnbd_path_reconnects,
+	NULL
+};
+#define ALL_CLMS_PATHS_CNT (ARRSIZE(all_clms_paths) - 1)
+
+static struct table_column *def_clms_paths_clt[] = {
+	&clm_ibnbd_path_sessname,
+	&clm_ibnbd_path_hca_name,
+	&clm_ibnbd_path_hca_port,
+	&clm_ibnbd_path_srvaddr,
+	&clm_ibnbd_path_state,
+	&clm_ibnbd_path_tx_bytes,
+	&clm_ibnbd_path_rx_bytes,
+	&clm_ibnbd_path_reconnects,
+	NULL
+};
+#define DEF_CLMS_PATHS_CLT_CNT (ARRSIZE(def_clms_paths_clt) - 1)
+
+static struct table_column *def_clms_paths_srv[] = {
+	&clm_ibnbd_path_sessname,
+	&clm_ibnbd_path_hca_name,
+	&clm_ibnbd_path_hca_port,
+	&clm_ibnbd_path_cltaddr,
+	&clm_ibnbd_path_tx_bytes,
+	&clm_ibnbd_path_rx_bytes,
+	&clm_ibnbd_path_inflights,
+	NULL
+};
+#define DEF_CLMS_PATHS_SRV_CNT (ARRSIZE(def_clms_paths_srv) - 1)
+
+
 struct sarg {
 	const char *str;
 	const char *descr;
