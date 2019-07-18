@@ -725,6 +725,10 @@ static int parse_unit(int argc, char **argv, int i, const struct sarg *sarg)
 
 	clm_set_hdr_unit(&clm_ibnbd_dev_rx_sect, sarg->descr);
 	clm_set_hdr_unit(&clm_ibnbd_dev_tx_sect, sarg->descr);
+	clm_set_hdr_unit(&clm_ibnbd_sess_rx_bytes, sarg->descr);
+	clm_set_hdr_unit(&clm_ibnbd_sess_tx_bytes, sarg->descr);
+	clm_set_hdr_unit(&clm_ibnbd_path_rx_bytes, sarg->descr);
+	clm_set_hdr_unit(&clm_ibnbd_path_tx_bytes, sarg->descr);
 
 	args.unit_set = 1;
 	return i + 1;
