@@ -1537,9 +1537,9 @@ static void default_args(void)
 
 int main(int argc, char **argv)
 {
-	int ret = 0, i;
-	struct cmd *cmd;
+	int ret = 0, i, rcd, rcs, rcp;
 	struct sarg *sarg;
+	struct cmd *cmd;
 
 	trm = (isatty(STDOUT_FILENO) == 1);
 
@@ -1589,9 +1589,11 @@ int main(int argc, char **argv)
 	while (i < argc) {
 		sarg = find_sarg(argv[i], sargs);
 		if (!sarg) {
-			if (!parse_devices_clms(argv[i]) ||
-			    !parse_precision(argv[i]) ||
-			    !parse_sessions_clms(argv[i])) {
+			rcd = parse_devices_clms(argv[i]);
+			rcs = parse_sessions_clms(argv[i]);
+			//rcp = parse_path_clms(argv[i]);
+			if (!parse_precision(argv[i]) ||
+			    !(rcd && rcs)) {
 				i++;
 				continue;
 			}
