@@ -44,6 +44,7 @@ struct ibnbd_sess {
 
 	/* fields calculated from the list of paths */
 	int		  act_path_cnt;	/* active path count */
+	char		  path_uu[NAME_MAX]; /* paths states str */
 	unsigned long	  rx_bytes;
 	unsigned long	  tx_bytes;
 	int		  inflights;

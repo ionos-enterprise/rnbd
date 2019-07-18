@@ -22,6 +22,7 @@ struct ibnbd_sess s = {
 	.rx_bytes = 377000,
 	.inflights = 100500,
 	.reconnects = 5,
+	.path_uu = "UU",
 	.paths = {
 		{.sess = &s,
 		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5@"
@@ -60,6 +61,7 @@ struct ibnbd_sess s1 = {
 	.rx_bytes = 377000,
 	.inflights = 100500,
 	.reconnects = 5,
+	.path_uu = "_U",
 	.paths = {
 		{.sess = &s,
 		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5@"
@@ -433,27 +435,8 @@ CLM_S(rx_bytes, "RX", FLD_NUM, size_to_str, 'r', CNRM, CNRM, "Bytes received");
 CLM_S(tx_bytes, "TX", FLD_NUM, size_to_str, 'r', CNRM, CNRM, "Bytes send");
 CLM_S(inflights, "Inflights", FLD_NUM, NULL, 'r', CNRM, CNRM, "Inflights");
 CLM_S(reconnects, "Reconnects", FLD_NUM, NULL, 'r', CNRM, CNRM, "Reconnects");
-
-static int sess_path_cnt_to_str(char *str, size_t len, enum color *clr,
-			        void *v, int humanize)
-{
-	struct ibnbd_sess *s = container_of(v, struct ibnbd_sess, act_path_cnt);
-	char uu[NAME_MAX];
-	int i, cnt = 0;
-
-	for (i = 0; i < s->path_cnt; i++)
-		if (!strcmp(s->paths[i].state, "connected"))
-			cnt += snprintf(uu + cnt, sizeof(uu) - cnt, "U");
-		else
-			cnt += snprintf(uu + cnt, sizeof(uu) - cnt, "_");
-
-	return snprintf(str, len, "%s", uu);
-}
-
-static struct table_column clm_ibnbd_sess_path_uu =
-	_CLM_S("path_uu", act_path_cnt, "PS", FLD_STR,
-		sess_path_cnt_to_str, 'l', CNRM, CNRM,
-		"Up (U) or down (_) state of every path");
+CLM_S(path_uu, "PS", FLD_STR, NULL, 'l', CNRM, CNRM,
+      "Up (U) or down (_) state of every path");
 
 static int act_path_cnt_to_state(char *str, size_t len, enum color *clr,
 				    void *v, int humanize)
@@ -1009,7 +992,6 @@ static int list_sessions_term(struct ibnbd_sess **sessions, int sess_num,
 
 	struct table_fld *flds;
 	int i, cs_cnt;
-
 	cs_cnt = clm_cnt(cs);
 
 	if (!has_num(cs))
@@ -1032,9 +1014,10 @@ static int list_sessions_term(struct ibnbd_sess **sessions, int sess_num,
 		total.reconnects += sessions[i]->reconnects;
 	}
 
-	if (!args.nototals_set)
-		table_row_stringify(&total, flds + i * cs_cnt,
+	if (!args.nototals_set) {
+		table_row_stringify(&total, flds + sess_num * cs_cnt,
 				    cs, 1, 0);
+	}
 
 	if (!args.noheaders_set)
 		table_header_print_term("", cs, trm, 'a');
@@ -1045,8 +1028,8 @@ static int list_sessions_term(struct ibnbd_sess **sessions, int sess_num,
 
 	if (!args.nototals_set) {
 		table_row_print_line("", cs, trm, 1, 0);
-		table_flds_del_not_num(flds + i * cs_cnt, cs);
-		table_flds_print_term("", flds + i * cs_cnt,
+		table_flds_del_not_num(flds + sess_num * cs_cnt, cs);
+		table_flds_print_term("", flds + sess_num * cs_cnt,
 				      cs, trm, 0);
 	}
 
@@ -1503,7 +1486,6 @@ static int parse_sessions_clms(const char *arg)
 
 	rc_srv = table_extend_columns(arg, ",", all_clms_sessions,
 				      args.clms_sessions_srv, CLM_MAX_CNT);
-
 	return rc_clt && rc_srv;
 }
 
