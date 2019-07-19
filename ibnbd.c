@@ -1669,11 +1669,12 @@ static void help_show(struct cmd *cmd)
 	cmd_print_usage(cmd, "<name> [path] ");
 
 	printf("\nArguments:\n");
-	print_opt("<name>", "Name of the local or remote block device, session name ");
-	print_opt("", "or remote hostname. I.e. ibnbd0, /dev/ibnbd0, ");
-	print_opt("", "d12aef94-4110-4321-9373-3be8494a557b, ps401a-1@st401b-2, st401b-2");
-	print_opt("", "In order to display path information, path or port parameter ");
-	print_opt("", "has to be provided. I.e. ibnbd show st401b-2 port=1.");
+	print_opt("<name>", "Name of the local or remote block device,");
+	print_opt("", " session name, path name or remote hostname.");
+	print_opt("", "I.e. ibnbd0, /dev/ibnbd0, d12aef94-4110-4321-9373-3be8494a557b,"
+		      " ps401a-1@st401b-2, st401b-2, <ip1>@<ip2>, etc.");
+	print_opt("", "In order to display path information, path name or identifier");
+	print_opt("", "has to be provided, i.e. st401b-2:1.");
 
 	printf("\nOptions:\n");
 	print_opt("{path}", "Path name (<addr>@<addr>) or address (<addr>),");
@@ -1699,6 +1700,29 @@ static void help_show(struct cmd *cmd)
 	print_sarg_descr("help");
 }
 
+static void help_map(struct cmd *cmd)
+{
+	cmd_print_usage(cmd, "<path> from <server>");
+
+	printf("\nArguments:\n");
+	print_opt("<path>", "Name of the device to be mapped");
+	print_opt("from <server>", "Address, name or session name of the server");
+
+	printf("\nOptions:\n");
+	print_opt("{iomode}",
+		  "IO Mode to use on server side: fileio|blockio. Default: blockio");
+	print_opt("{rw}",
+		  "Access permission on server side: ro|rw|migration. Default: rw");
+	print_sarg_descr("verbose");
+	print_sarg_descr("help");
+}
+
+static int cmd_map(void)
+{
+	printf("TODO\n");
+	return 0;
+}
+
 static struct cmd cmds[] = {
 	{"list", "List ibnbd block- and transport information",
 		 "List ibnbd block- and transport information: "
@@ -1706,6 +1730,9 @@ static struct cmd cmds[] = {
 	{"show", "Show information about a device, a session or a path",
 		 "Show information about an ibnbd block- or transport- item: "
 		 "device, session or path.", cmd_show, parse_name, help_show},
+	{"map", "Map a device from a remote machine",
+		 "Map a device from a remote machine",
+		 cmd_map, parse_name, help_map},
 	{"help", "Display help", "Display help message and exit.",
 		cmd_help, NULL, NULL},
 
