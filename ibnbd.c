@@ -1480,7 +1480,7 @@ static struct ibnbd_sess *find_session(char *name)
 
 /*
  * Find a path by sessname:port,sessname:dstaddr,sessname:hca_name:port,
- * sesname:hca
+ * sesname:hca, check if uninque
  * TODO
  */
 static struct ibnbd_path *find_path(char *name)
