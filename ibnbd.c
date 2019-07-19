@@ -16,6 +16,8 @@
 
 struct ibnbd_sess s = {
 	.sessname = "ps401a-3@st401b-3",
+	.mp = "round-robin",
+	.mp_short = "RR",
 	.act_path_cnt = 2,
 	.path_cnt = 2,
 	.tx_bytes = 1023,
@@ -55,6 +57,8 @@ struct ibnbd_sess s = {
 
 struct ibnbd_sess s1 = {
 	.sessname = "ps401a-3@st401b-4",
+	.mp = "min-inflight",
+	.mp_short = "MI",
 	.act_path_cnt = 1,
 	.path_cnt = 2,
 	.tx_bytes = 1023,
@@ -428,6 +432,10 @@ static struct table_column *def_clms_devices_srv[] = {
 
 CLM_S(sessname, "Session name", FLD_STR, NULL, 'l', CNRM, CBLD,
        "Name of the session");
+CLM_S(mp_short, "MP", FLD_STR, NULL, 'l', CNRM, CNRM,
+       "Multipath policy (short)");
+CLM_S(mp, "MP Policy", FLD_STR, NULL, 'l', CNRM, CNRM,
+       "Multipath policy");
 CLM_S(path_cnt, "Path cnt", FLD_NUM, NULL, 'r', CNRM, CNRM,
        "Number of paths");
 CLM_S(act_path_cnt, "Act path cnt", FLD_NUM, NULL, 'r', CNRM, CNRM,
@@ -462,6 +470,8 @@ static struct table_column *all_clms_sessions[] = {
 	&clm_ibnbd_sess_act_path_cnt,
 	&clm_ibnbd_sess_state,
 	&clm_ibnbd_sess_path_uu,
+	&clm_ibnbd_sess_mp,
+	&clm_ibnbd_sess_mp_short,
 	&clm_ibnbd_sess_rx_bytes,
 	&clm_ibnbd_sess_tx_bytes,
 	&clm_ibnbd_sess_inflights,
@@ -474,6 +484,7 @@ static struct table_column *def_clms_sessions_clt[] = {
 	&clm_ibnbd_sess_sessname,
 	&clm_ibnbd_sess_state,
 	&clm_ibnbd_sess_path_uu,
+	&clm_ibnbd_sess_mp,
 	&clm_ibnbd_sess_tx_bytes,
 	&clm_ibnbd_sess_rx_bytes,
 	&clm_ibnbd_sess_inflights,
@@ -1598,7 +1609,8 @@ static int show_session(char *sessname)
 		table_row_stringify(sess, flds, cs, 1, 0);
 		table_entry_print_term("", flds, cs,
 				       table_get_max_h_width(cs), trm);
-		printf("%s%s%s\n", CLR(trm, CBLD, sess->sessname));
+		printf("%s%s%s %s(%s)%s\n", CLR(trm, CBLD, sess->sessname),
+		       CLR(trm, CBLD, sess->mp_short));
 		list_paths_term(&sess, 1, clms_paths_sess, 1);
 
 		break;

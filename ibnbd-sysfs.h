@@ -41,6 +41,8 @@ struct ibnbd_path {
 
 struct ibnbd_sess {
 	char		  sessname[NAME_MAX];	/* session name */
+	char		  mp[NAME_MAX];		/* multipath policy */
+	char		  mp_short[NAME_MAX];	/* multipath policy short */
 
 	/* fields calculated from the list of paths */
 	int		  act_path_cnt;	/* active path count */
