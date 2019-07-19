@@ -1478,12 +1478,7 @@ static struct ibnbd_sess *find_session(char *name)
 	return NULL;
 }
 
-/*
- * Find a path by sessname:port,sessname:dstaddr,sessname:hca_name:port,
- * sesname:hca, check if uninque
- * TODO
- */
-static struct ibnbd_path *find_path(char *name)
+static struct ibnbd_path *find_path_by_sess_port(char *name)
 {
 	struct ibnbd_sess *s;
 	int i = 0, j, port;
@@ -1496,12 +1491,68 @@ static struct ibnbd_path *find_path(char *name)
 	if (sscanf(at + 1, "%d\n", &port) != 1)
 		return NULL;
 
-	while ((s = sessions[i++])) {
+	while ((s = sessions[i++]))
 		if (!strncmp(name, s->sessname, at - name))
 			for (j = 0; j < s->path_cnt; j++)
 				if (s->paths[j].hca_port == port)
 					return &s->paths[j];
-	}
+
+	return NULL;
+}
+
+/*
+ * FIXME: This might deliver multiple paths on both:
+ * client and server. GID contains colons so it won't work.
+ */
+static struct ibnbd_path *find_path_by_sess_srvaddr(char *name)
+{
+	struct ibnbd_sess *s;
+	int i = 0, j;
+	char *at;
+
+	at = strrchr(name, ':');
+	if (!at)
+		return NULL;
+
+	while ((s = sessions[i++]))
+		if (!strncmp(name, s->sessname, at - name))
+			for (j = 0; j < s->path_cnt; j++)
+				if (!strcmp(s->paths[j].srvaddr, at + 1))
+					return &s->paths[j];
+
+	return NULL;
+}
+
+static struct ibnbd_path *find_path_by_pathname(char *name)
+{
+	struct ibnbd_sess *s;
+	int i = 0, j;
+
+	while ((s = sessions[i++]))
+		for (j = 0; j < s->path_cnt; j++)
+			if (!strcmp(s->paths[j].pathname, name))
+				return &s->paths[j];
+
+	return NULL;
+}
+
+/*
+ * Find a path by pathname, sessname:port, sessname:dstaddr/cltaddr,
+ * sessname:hca_name:port, sesname:hca, check if uninque
+ * TODO
+ */
+static struct ibnbd_path *find_path(char *name)
+{
+	struct ibnbd_path *p;
+
+	if ((p = find_path_by_sess_port(name)))
+		return p;
+
+	if ((p = find_path_by_pathname(name)))
+		return p;
+
+	if ((p = find_path_by_sess_srvaddr(name)))
+		return p;
 
 	return NULL;
 }
