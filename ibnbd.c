@@ -599,11 +599,18 @@ static struct table_column *def_clms_paths_srv[] = {
 };
 #define DEF_CLMS_PATHS_SRV_CNT (ARRSIZE(def_clms_paths_srv) - 1)
 
-static struct table_column *clms_paths_sess[] = {
-	&clm_ibnbd_path_pathname,
+static struct table_column *clms_paths_sess_clt[] = {
 	&clm_ibnbd_path_hca_name,
 	&clm_ibnbd_path_hca_port,
+	&clm_ibnbd_path_srvaddr,
 	&clm_ibnbd_path_state,
+	NULL
+};
+
+static struct table_column *clms_paths_sess_srv[] = {
+	&clm_ibnbd_path_hca_name,
+	&clm_ibnbd_path_hca_port,
+	&clm_ibnbd_path_cltaddr,
 	NULL
 };
 
@@ -1109,6 +1116,8 @@ static int list_devices()
 static int list_paths_term(struct ibnbd_sess **sessions, int sess_num,
 			   struct table_column **cs, int tree)
 {
+	int i, j, cs_cnt, path_cnt = 0, fld_cnt = 0;
+	struct table_fld *flds;
 	struct ibnbd_path total = {
 		.rx_bytes = 0,
 		.tx_bytes = 0,
@@ -1116,13 +1125,7 @@ static int list_paths_term(struct ibnbd_sess **sessions, int sess_num,
 		.reconnects = 0
 	};
 
-	struct table_fld *flds;
-	int i, j, cs_cnt, path_cnt = 0, fld_cnt = 0;
-
 	cs_cnt = clm_cnt(cs);
-
-	if (!has_num(cs))
-		args.nototals_set = 1;
 
 	for (i = 0; i < sess_num; i++)
 		path_cnt += sessions[i]->path_cnt;
@@ -1165,7 +1168,7 @@ static int list_paths_term(struct ibnbd_sess **sessions, int sess_num,
 		}
 	}
 
-	if (!args.nototals_set) {
+	if (!args.nototals_set && has_num(cs) && !tree) {
 		table_row_print_line("", cs, trm, 1, 0);
 		table_flds_del_not_num(flds + fld_cnt, cs);
 		table_flds_print_term("", flds + fld_cnt, cs, trm, 0);
@@ -1177,8 +1180,11 @@ static int list_paths_term(struct ibnbd_sess **sessions, int sess_num,
 }
 
 static int list_sessions_term(struct ibnbd_sess **sessions, int sess_num,
-			      struct table_column **cs, int tree)
+			      struct table_column **cs,
+			      struct table_column **ps, int tree)
 {
+	struct table_fld *flds;
+	int i, cs_cnt;
 	struct ibnbd_sess total = {
 		.act_path_cnt = 0,
 		.path_cnt = 0,
@@ -1188,12 +1194,7 @@ static int list_sessions_term(struct ibnbd_sess **sessions, int sess_num,
 		.reconnects = 0
 	};
 
-	struct table_fld *flds;
-	int i, cs_cnt;
 	cs_cnt = clm_cnt(cs);
-
-	if (!has_num(cs))
-		args.nototals_set = 1;
 
 	flds = calloc((sess_num + 1) * cs_cnt, sizeof(*flds));
 	if (!flds) {
@@ -1223,11 +1224,13 @@ static int list_sessions_term(struct ibnbd_sess **sessions, int sess_num,
 	for (i = 0; i < sess_num; i++) {
 		table_flds_print_term("", flds + i * cs_cnt,
 				      cs, trm, 0);
-		if (tree)
-			list_paths_term(&sessions[i], 1, clms_paths_sess, 1);
+		if (tree) {
+			list_paths_term(&sessions[i], 1, ps, 1);
+			printf("\n");
+		}
 	}
 
-	if (!args.nototals_set) {
+	if (!args.nototals_set && has_num(cs)) {
 		table_row_print_line("", cs, trm, 1, 0);
 		table_flds_del_not_num(flds + sess_num * cs_cnt, cs);
 		table_flds_print_term("", flds + sess_num * cs_cnt,
@@ -1241,16 +1244,18 @@ static int list_sessions_term(struct ibnbd_sess **sessions, int sess_num,
 
 static int list_sessions()
 {
-	struct table_column **cs;
+	struct table_column **cs, **ps;
 	int i, rc = 0, sess_num;
 
 	switch (args.ibnbdmode) {
 	case IBNBD_CLIENT:
 	case IBNBD_BOTH:
 		cs = args.clms_sessions_clt;
+		ps = clms_paths_sess_clt;
 		break;
 	case IBNBD_SERVER:
 		cs = args.clms_sessions_srv;
+		ps = clms_paths_sess_srv;
 		break;
 	default:
 		assert(0);
@@ -1292,7 +1297,7 @@ static int list_sessions()
 		break;
 	case FMT_TERM:
 	default:
-		rc = list_sessions_term(sessions, sess_num, cs, args.tree_set);
+		rc = list_sessions_term(sessions, sess_num, cs, ps, args.tree_set);
 		break;
 	}
 
@@ -1625,7 +1630,7 @@ static int show_session(char *sessname)
 {
 	struct table_fld flds[CLM_MAX_CNT];
 	struct ibnbd_sess *sess;
-	struct table_column **cs;
+	struct table_column **cs, **ps;
 
 	sess = find_session(sessname);
 
@@ -1638,9 +1643,11 @@ static int show_session(char *sessname)
 	case IBNBD_CLIENT:
 	case IBNBD_BOTH:
 		cs = args.clms_sessions_clt;
+		ps = clms_paths_sess_clt;
 		break;
 	case IBNBD_SERVER:
 		cs = args.clms_sessions_srv;
+		ps = clms_paths_sess_srv;
 		break;
 	default:
 		assert(0);
@@ -1666,7 +1673,7 @@ static int show_session(char *sessname)
 				       table_get_max_h_width(cs), trm);
 		printf("%s%s%s %s(%s)%s\n", CLR(trm, CBLD, sess->sessname),
 		       CLR(trm, CBLD, sess->mp_short));
-		list_paths_term(&sess, 1, clms_paths_sess, 1);
+		list_paths_term(&sess, 1, ps, 1);
 
 		break;
 	}
