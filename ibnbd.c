@@ -890,6 +890,10 @@ static void print_help(const char *program_name, const struct cmd *cmds)
 	do
 		printf("     %-*s%s\n", 20, (*cmds).cmd, (*cmds).short_d);
 	while ((*++cmds).cmd);
+
+	printf("\nOptions:\n");
+	print_sarg_descr("verbose");
+	print_sarg_descr("help");
 }
 
 static int cmd_help(void);
