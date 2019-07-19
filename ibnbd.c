@@ -207,9 +207,6 @@ struct args {
 	short help_set;
 	short verbose_set;
 
-	short port_set;
-	short path_set;
-
 	int unit_id;
 	short unit_set;
 	char unit[5];
@@ -531,6 +528,8 @@ static int path_to_sessname(char *str, size_t len, enum color *clr,
 			    void *v, int humanize)
 {
 	struct ibnbd_path *p = container_of(v, struct ibnbd_path, sess);
+
+	*clr = CNRM;
 
 	if (p->sess)
 		return snprintf(str, len, "%s", p->sess->sessname);
@@ -1424,8 +1423,9 @@ static int show_device(char *devname)
 }
 
 /*
- * Find a session by name or hostname
- * TODO
+ * Find a session by name or hostname...
+ * check if unique...
+ * FIXME
  */
 static struct ibnbd_sess *find_session(char *name)
 {
@@ -1438,11 +1438,38 @@ static struct ibnbd_sess *find_session(char *name)
 			return s;
 
 		at = strchr(s->sessname, '@');
-		if (*at) {
-			if (!strncmp(name, s->sessname, at - s->sessname) ||
-			    !strcmp(name, at + 1))
+		if (at) {
+			if (!strcmp(name, at + 1))
 				return s;
 		}
+	}
+
+	return NULL;
+}
+
+/*
+ * Find a path by sessname:port,sessname:dstaddr,sessname:hca_name:port,
+ * sesname:hca
+ * TODO
+ */
+static struct ibnbd_path *find_path(char *name)
+{
+	struct ibnbd_sess *s;
+	int i = 0, j, port;
+	char *at;
+
+	at = strrchr(name, ':');
+	if (!at)
+		return NULL;
+
+	if (sscanf(at + 1, "%d\n", &port) != 1)
+		return NULL;
+
+	while ((s = sessions[i++])) {
+		if (!strncmp(name, s->sessname, at - name))
+			for (j = 0; j < s->path_cnt; j++)
+				if (s->paths[j].hca_port == port)
+					return &s->paths[j];
 	}
 
 	return NULL;
@@ -1454,6 +1481,8 @@ static int get_showmode(char *name, enum showmode *mode)
 		*mode = SHOW_DEVICE;
 	else if (find_session(name))
 		*mode = SHOW_SESSION;
+	else if (find_path(name))
+		*mode = SHOW_PATH;
 	else
 		return -ENOENT;
 
@@ -1462,6 +1491,51 @@ static int get_showmode(char *name, enum showmode *mode)
 
 static int show_path(char *pathname)
 {
+	struct table_fld flds[CLM_MAX_CNT];
+	struct ibnbd_path *path;
+	struct table_column **cs;
+
+	path = find_path(pathname);
+
+	if (!path) {
+		ERR("Path %s not found\n", pathname);
+		return -ENOENT;
+	}
+
+	switch (args.ibnbdmode) {
+	case IBNBD_CLIENT:
+	case IBNBD_BOTH:
+		cs = args.clms_paths_clt;
+		break;
+	case IBNBD_SERVER:
+		cs = args.clms_paths_srv;
+		break;
+	default:
+		assert(0);
+	}
+
+	switch (args.fmt) {
+	case FMT_CSV:
+		if (!args.noheaders_set)
+			table_header_print_csv(cs);
+		table_row_print(path, FMT_CSV, "", cs, 0, 0, 0);
+		break;
+	case FMT_JSON:
+		table_row_print(path, FMT_JSON, "", cs, 0, 0, 0);
+		printf("\n");
+		break;
+	case FMT_XML:
+		table_row_print(path, FMT_XML, "", cs, 0, 0, 0);
+		break;
+	case FMT_TERM:
+	default:
+		table_row_stringify(path, flds, cs, 1, 0);
+		table_entry_print_term("", flds, cs,
+				       table_get_max_h_width(cs), trm);
+		break;
+	}
+
+
 	return 0;
 }
 
@@ -1519,8 +1593,10 @@ static int cmd_show(void)
 	int rc;
 
 	if (!args.showmode_set) {
+		//FIXME
 		if (get_showmode(args.name, &args.showmode)) {
-			ERR("'%s' is neither device nor session\n", args.name);
+			ERR("'%s' is neither device nor session nor path\n",
+			    args.name);
 			return -ENOENT;
 		}
 		args.showmode_set = 1;
@@ -1531,10 +1607,7 @@ static int cmd_show(void)
 		rc = show_device(args.name);
 		break;
 	case SHOW_SESSION:
-		if (args.port_set || args.path_set)
-			rc = show_path(args.name);
-		else
-			rc = show_session(args.name);
+		rc = show_session(args.name);
 		break;
 	case SHOW_PATH:
 		rc = show_path(args.name);
