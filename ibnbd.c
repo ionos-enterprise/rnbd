@@ -587,6 +587,13 @@ static struct table_column *def_clms_paths_srv[] = {
 };
 #define DEF_CLMS_PATHS_SRV_CNT (ARRSIZE(def_clms_paths_srv) - 1)
 
+static struct table_column *clms_paths_sess[] = {
+	&clm_ibnbd_path_pathname,
+	&clm_ibnbd_path_hca_name,
+	&clm_ibnbd_path_hca_port,
+	&clm_ibnbd_path_state,
+	NULL
+};
 
 struct sarg {
 	const char *str;
@@ -1202,7 +1209,7 @@ static int list_sessions()
 }
 
 static int list_paths_term(struct ibnbd_sess **sessions, int sess_num,
-			   struct table_column **cs)
+			   struct table_column **cs, int tree)
 {
 	struct ibnbd_path total = {
 		.rx_bytes = 0,
@@ -1246,13 +1253,16 @@ static int list_paths_term(struct ibnbd_sess **sessions, int sess_num,
 		table_row_stringify(&total, flds + fld_cnt, cs, 1, 0);
 	}
 
-	if (!args.noheaders_set)
+	if (!args.noheaders_set && !tree)
 		table_header_print_term("", cs, trm, 'a');
 
 	fld_cnt = 0;
 	for (i = 0; i < sess_num; i++) {
 		for (j = 0; j < sessions[i]->path_cnt; j++) {
-			table_flds_print_term("", flds + fld_cnt, cs, trm, 0);
+			table_flds_print_term(!tree ? "" :
+					      j < sessions[i]->path_cnt - 1 ?
+					      "├─ " : "└─ ", flds + fld_cnt,
+					      cs, trm, 0);
 			fld_cnt += cs_cnt;
 		}
 	}
@@ -1329,7 +1339,7 @@ static int list_paths()
 		break;
 	case FMT_TERM:
 	default:
-		rc = list_paths_term(sessions, sess_num, cs);
+		rc = list_paths_term(sessions, sess_num, cs, 0);
 		break;
 	}
 
@@ -1582,6 +1592,9 @@ static int show_session(char *sessname)
 		table_row_stringify(sess, flds, cs, 1, 0);
 		table_entry_print_term("", flds, cs,
 				       table_get_max_h_width(cs), trm);
+		printf("%s%s%s\n", CLR(trm, CBLD, sess->sessname));
+		list_paths_term(&sess, 1, clms_paths_sess, 1);
+
 		break;
 	}
 
