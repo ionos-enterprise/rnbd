@@ -12,6 +12,11 @@ enum ibnbd_access_mode {
 	IBNBD_MIGRATION
 };
 
+enum ibnbd_side {
+	IBNBD_CLT,
+	IBNBD_SRV
+};
+
 /*
  * IBNBD block device, client side
  */
@@ -40,6 +45,7 @@ struct ibnbd_path {
 };
 
 struct ibnbd_sess {
+	enum ibnbd_side	  side;			/* client or server side */
 	char		  sessname[NAME_MAX];	/* session name */
 	char		  mp[NAME_MAX];		/* multipath policy */
 	char		  mp_short[NAME_MAX];	/* multipath policy short */
