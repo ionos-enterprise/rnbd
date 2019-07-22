@@ -108,12 +108,15 @@ struct ibnbd_sess s2 = {
 	.tx_bytes = 1023,
 	.rx_bytes = 377000,
 	.inflights = 100500,
+	.reconnects = 5,
+	.path_uu = "UU",
 	.paths = {
 		{.sess = &s2,
 		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5@"
 			     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
 		 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5",
 		 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
+		 .state = "connected",
 		 .hca_name = "mlx4_0",
 		 .hca_port = 1,
 		 .tx_bytes = 0,
@@ -125,6 +128,7 @@ struct ibnbd_sess s2 = {
 			     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
 		 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
 		 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
+		 .state = "connected",
 		 .hca_name = "mlx4_0",
 		 .hca_port = 2,
 		 .tx_bytes = 1023,
@@ -137,6 +141,7 @@ struct ibnbd_sess s2 = {
 struct ibnbd_sess *sessions[] = {
 	&s,
 	&s1,
+	&s2,
 	NULL
 };
 
@@ -198,7 +203,7 @@ struct ibnbd_sess_dev sd[] = {
 	{.mapping_path = "ecf6bfd0-3dae-46a3-9a1b-e61225920185",
 	 .access_mode = IBNBD_RW,
 	 .sess = &s2,
-	 .dev = &d[5]
+	 .dev = &d[4]
 	},
 
 };
