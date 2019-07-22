@@ -26,7 +26,10 @@ enum color {
 	CBLU,
 	CMAG,
 	CCYN,
-	CWHT
+	CWHT,
+	CDIM,
+	CDGR,
+	CSTRIKETHROUGH,
 };
 
 struct table_column {
@@ -93,6 +96,9 @@ static const char * const colors[] = {
 	[CMAG] = "\x1B[35m",
 	[CCYN] = "\x1B[36m",
 	[CWHT] = "\x1B[37m",
+	[CDIM] = "\x1B[2m",
+	[CDGR] = "\x1B[90m",
+	[CSTRIKETHROUGH] = "\x1B[9m\x1B[90m",
 };
 
 #define CLR(trm, clr, str) \
