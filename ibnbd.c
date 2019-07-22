@@ -607,7 +607,32 @@ static int path_to_sessname(char *str, size_t len, enum color *clr,
 
 static struct table_column clm_ibnbd_path_sessname =
 	_CLM_P("sessname", sess, "Sessname", FLD_STR, path_to_sessname, 'l',
-	      CNRM, CNRM, "Name of the session.");
+	       CNRM, CNRM, "Name of the session.");
+
+static int path_to_shortdesc(char *str, size_t len, enum color *clr,
+			     void *v, int humanize)
+{
+	struct ibnbd_path *p = container_of(v, struct ibnbd_path, sess);
+	enum color c;
+
+	*clr = CDIM;
+
+	/* return if sess not set (this is the case if called on a total) */
+	if (!p->sess)
+		return 0;
+
+	if (!strcmp(p->state, "connected"))
+		c = CDIM;
+	else
+		c = CRED;
+
+	return snprintf(str, len, "%s %d %s%s%s", p->hca_name, p->hca_port,
+			CLR(trm, c, p->pathname));
+}
+
+static struct table_column clm_ibnbd_path_shortdesc =
+	_CLM_P("shortdesc", sess, "Short", FLD_STR,
+	       path_to_shortdesc, 'l', CNRM, CNRM, "Short description");
 
 static struct table_column *all_clms_paths[] = {
 	&clm_ibnbd_path_sessname,
@@ -663,6 +688,11 @@ static struct table_column *clms_paths_sess_srv[] = {
 	&clm_ibnbd_path_hca_name,
 	&clm_ibnbd_path_hca_port,
 	&clm_ibnbd_path_cltaddr,
+	NULL
+};
+
+static struct table_column *clms_paths_shortdesc[] = {
+	&clm_ibnbd_path_shortdesc,
 	NULL
 };
 
@@ -1232,8 +1262,7 @@ static int list_paths_term(struct ibnbd_sess **sessions, int sess_num,
 }
 
 static int list_sessions_term(struct ibnbd_sess **sessions, int sess_num,
-			      struct table_column **cs,
-			      struct table_column **ps, int tree)
+			      struct table_column **cs, int tree)
 {
 	struct table_fld *flds;
 	int i, cs_cnt;
@@ -1276,10 +1305,9 @@ static int list_sessions_term(struct ibnbd_sess **sessions, int sess_num,
 	for (i = 0; i < sess_num; i++) {
 		table_flds_print_term("", flds + i * cs_cnt,
 				      cs, trm, 0);
-		if (tree) {
-			list_paths_term(&sessions[i], 1, ps, 1);
-			printf("\n");
-		}
+		if (tree)
+			list_paths_term(&sessions[i], 1,
+					clms_paths_shortdesc, 1);
 	}
 
 	if (!args.nototals_set && has_num(cs)) {
@@ -1296,18 +1324,16 @@ static int list_sessions_term(struct ibnbd_sess **sessions, int sess_num,
 
 static int list_sessions()
 {
-	struct table_column **cs, **ps;
+	struct table_column **cs;
 	int i, rc = 0, sess_num;
 
 	switch (args.ibnbdmode) {
 	case IBNBD_CLIENT:
 	case IBNBD_BOTH:
 		cs = args.clms_sessions_clt;
-		ps = clms_paths_sess_clt;
 		break;
 	case IBNBD_SERVER:
 		cs = args.clms_sessions_srv;
-		ps = clms_paths_sess_srv;
 		break;
 	default:
 		assert(0);
@@ -1349,7 +1375,7 @@ static int list_sessions()
 		break;
 	case FMT_TERM:
 	default:
-		rc = list_sessions_term(sessions, sess_num, cs, ps, args.tree_set);
+		rc = list_sessions_term(sessions, sess_num, cs, args.tree_set);
 		break;
 	}
 
