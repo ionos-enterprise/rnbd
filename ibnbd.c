@@ -15,6 +15,7 @@
 #include "ibnbd-sysfs.h"
 
 struct ibnbd_sess s = {
+	.side	  = IBNBD_CLT,
 	.sessname = "ps401a-3@st401b-3",
 	.mp = "round-robin",
 	.mp_short = "RR",
@@ -56,6 +57,7 @@ struct ibnbd_sess s = {
 };
 
 struct ibnbd_sess s1 = {
+	.side	  = IBNBD_CLT,
 	.sessname = "ps401a-3@st401b-4",
 	.mp = "min-inflight",
 	.mp_short = "MI",
@@ -96,6 +98,42 @@ struct ibnbd_sess s1 = {
 	}
 };
 
+struct ibnbd_sess s2 = {
+	.side	  = IBNBD_SRV,
+	.sessname = "ps401a-1@ps401a-3",
+	.mp = "min-inflight",
+	.mp_short = "MI",
+	.act_path_cnt = 1,
+	.path_cnt = 2,
+	.tx_bytes = 1023,
+	.rx_bytes = 377000,
+	.inflights = 100500,
+	.paths = {
+		{.sess = &s2,
+		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5@"
+			     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
+		 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5",
+		 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
+		 .hca_name = "mlx4_0",
+		 .hca_port = 1,
+		 .tx_bytes = 0,
+		 .rx_bytes = 377000,
+		 .inflights = 0,
+		},
+		{.sess = &s2,
+		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6@"
+			     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
+		 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
+		 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
+		 .hca_name = "mlx4_0",
+		 .hca_port = 2,
+		 .tx_bytes = 1023,
+		 .rx_bytes = 0,
+		 .inflights = 100500,
+		}
+	}
+};
+
 struct ibnbd_sess *sessions[] = {
 	&s,
 	&s1,
@@ -124,6 +162,14 @@ struct ibnbd_dev d[] = {
 	 .tx_sect = 2342,
 	 .state = "closed"
 	},
+	{.devname = "ibnbd3",
+	 .devpath = "/dev/ibnbd3",
+	 .iomode = IBNBD_BLOCKIO,
+	 .rx_sect = 1904,
+	 .tx_sect = 23423,
+	 .state = "open"
+	},
+
 	{.devname = "ram0",
 	 .devpath = "/dev/ram0",
 	 .iomode = IBNBD_BLOCKIO,
@@ -141,14 +187,20 @@ struct ibnbd_sess_dev sd[] = {
 	},
 	{.mapping_path = "8f749d51-c7c2-41cc-a55e-4fca8b97de73",
 	 .access_mode = IBNBD_RO,
-	 .sess = &s,
+	 .sess = &s1,
 	 .dev = &d[1]
 	},
 	{.mapping_path = "ecf6bfd0-3dae-46a3-9a1b-e61225920185",
 	 .access_mode = IBNBD_MIGRATION,
-	 .sess = &s,
+	 .sess = &s1,
 	 .dev = &d[2]
 	},
+	{.mapping_path = "ecf6bfd0-3dae-46a3-9a1b-e61225920185",
+	 .access_mode = IBNBD_RW,
+	 .sess = &s2,
+	 .dev = &d[5]
+	},
+
 };
 
 #define ERR(fmt, ...) \
