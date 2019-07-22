@@ -536,7 +536,7 @@ static struct table_column *def_clms_sessions_clt[] = {
 	&clm_ibnbd_sess_sessname,
 	&clm_ibnbd_sess_state,
 	&clm_ibnbd_sess_path_uu,
-	&clm_ibnbd_sess_mp,
+	&clm_ibnbd_sess_mp_short,
 	&clm_ibnbd_sess_tx_bytes,
 	&clm_ibnbd_sess_rx_bytes,
 	&clm_ibnbd_sess_inflights,
