@@ -7,7 +7,7 @@ Build-Depends: debhelper (>= 7),
                uuid-dev,
                bash-completion,
 Standards-Version: 3.9.5
-Homepage: https://gitlab.pb.local/dkipnis/ibnbd-tool.git
+Homepage: https://gitlab.pb.local/ibnbd/ibnbd-tool.git
 
 Package: ibnbd-tool
 Architecture: any

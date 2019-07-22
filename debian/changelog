@@ -1,5 +1,5 @@
-ibnbd-tool (0.0.1) jessie; urgency=medium
+ibnbd-tool (0.0.1) jessie stretch buster; urgency=medium
 
   * Initial release
 
- -- Danil Kipnis <danil.kipnis@profitbricks.com>  Thu, 07 Jun 2018 15:34:46 +0200
+ -- Danil Kipnis <danil.kipnis@cloud.ionos.com>  Thu, 07 Jun 2018 15:34:46 +0200
