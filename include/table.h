@@ -98,7 +98,7 @@ static const char * const colors[] = {
 	[CWHT] = "\x1B[37m",
 	[CDIM] = "\x1B[2m",
 	[CDGR] = "\x1B[90m",
-	[CSTRIKETHROUGH] = "\x1B[9m\x1B[90m",
+	[CSTRIKETHROUGH] = "\x1B[9m",
 };
 
 #define CLR(trm, clr, str) \
