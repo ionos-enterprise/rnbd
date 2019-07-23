@@ -2051,6 +2051,9 @@ static void init_args(void)
 
 static void default_args(void)
 {
+	struct ibnbd_sess *s;
+	int i = 0;
+
 	if (!args.lstmode_set)
 		args.lstmode = LST_DEVICES;
 
@@ -2061,23 +2064,11 @@ static void default_args(void)
 		args.prec = 3;
 
 	if (!args.ibnbdmode_set) {
-		DIR* dir;
-
-		dir = opendir("/sys/module/ibnbd_client");
-		if (dir) {
-			args.ibnbdmode |= IBNBD_CLIENT;
-			args.ibnbdmode_set = 1;
-			closedir(dir);
-		}
-		dir = opendir("/sys/module/ibnbd_server");
-		if (dir) {
-			args.ibnbdmode |= IBNBD_SERVER;
-			args.ibnbdmode_set = 1;
-			closedir(dir);
-		}
-		if (!args.ibnbdmode) {
-			args.ibnbdmode |= IBNBD_BOTH;
-			args.ibnbdmode_set = 1;
+		while ((s = sessions[i++])) {
+			if (s->side == IBNBD_CLT)
+				args.ibnbdmode |= IBNBD_CLIENT;
+			if (s->side == IBNBD_SRV)
+				args.ibnbdmode |= IBNBD_SERVER;
 		}
 	}
 }
