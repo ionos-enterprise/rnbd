@@ -144,6 +144,8 @@ struct ibnbd_sess *sessions[] = {
 	&s2,
 	NULL
 };
+struct ibnbd_sess *sess_clt[ARRSIZE(sessions)];
+struct ibnbd_sess *sess_srv[ARRSIZE(sessions)];
 
 struct ibnbd_dev d[] = {
 	{.devname = "ibnbd0",
@@ -214,6 +216,8 @@ struct ibnbd_sess_dev *sds[] = {
 	&sess_devs[3],
 	NULL
 };
+struct ibnbd_sess_dev *sds_clt[ARRSIZE(sds)];
+struct ibnbd_sess_dev *sds_srv[ARRSIZE(sds)];
 
 #define ERR(fmt, ...) \
 	do { \
@@ -2080,6 +2084,33 @@ static void default_args(void)
 	}
 }
 
+int ibnbd_read_sysfs(void)
+{
+	int i = 0, clt = 0, srv = 0;
+	struct ibnbd_sess_dev *sd;
+	struct ibnbd_sess *s;
+
+	while ((s = sessions[i++]))
+		if (s->side == IBNBD_CLT)
+			sess_clt[clt++] = s;
+		else
+			sess_srv[srv++] = s;
+
+	sess_clt[clt] = NULL;
+	sess_srv[srv] = NULL;
+
+	for (i = 0, clt = 0, srv = 0, sd = sds[0]; sd; sd = sds[++i])
+		if (sd->sess->side == IBNBD_CLT)
+			sds_clt[clt++] = sd;
+		else
+			sds_srv[srv++] = sd;
+
+	sds_clt[clt] = NULL;
+	sds_srv[srv] = NULL;
+
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	int ret = 0, i, rcd, rcs, rcp;
@@ -2171,6 +2202,14 @@ int main(int argc, char **argv)
 	}
 
 	default_args();
+	/*
+	 * Read stuff from sysfs
+	 */
+	ret = ibnbd_read_sysfs();
+	if (ret) {
+		ERR("Failed to read sysfs entries: %d\n", ret);
+		goto out;
+	}
 
 	ret = 0;
 	if (args.help_set && cmd->help)
