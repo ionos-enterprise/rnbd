@@ -216,6 +216,7 @@ struct ibnbd_sess_dev *sds[] = {
 	&sess_devs[3],
 	NULL
 };
+
 struct ibnbd_sess_dev *sds_clt[ARRSIZE(sds)];
 struct ibnbd_sess_dev *sds_srv[ARRSIZE(sds)];
 
@@ -1112,10 +1113,9 @@ static int has_num(struct table_column **cs)
 	return 0;
 }
 
-static int list_devices_term(struct ibnbd_sess_dev **sds, int dev_num,
+static int list_devices_term(struct ibnbd_sess_dev **sds,
 			     struct table_column **cs)
 {
-	struct ibnbd_sess_dev *sd;
 	struct ibnbd_dev d_total = {
 		.rx_sect = 0,
 		.tx_sect = 0
@@ -1124,10 +1124,15 @@ static int list_devices_term(struct ibnbd_sess_dev **sds, int dev_num,
 		.dev = &d_total,
 		.mapping_path = ""
 	};
+	struct ibnbd_sess_dev *sd;
 	struct table_fld *flds;
 	int i = 0, cs_cnt;
+	int dev_num = 0;
 
 	cs_cnt = clm_cnt(cs);
+
+	while ((sd = sds[dev_num++]));
+	dev_num--;
 
 	if (!has_num(cs))
 		args.nototals_set = 1;
@@ -1168,63 +1173,118 @@ static int list_devices_term(struct ibnbd_sess_dev **sds, int dev_num,
 	return 0;
 }
 
-static int list_devices()
+static void list_devices_csv(struct ibnbd_sess_dev **sds,
+			     struct table_column **cs)
 {
-	int i = 0, rc = 0;
 	struct ibnbd_sess_dev *sd;
-	struct table_column **cs;
+	int i = 0;
 
-	switch (args.ibnbdmode) {
-	case IBNBD_CLIENT:
-	case IBNBD_BOTH:
-		cs = args.clms_devices_clt;
-		break;
-	case IBNBD_SERVER:
-		cs = args.clms_devices_srv;
-		break;
-	default:
-		assert(0);
+	if (!args.noheaders_set)
+		table_header_print_csv(cs);
+
+	while ((sd = sds[i++]))
+		table_row_print(sd, FMT_CSV, "", cs, 0, 0, 0);
+}
+
+static void list_devices_json(struct ibnbd_sess_dev **sds,
+			      struct table_column **cs)
+{
+	struct ibnbd_sess_dev *sd;
+	int i = 0;
+
+	printf("[\n");
+
+	while ((sd = sds[i++])) {
+		if (i > 1)
+			printf(",\n");
+		table_row_print(sd, FMT_JSON, "\t\t", cs, 0, 0, 0);
 	}
 
+	printf("\n\t]");
+}
+
+static void list_devices_xml(struct ibnbd_sess_dev **sds,
+			     struct table_column **cs)
+{
+	struct ibnbd_sess_dev *sd;
+	int i = 0;
+
+	while ((sd = sds[i++])) {
+		printf("\t<device>\n");
+		table_row_print(sd, FMT_XML, "\t\t", cs, 0, 0, 0);
+		printf("\t</device>\n");
+	}
+}
+
+static int list_devices()
+{
 	switch (args.fmt) {
 	case FMT_CSV:
-		if (!args.noheaders_set)
-			table_header_print_csv(cs);
+		if (args.ibnbdmode == IBNBD_BOTH)
+			printf("Imports:\n");
 
-		while ((sd = sds[i++]))
-			table_row_print(sd, FMT_CSV, "", cs, 0, 0, 0);
+		if (args.ibnbdmode & IBNBD_CLIENT)
+			list_devices_csv(sds_clt, args.clms_devices_clt);
+
+		if (args.ibnbdmode == IBNBD_BOTH)
+			printf("Exports:\n");
+
+		if (args.ibnbdmode & IBNBD_SERVER)
+			list_devices_csv(sds_srv, args.clms_devices_srv);
 
 		break;
 	case FMT_JSON:
-		printf("{ \"devices\": [\n");
+		printf("{ \n");
 
-		while ((sd = sds[i++])) {
-			if (i > 1)
-				printf(",\n");
-			table_row_print(sd, FMT_JSON, "\t", cs, 0, 0, 0);
+		if (args.ibnbdmode & IBNBD_CLIENT) {
+			printf("\t\"imports\": ");
+			list_devices_json(sds_clt, args.clms_devices_clt);
 		}
 
-		printf("\n] }\n");
+		if (args.ibnbdmode == IBNBD_BOTH)
+			printf(", \n");
+		else
+			printf("\n");
+
+		if (args.ibnbdmode & IBNBD_SERVER) {
+			printf("\t\"exports\": ");
+			list_devices_json(sds_srv, args.clms_devices_srv);
+		}
+
+		printf("\n}\n");
+
 		break;
 	case FMT_XML:
-		printf("<devices>\n");
-
-		while ((sd = sds[i++])) {
-			printf("\t<device>\n");
-			table_row_print(sd, FMT_XML, "\t\t", cs, 0, 0, 0);
-			printf("\t</device>\n");
+		if (args.ibnbdmode & IBNBD_CLIENT) {
+			printf("<imports>\n");
+			list_devices_xml(sds_clt, args.clms_devices_clt);
+			printf("</imports>\n");
 		}
-
-		printf("</devices>\n");
+		if (args.ibnbdmode & IBNBD_SERVER) {
+			printf("<exports>\n");
+			list_devices_xml(sds_srv, args.clms_devices_srv);
+			printf("</exports>\n");
+		}
 
 		break;
 	case FMT_TERM:
 	default:
-		rc = list_devices_term(sds, ARRSIZE(sds) - 1, cs);
+		if (args.ibnbdmode == IBNBD_BOTH)
+			printf("――――――――――――――――――Imports―――――――――――――――――\n");
+
+		if (args.ibnbdmode & IBNBD_CLIENT)
+			list_devices_term(sds_clt, args.clms_devices_clt);
+
+		if (args.ibnbdmode == IBNBD_BOTH)
+			printf("――――――――――――――――――Exports―――――――――――――――――\n");
+
+		if (args.ibnbdmode & IBNBD_SERVER)
+			list_devices_term(sds_srv, args.clms_devices_srv);
+
 		break;
 	}
 
-	return rc;
+	return 0;
 }
 
 static int list_paths_term(struct ibnbd_sess **sessions, int sess_num,
