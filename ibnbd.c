@@ -1592,12 +1592,11 @@ static int show_device(char *devname)
 		return -ENOENT;
 	}
 
-	switch (args.ibnbdmode) {
-	case IBNBD_CLIENT:
-	case IBNBD_BOTH:
+	switch (dev->sess->side) {
+	case IBNBD_CLT:
 		cs = args.clms_devices_clt;
 		break;
-	case IBNBD_SERVER:
+	case IBNBD_SRV:
 		cs = args.clms_devices_srv;
 		break;
 	default:
@@ -1759,12 +1758,11 @@ static int show_path(char *pathname)
 		return -ENOENT;
 	}
 
-	switch (args.ibnbdmode) {
-	case IBNBD_CLIENT:
-	case IBNBD_BOTH:
+	switch (path->sess->side) {
+	case IBNBD_CLT:
 		cs = args.clms_paths_clt;
 		break;
-	case IBNBD_SERVER:
+	case IBNBD_SRV:
 		cs = args.clms_paths_srv;
 		break;
 	default:
@@ -1809,13 +1807,12 @@ static int show_session(char *sessname)
 		return -ENOENT;
 	}
 
-	switch (args.ibnbdmode) {
-	case IBNBD_CLIENT:
-	case IBNBD_BOTH:
+	switch (sess->side) {
+	case IBNBD_CLT:
 		cs = args.clms_sessions_clt;
 		ps = clms_paths_sess_clt;
 		break;
-	case IBNBD_SERVER:
+	case IBNBD_SRV:
 		cs = args.clms_sessions_srv;
 		ps = clms_paths_sess_srv;
 		break;
