@@ -521,6 +521,27 @@ static struct table_column clm_ibnbd_sess_state =
 		act_path_cnt_to_state, 'l', CNRM, CNRM,
 		"State of the session.");
 
+static int sess_side_to_dir(char *str, size_t len, enum color *clr,
+			    void *v, int humanize)
+{
+	struct ibnbd_sess *s = container_of(v, struct ibnbd_sess, side);
+
+	*clr = CNRM;
+	switch (s->side) {
+	case IBNBD_CLT:
+		return snprintf(str, len, "→");
+	case IBNBD_SRV:
+		return snprintf(str, len, "←");
+	default:
+		assert(0);
+	}
+}
+
+static struct table_column clm_ibnbd_sess_dir =
+	_CLM_S("dir", side, "↔", FLD_STR,
+		sess_side_to_dir, 'l', CNRM, CNRM,
+		"Direction of the session: in- or outcoming");
+
 static struct table_column *all_clms_sessions[] = {
 	&clm_ibnbd_sess_sessname,
 	&clm_ibnbd_sess_path_cnt,
@@ -533,6 +554,7 @@ static struct table_column *all_clms_sessions[] = {
 	&clm_ibnbd_sess_tx_bytes,
 	&clm_ibnbd_sess_inflights,
 	&clm_ibnbd_sess_reconnects,
+	&clm_ibnbd_sess_dir,
 	NULL
 };
 
