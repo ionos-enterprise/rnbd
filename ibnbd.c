@@ -184,7 +184,7 @@ struct ibnbd_dev d[] = {
 	},
 };
 
-struct ibnbd_sess_dev sd[] = {
+struct ibnbd_sess_dev sess_devs[] = {
 	{.mapping_path = "112b5fc0-91f5-4157-8603-777f8e733f1f",
 	 .access_mode = IBNBD_RW,
 	 .sess = &s,
@@ -205,7 +205,14 @@ struct ibnbd_sess_dev sd[] = {
 	 .sess = &s2,
 	 .dev = &d[4]
 	},
+};
 
+struct ibnbd_sess_dev *sds[] = {
+	&sess_devs[0],
+	&sess_devs[1],
+	&sess_devs[2],
+	&sess_devs[3],
+	NULL
 };
 
 #define ERR(fmt, ...) \
@@ -1101,9 +1108,10 @@ static int has_num(struct table_column **cs)
 	return 0;
 }
 
-static int list_devices_term(struct ibnbd_sess_dev *sd, int dev_num,
+static int list_devices_term(struct ibnbd_sess_dev **sds, int dev_num,
 			     struct table_column **cs)
 {
+	struct ibnbd_sess_dev *sd;
 	struct ibnbd_dev d_total = {
 		.rx_sect = 0,
 		.tx_sect = 0
@@ -1113,7 +1121,7 @@ static int list_devices_term(struct ibnbd_sess_dev *sd, int dev_num,
 		.mapping_path = ""
 	};
 	struct table_fld *flds;
-	int i, cs_cnt;
+	int i = 0, cs_cnt;
 
 	cs_cnt = clm_cnt(cs);
 
@@ -1126,10 +1134,10 @@ static int list_devices_term(struct ibnbd_sess_dev *sd, int dev_num,
 		return -ENOMEM;
 	}
 
-	for (i = 0; i < dev_num; i++) {
-		table_row_stringify(&sd[i], flds + i * cs_cnt, cs, 1, 0);
-		total.dev->rx_sect += sd[i].dev->rx_sect;
-		total.dev->tx_sect += sd[i].dev->tx_sect;
+	for (i = 0, sd = sds[i]; sd; sd = sds[++i]) {
+		table_row_stringify(sd, flds + i * cs_cnt, cs, 1, 0);
+		total.dev->rx_sect += sd->dev->rx_sect;
+		total.dev->tx_sect += sd->dev->tx_sect;
 	}
 
 	if (!args.nototals_set)
@@ -1158,8 +1166,9 @@ static int list_devices_term(struct ibnbd_sess_dev *sd, int dev_num,
 
 static int list_devices()
 {
+	int i = 0, rc = 0;
+	struct ibnbd_sess_dev *sd;
 	struct table_column **cs;
-	int i, rc = 0, dev_num;
 
 	switch (args.ibnbdmode) {
 	case IBNBD_CLIENT:
@@ -1173,24 +1182,22 @@ static int list_devices()
 		assert(0);
 	}
 
-	dev_num = ARRSIZE(sd);
-
 	switch (args.fmt) {
 	case FMT_CSV:
 		if (!args.noheaders_set)
 			table_header_print_csv(cs);
 
-		for (i = 0; i < dev_num; i++) {
-			table_row_print(&sd[i], FMT_CSV, "", cs, 0, 0, 0);
-		}
+		while ((sd = sds[i++]))
+			table_row_print(sd, FMT_CSV, "", cs, 0, 0, 0);
+
 		break;
 	case FMT_JSON:
 		printf("{ \"devices\": [\n");
 
-		for (i = 0; i < dev_num; i++) {
-			if (i)
+		while ((sd = sds[i++])) {
+			if (i > 1)
 				printf(",\n");
-			table_row_print(&sd[i], FMT_JSON, "\t", cs, 0, 0, 0);
+			table_row_print(sd, FMT_JSON, "\t", cs, 0, 0, 0);
 		}
 
 		printf("\n] }\n");
@@ -1198,9 +1205,9 @@ static int list_devices()
 	case FMT_XML:
 		printf("<devices>\n");
 
-		for (i = 0; i < dev_num; i++) {
+		while ((sd = sds[i++])) {
 			printf("\t<device>\n");
-			table_row_print(&sd[i], FMT_XML, "\t\t", cs, 0, 0, 0);
+			table_row_print(sd, FMT_XML, "\t\t", cs, 0, 0, 0);
 			printf("\t</device>\n");
 		}
 
@@ -1209,7 +1216,7 @@ static int list_devices()
 		break;
 	case FMT_TERM:
 	default:
-		rc = list_devices_term(sd, dev_num, cs);
+		rc = list_devices_term(sds, ARRSIZE(sds) - 1, cs);
 		break;
 	}
 
@@ -1493,17 +1500,17 @@ static int cmd_list(void)
 
 /*
  * Find an ibnbd device by device name, path or mapping path
- * TODO
  */
 static struct ibnbd_sess_dev *find_device(char *name)
 {
-	int i;
+	struct ibnbd_sess_dev *sd;
+	int i = 0;
 
-	for (i = 0; i < ARRSIZE(sd); i++)
-		if (!strcmp(sd[i].mapping_path, name) ||
-		    !strcmp(sd[i].dev->devname, name) ||
-		    !strcmp(sd[i].dev->devpath, name))
-			return &sd[i];
+	while ((sd = sds[i++]))
+		if (!strcmp(sd->mapping_path, name) ||
+		    !strcmp(sd->dev->devname, name) ||
+		    !strcmp(sd->dev->devpath, name))
+			return sd;
 
 	return NULL;
 }
