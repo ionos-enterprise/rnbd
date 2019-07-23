@@ -734,7 +734,7 @@ static int parse_fmt(int argc, char **argv, int i, const struct sarg *sarg)
 	else if (!strcasecmp(argv[i], "xml"))
 		args.fmt = FMT_XML;
 	else
-		assert(0);
+		return i;
 
 	args.fmt_set = 1;
 
@@ -748,7 +748,7 @@ static int parse_iomode(int argc, char **argv, int i, const struct sarg *sarg)
 	else if (!strcasecmp(argv[i], "fileio"))
 		args.iomode = IBNBD_FILEIO;
 	else
-		assert(0);
+		return i;
 
 	args.iomode_set = 1;
 
@@ -785,7 +785,7 @@ static int parse_lst(int argc, char **argv, int i, const struct sarg *sarg)
 		args.lstmode = LST_PATHS;
 		args.showmode = SHOW_PATH;
 	} else
-		assert(0);
+		return i;
 
 	args.lstmode_set = 1;
 	args.showmode_set = 1;
@@ -809,7 +809,7 @@ static int parse_mode(int argc, char **argv, int i, const struct sarg *sarg)
 	else if (!strcasecmp(argv[i], "both"))
 		args.ibnbdmode = IBNBD_BOTH;
 	else
-		assert(0);
+		return i;
 
 	args.ibnbdmode_set = 1;
 
@@ -825,7 +825,7 @@ static int parse_rw(int argc, char **argv, int i, const struct sarg *sarg)
 	else if (!strcasecmp(argv[i], "migration"))
 		args.ro = IBNBD_MIGRATION;
 	else
-		assert(0);
+		return i;
 
 	args.ro_set = 1;
 
@@ -2093,6 +2093,13 @@ int main(int argc, char **argv)
 	}
 
 	i = 1;
+
+	/*
+	 * try finding sess/devs/paths preceding the command
+	 * (for those who is used to type ibnbd dev map or ibnbd session list)
+	 */
+	i = parse_lst(argc, argv, i, NULL);
+
 	cmd = find_cmd(argv[i], cmds);
 	if (!cmd) {
 		printf("'%s' is not a valid command. Try '%s%s%s %s%s%s'\n",
