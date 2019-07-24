@@ -207,6 +207,16 @@ struct ibnbd_sess_dev sess_devs[] = {
 	 .sess = &s2,
 	 .dev = &d[4]
 	},
+	{.mapping_path = "ecf6bfd0-3dae-46a3-9a1b-e61225920185",
+	 .access_mode = IBNBD_RW,
+	 .sess = &s2,
+	 .dev = &d[3]
+	},
+	{.mapping_path = "ecf6bfd0-3dae-46a3-9a1b-e61225920185",
+	 .access_mode = IBNBD_RW,
+	 .sess = &s,
+	 .dev = &d[3]
+	},
 };
 
 struct ibnbd_sess_dev *sds[] = {
@@ -214,6 +224,8 @@ struct ibnbd_sess_dev *sds[] = {
 	&sess_devs[1],
 	&sess_devs[2],
 	&sess_devs[3],
+	&sess_devs[4],
+	&sess_devs[5],
 	NULL
 };
 
