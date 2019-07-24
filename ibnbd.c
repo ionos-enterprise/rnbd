@@ -1236,28 +1236,26 @@ static int list_devices_term(struct ibnbd_sess_dev **sds,
 static void list_devices_csv(struct ibnbd_sess_dev **sds,
 			     struct table_column **cs)
 {
-	struct ibnbd_sess_dev *sd;
-	int i = 0;
+	int i;
 
 	if (!args.noheaders_set)
 		table_header_print_csv(cs);
 
-	while ((sd = sds[i++]))
-		table_row_print(sd, FMT_CSV, "", cs, 0, 0, 0);
+	for (i = 0; sds[i]; i++)
+		table_row_print(sds[i], FMT_CSV, "", cs, 0, 0, 0);
 }
 
 static void list_devices_json(struct ibnbd_sess_dev **sds,
 			      struct table_column **cs)
 {
-	struct ibnbd_sess_dev *sd;
-	int i = 0;
+	int i;
 
 	printf("[\n");
 
-	while ((sd = sds[i++])) {
+	for (i = 0; sds[i]; i++) {
 		if (i > 1)
 			printf(",\n");
-		table_row_print(sd, FMT_JSON, "\t\t", cs, 0, 0, 0);
+		table_row_print(sds[i], FMT_JSON, "\t\t", cs, 0, 0, 0);
 	}
 
 	printf("\n\t]");
@@ -1266,12 +1264,11 @@ static void list_devices_json(struct ibnbd_sess_dev **sds,
 static void list_devices_xml(struct ibnbd_sess_dev **sds,
 			     struct table_column **cs)
 {
-	struct ibnbd_sess_dev *sd;
-	int i = 0;
+	int i;
 
-	while ((sd = sds[i++])) {
+	for (i = 0; sds[i]; i++) {
 		printf("\t<device>\n");
-		table_row_print(sd, FMT_XML, "\t\t", cs, 0, 0, 0);
+		table_row_print(sds[i], FMT_XML, "\t\t", cs, 0, 0, 0);
 		printf("\t</device>\n");
 	}
 }
@@ -1412,11 +1409,9 @@ static int list_paths_term(struct ibnbd_sess **sessions, int sess_num,
 	return 0;
 }
 
-static int list_sessions_term(struct ibnbd_sess **sessions, int sess_num,
+static int list_sessions_term(struct ibnbd_sess **sessions,
 			      struct table_column **cs, int tree)
 {
-	struct table_fld *flds;
-	int i, cs_cnt;
 	struct ibnbd_sess total = {
 		.act_path_cnt = 0,
 		.path_cnt = 0,
@@ -1425,8 +1420,12 @@ static int list_sessions_term(struct ibnbd_sess **sessions, int sess_num,
 		.inflights = 0,
 		.reconnects = 0
 	};
+	int i, cs_cnt, sess_num;
+	struct table_fld *flds;
 
 	cs_cnt = clm_cnt(cs);
+	for (sess_num = 0; sessions[sess_num]; sess_num++)
+		;
 
 	flds = calloc((sess_num + 1) * cs_cnt, sizeof(*flds));
 	if (!flds) {
@@ -1434,7 +1433,7 @@ static int list_sessions_term(struct ibnbd_sess **sessions, int sess_num,
 		return -ENOMEM;
 	}
 
-	for (i = 0; i < sess_num; i++) {
+	for (i = 0; sessions[i]; i++) {
 		table_row_stringify(sessions[i], flds + i * cs_cnt, cs, 1, 0);
 
 		total.act_path_cnt += sessions[i]->act_path_cnt;
@@ -1453,7 +1452,7 @@ static int list_sessions_term(struct ibnbd_sess **sessions, int sess_num,
 	if (!args.noheaders_set)
 		table_header_print_term("", cs, trm, 'a');
 
-	for (i = 0; i < sess_num; i++) {
+	for (i = 0; sessions[i]; i++) {
 		table_flds_print_term("", flds + i * cs_cnt,
 				      cs, trm, 0);
 		if (tree)
@@ -1473,65 +1472,115 @@ static int list_sessions_term(struct ibnbd_sess **sessions, int sess_num,
 	return 0;
 }
 
-static int list_sessions(void)
+static void list_sessions_csv(struct ibnbd_sess **sessions,
+			      struct table_column **cs)
 {
-	struct table_column **cs;
-	int i, rc = 0, sess_num;
+	int i;
 
-	switch (args.ibnbdmode) {
-	case IBNBD_CLIENT:
-	case IBNBD_BOTH:
-		cs = args.clms_sessions_clt;
-		break;
-	case IBNBD_SERVER:
-		cs = args.clms_sessions_srv;
-		break;
-	default:
-		assert(0);
+	if (!args.noheaders_set)
+		table_header_print_csv(cs);
+
+	for (i = 0; sessions[i]; i++)
+		table_row_print(sessions[i], FMT_CSV, "", cs, 0, 0, 0);
+}
+
+static void list_sessions_json(struct ibnbd_sess **sessions,
+			       struct table_column **cs)
+{
+	int i;
+
+	printf("[\n");
+
+	for (i = 0; sessions[i]; i++) {
+		if (i)
+			printf(",\n");
+		table_row_print(sessions[i], FMT_JSON, "\t\t", cs, 0, 0, 0);
 	}
 
-	sess_num = ARRSIZE(sessions) - 1;
+	printf("\n\t]");
+}
 
+static void list_sessions_xml(struct ibnbd_sess **sessions,
+			      struct table_column **cs)
+{
+	int i;
+
+	for (i = 0; sessions[i]; i++) {
+		printf("\t<session>\n");
+		table_row_print(sessions[i], FMT_XML, "\t\t", cs, 0, 0, 0);
+		printf("\t</session>\n");
+	}
+}
+
+static int list_sessions(void)
+{
 	switch (args.fmt) {
 	case FMT_CSV:
-		if (!args.noheaders_set)
-			table_header_print_csv(cs);
+		if (args.ibnbdmode == IBNBD_BOTH)
+			printf("Outgoing:\n");
 
-		for (i = 0; i < sess_num; i++)
-			table_row_print(sessions[i], FMT_CSV, "", cs, 0, 0, 0);
+		if (args.ibnbdmode & IBNBD_CLIENT)
+			list_sessions_csv(sess_clt, args.clms_sessions_clt);
+
+		if (args.ibnbdmode == IBNBD_BOTH)
+			printf("Incoming:\n");
+
+		if (args.ibnbdmode & IBNBD_SERVER)
+			list_sessions_csv(sess_srv, args.clms_sessions_srv);
 		break;
 	case FMT_JSON:
-		printf("{ \"sessions\": [\n");
+		printf("{\n");
 
-		for (i = 0; i < sess_num; i++) {
-			if (i)
-				printf(",\n");
-			table_row_print(sessions[i], FMT_JSON,
-					"\t", cs, 0, 0, 0);
+		if (args.ibnbdmode & IBNBD_CLIENT) {
+			printf("\t\"outgoing\": ");
+			list_sessions_json(sess_clt, args.clms_sessions_clt);
 		}
 
-		printf("\n] }\n");
+		if (args.ibnbdmode == IBNBD_BOTH)
+			printf(",");
+
+		printf("\n");
+
+		if (args.ibnbdmode & IBNBD_SERVER) {
+			printf("\t\"incoming\": ");
+			list_sessions_json(sess_srv, args.clms_sessions_srv);
+		}
+
+		printf("\n}\n");
+
 		break;
 	case FMT_XML:
-		printf("<sessions>\n");
-
-		for (i = 0; i < sess_num; i++) {
-			printf("\t<session>\n");
-			table_row_print(sessions[i], FMT_XML,
-					"\t\t", cs, 0, 0, 0);
-			printf("\t</session>\n");
+		if (args.ibnbdmode & IBNBD_CLIENT) {
+			printf("<outgoing>\n");
+			list_sessions_xml(sess_clt, args.clms_sessions_clt);
+			printf("</outgoing>\n");
 		}
-
-		printf("</sessions>\n");
+		if (args.ibnbdmode & IBNBD_SERVER) {
+			printf("<incoming>\n");
+			list_sessions_xml(sess_srv, args.clms_sessions_srv);
+			printf("</incoming>\n");
+		}
 
 		break;
 	case FMT_TERM:
 	default:
-		rc = list_sessions_term(sessions, sess_num, cs, args.tree_set);
+		if (args.ibnbdmode == IBNBD_BOTH)
+			printf("----------------- outgoing ----------------\n");
+
+		if (args.ibnbdmode & IBNBD_CLIENT)
+			list_sessions_term(sess_clt, args.clms_sessions_clt,
+					   args.tree_set);
+
+		if (args.ibnbdmode == IBNBD_BOTH)
+			printf("----------------- incoming ----------------\n");
+
+		if (args.ibnbdmode & IBNBD_SERVER)
+			list_sessions_term(sess_srv, args.clms_sessions_srv,
+					   args.tree_set);
 		break;
 	}
 
-	return rc;
+	return 0;
 }
 
 static int list_paths(void)
