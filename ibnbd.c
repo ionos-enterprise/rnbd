@@ -570,24 +570,24 @@ static struct table_column clm_ibnbd_sess_state =
 		act_path_cnt_to_state, 'l', CNRM, CNRM,
 		"State of the session.");
 
-static int sess_side_to_str(char *str, size_t len, enum color *clr,
-			    void *v, int humanize)
+static int sess_side_to_direction(char *str, size_t len, enum color *clr,
+				  void *v, int humanize)
 {
 	struct ibnbd_sess *s = container_of(v, struct ibnbd_sess, side);
 
 	*clr = CNRM;
 	switch (s->side) {
 	case IBNBD_CLT:
-		return snprintf(str, len, "clt");
+		return snprintf(str, len, "outgoing");
 	case IBNBD_SRV:
-		return snprintf(str, len, "srv");
+		return snprintf(str, len, "incoming");
 	default:
 		assert(0);
 	}
 }
 
-CLM_S(side, "Side", FLD_STR, sess_side_to_str, 'l', CNRM, CNRM,
-	"Direction of the session: client or server");
+CLM_S(side, "Direction", FLD_STR, sess_side_to_direction, 'l', CNRM, CNRM,
+	"Direction of the session: incoming or outgoing");
 
 static struct table_column *all_clms_sessions[] = {
 	&clm_ibnbd_sess_sessname,
@@ -732,6 +732,32 @@ static struct table_column clm_ibnbd_path_shortdesc =
 	_CLM_P("shortdesc", sess, "Short", FLD_STR,
 	       path_to_shortdesc, 'l', CNRM, CNRM, "Short description");
 
+static int path_sess_to_direction(char *str, size_t len, enum color *clr,
+				  void *v, int humanize)
+{
+	struct ibnbd_path *p = container_of(v, struct ibnbd_path, sess);
+
+	*clr = CNRM;
+
+	/* return if sess not set (this is the case if called on a total) */
+	if (!p->sess)
+		return 0;
+
+	switch (p->sess->side) {
+	case IBNBD_CLT:
+		return snprintf(str, len, "outgoing");
+	case IBNBD_SRV:
+		return snprintf(str, len, "incoming");
+	default:
+		assert(0);
+	}
+}
+
+static struct table_column clm_ibnbd_path_direction =
+	_CLM_P("direction", sess, "Direction", FLD_STR,
+	       path_sess_to_direction, 'l', CNRM, CNRM,
+	       "Direction of the path");
+
 static struct table_column *all_clms_paths[] = {
 	&clm_ibnbd_path_sessname,
 	&clm_ibnbd_path_pathname,
@@ -744,6 +770,7 @@ static struct table_column *all_clms_paths[] = {
 	&clm_ibnbd_path_tx_bytes,
 	&clm_ibnbd_path_inflights,
 	&clm_ibnbd_path_reconnects,
+	&clm_ibnbd_path_direction,
 	NULL
 };
 
@@ -758,6 +785,7 @@ static struct table_column *all_clms_paths_clt[] = {
 	&clm_ibnbd_path_tx_bytes,
 	&clm_ibnbd_path_inflights,
 	&clm_ibnbd_path_reconnects,
+	&clm_ibnbd_path_direction,
 	NULL
 };
 
@@ -770,6 +798,7 @@ static struct table_column *all_clms_paths_srv[] = {
 	&clm_ibnbd_path_rx_bytes,
 	&clm_ibnbd_path_tx_bytes,
 	&clm_ibnbd_path_inflights,
+	&clm_ibnbd_path_direction,
 	NULL
 };
 
