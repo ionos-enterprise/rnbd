@@ -455,6 +455,7 @@ static int dev_sessname_to_str(char *str, size_t len, enum color *clr,
 {
 	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
 						 sess);
+	*clr = CNRM;
 
 	if (!sd->sess)
 		return 0;
@@ -466,6 +467,31 @@ static struct table_column clm_ibnbd_sess_dev_sessname =
 	_CLM_SD("sessname", sess, "Session", FLD_STR, dev_sessname_to_str, 'l',
 		CNRM, CNRM, "Name of the IBTRS session of the device");
 
+static int sd_sess_to_direction(char *str, size_t len, enum color *clr,
+				void *v, int humanize)
+{
+	struct ibnbd_sess_dev *p = container_of(v, struct ibnbd_sess_dev, sess);
+
+	*clr = CNRM;
+
+	if (!p->sess)
+		return 0;
+
+	switch (p->sess->side) {
+	case IBNBD_CLT:
+		return snprintf(str, len, "import");
+	case IBNBD_SRV:
+		return snprintf(str, len, "export");
+	default:
+		assert(0);
+	}
+}
+
+static struct table_column clm_ibnbd_sess_dev_direction =
+	_CLM_SD("direction", sess, "Direction", FLD_STR,
+		sd_sess_to_direction, 'l', CNRM, CNRM,
+		"Direction of data transfer: imported or exported");
+
 static struct table_column *all_clms_devices[] = {
 	&clm_ibnbd_sess_dev_sessname,
 	&clm_ibnbd_sess_dev_mapping_path,
@@ -476,6 +502,7 @@ static struct table_column *all_clms_devices[] = {
 	&clm_ibnbd_dev_iomode,
 	&clm_ibnbd_dev_rx_sect,
 	&clm_ibnbd_dev_tx_sect,
+	&clm_ibnbd_sess_dev_direction,
 	NULL
 };
 
@@ -489,6 +516,7 @@ static struct table_column *all_clms_devices_clt[] = {
 	&clm_ibnbd_dev_iomode,
 	&clm_ibnbd_dev_rx_sect,
 	&clm_ibnbd_dev_tx_sect,
+	&clm_ibnbd_sess_dev_direction,
 	NULL
 };
 
@@ -501,6 +529,7 @@ static struct table_column *all_clms_devices_srv[] = {
 	&clm_ibnbd_dev_iomode,
 	&clm_ibnbd_dev_rx_sect,
 	&clm_ibnbd_dev_tx_sect,
+	&clm_ibnbd_sess_dev_direction,
 	NULL
 };
 
@@ -756,7 +785,7 @@ static int path_sess_to_direction(char *str, size_t len, enum color *clr,
 static struct table_column clm_ibnbd_path_direction =
 	_CLM_P("direction", sess, "Direction", FLD_STR,
 	       path_sess_to_direction, 'l', CNRM, CNRM,
-	       "Direction of the path");
+	       "Direction of the path: incoming or outgoing");
 
 static struct table_column *all_clms_paths[] = {
 	&clm_ibnbd_path_sessname,
