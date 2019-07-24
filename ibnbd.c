@@ -176,7 +176,6 @@ struct ibnbd_dev d[] = {
 	 .tx_sect = 23423,
 	 .state = "open"
 	},
-
 	{.devname = "ram0",
 	 .devpath = "/dev/ram0",
 	 .iomode = IBNBD_BLOCKIO,
@@ -1826,7 +1825,7 @@ static int cmd_list(void)
 }
 
 /*
- * Find an ibnbd device by device name, path or mapping path
+ * Find first ibnbd device by device name, path or mapping path
  */
 static struct ibnbd_sess_dev *find_device(char *name)
 {
@@ -1841,51 +1840,136 @@ static struct ibnbd_sess_dev *find_device(char *name)
 	return NULL;
 }
 
+/*
+ * Find all ibnbd devices by device name, path or mapping path
+ */
+static int find_devices(char *name, struct ibnbd_sess_dev **ds_imp,
+			struct ibnbd_sess_dev **ds_exp)
+{
+	int i, j = 0, k = 0;
+
+	for (i = 0; sds[i]; i++) {
+		if (!strcmp(sds[i]->mapping_path, name) ||
+		    !strcmp(sds[i]->dev->devname, name) ||
+		    !strcmp(sds[i]->dev->devpath, name)) {
+			if (sds[i]->sess->side == IBNBD_CLT)
+				ds_imp[j++] = sds[i];
+			else
+				ds_exp[k++] = sds[i];
+		}
+	}
+
+	ds_imp[j] = NULL;
+	ds_exp[k] = NULL;
+
+	return j + k;
+}
+
 static int show_device(char *devname)
 {
+	struct ibnbd_sess_dev **ds_imp, **ds_exp;
 	struct table_fld flds[CLM_MAX_CNT];
 	struct ibnbd_sess_dev *dev;
 	struct table_column **cs;
+	int cnt;
 
-	dev = find_device(devname);
-
-	if (!dev) {
-		ERR("Device %s not found\n", devname);
-		return -ENOENT;
+	ds_imp = calloc(ARRSIZE(sds), sizeof(sds[0]));
+	if (!ds_imp) {
+		ERR("Failed to alloc memory\n");
+		return -ENOMEM;
 	}
 
-	switch (dev->sess->side) {
-	case IBNBD_CLT:
-		cs = args.clms_devices_clt;
-		break;
-	case IBNBD_SRV:
-		cs = args.clms_devices_srv;
-		break;
-	default:
-		assert(0);
+	ds_exp = calloc(ARRSIZE(sds), sizeof(sds[0]));
+	if (!ds_exp) {
+		ERR("Failed to alloc memory\n");
+		free(ds_imp);
+		return -ENOMEM;
+	}
+
+	cnt = find_devices(devname, ds_imp, ds_exp);
+	if (!cnt) {
+		ERR("Found no devices matching '%s'\n", devname);
+		free(ds_exp);
+		free(ds_imp);
+		return -ENOENT;
 	}
 
 	switch (args.fmt) {
 	case FMT_CSV:
-		if (!args.noheaders_set)
-			table_header_print_csv(cs);
-		table_row_print(dev, FMT_CSV, "", cs, 0, 0, 0);
+		if (ds_imp[0] && ds_exp[0])
+			printf("Imports:\n");
+
+		list_devices_csv(ds_imp, args.clms_devices_clt);
+
+		if (ds_imp[0] && ds_exp[0])
+			printf("Exports:\n");
+
+		list_devices_csv(ds_exp, args.clms_devices_srv);
+
 		break;
 	case FMT_JSON:
-		table_row_print(dev, FMT_JSON, "", cs, 0, 0, 0);
+		printf("{\n");
+
+		if (ds_imp[0]) {
+			printf("\t\"imports\": ");
+			list_devices_json(ds_imp, args.clms_devices_clt);
+		}
+
+		if (ds_imp[0] && ds_exp[0])
+			printf(",");
+
 		printf("\n");
+
+		if (ds_exp[0]) {
+			printf("\t\"exports\": ");
+			list_devices_json(ds_exp, args.clms_devices_srv);
+		}
+
+		printf("\n}\n");
+
 		break;
 	case FMT_XML:
-		table_row_print(dev, FMT_XML, "", cs, 0, 0, 0);
+		if (ds_imp[0]) {
+			printf("<imports>\n");
+			list_devices_xml(ds_imp, args.clms_devices_clt);
+			printf("</imports>\n");
+		}
+
+		if (ds_exp[0]) {
+			printf("<exports>\n");
+			list_devices_xml(sds_srv, args.clms_devices_srv);
+			printf("</exports>\n");
+		}
+
 		break;
 	case FMT_TERM:
 	default:
-		table_row_stringify(dev, flds, cs, 1, 0);
-		table_entry_print_term("", flds, cs,
-				       table_get_max_h_width(cs), trm);
+		if (cnt == 1) {
+			if (ds_imp[0]) {
+				dev = ds_imp[0];
+				cs = args.clms_devices_clt;
+			} else {
+				dev = ds_exp[0];
+				cs = args.clms_devices_srv;
+			}
+			table_row_stringify(dev, flds, cs, 1, 0);
+			table_entry_print_term("", flds, cs,
+					       table_get_max_h_width(cs), trm);
+		} else {
+			if (ds_imp[0]) {
+				printf("%s%s%s\n", CLR(trm, CDIM, "Imports"));
+				list_devices_term(ds_imp, args.clms_devices_clt);
+			}
+			if (ds_exp[0]) {
+				printf("%s%s%s\n", CLR(trm, CDIM, "Exports"));
+				list_devices_term(ds_exp, args.clms_devices_srv);
+			}
+		}
 		break;
 	}
 
+	free(ds_exp);
+	free(ds_imp);
 	return 0;
 }
 
