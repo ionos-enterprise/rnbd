@@ -1355,13 +1355,13 @@ static int list_devices(void)
 	case FMT_TERM:
 	default:
 		if (args.ibnbdmode == IBNBD_BOTH)
-			printf("----------------- imports ----------------\n");
+			printf("%s%s%s\n", CLR(trm, CDIM, "Imported devices"));
 
 		if (args.ibnbdmode & IBNBD_CLIENT)
 			list_devices_term(sds_clt, args.clms_devices_clt);
 
 		if (args.ibnbdmode == IBNBD_BOTH)
-			printf("----------------- exports ----------------\n");
+			printf("%s%s%s\n", CLR(trm, CDIM, "Exported devices"));
 
 		if (args.ibnbdmode & IBNBD_SERVER)
 			list_devices_term(sds_srv, args.clms_devices_srv);
@@ -1593,14 +1593,14 @@ static int list_sessions(void)
 	case FMT_TERM:
 	default:
 		if (args.ibnbdmode == IBNBD_BOTH)
-			printf("----------------- outgoing ----------------\n");
+			printf("%s%s%s\n", CLR(trm, CDIM, "Outgoing sessions"));
 
 		if (args.ibnbdmode & IBNBD_CLIENT)
 			list_sessions_term(sess_clt, args.clms_sessions_clt,
 					   args.tree_set);
 
 		if (args.ibnbdmode == IBNBD_BOTH)
-			printf("----------------- incoming ----------------\n");
+			printf("%s%s%s\n", CLR(trm, CDIM, "Incoming sessions"));
 
 		if (args.ibnbdmode & IBNBD_SERVER)
 			list_sessions_term(sess_srv, args.clms_sessions_srv,
