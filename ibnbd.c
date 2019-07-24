@@ -627,6 +627,34 @@ static struct table_column *all_clms_sessions[] = {
 	NULL
 };
 
+static struct table_column *all_clms_sessions_clt[] = {
+	&clm_ibnbd_sess_sessname,
+	&clm_ibnbd_sess_path_cnt,
+	&clm_ibnbd_sess_act_path_cnt,
+	&clm_ibnbd_sess_state,
+	&clm_ibnbd_sess_path_uu,
+	&clm_ibnbd_sess_mp,
+	&clm_ibnbd_sess_mp_short,
+	&clm_ibnbd_sess_rx_bytes,
+	&clm_ibnbd_sess_tx_bytes,
+	&clm_ibnbd_sess_inflights,
+	&clm_ibnbd_sess_reconnects,
+	&clm_ibnbd_sess_side,
+	&clm_ibnbd_sess_dir,
+	NULL
+};
+
+static struct table_column *all_clms_sessions_srv[] = {
+	&clm_ibnbd_sess_sessname,
+	&clm_ibnbd_sess_path_cnt,
+	&clm_ibnbd_sess_rx_bytes,
+	&clm_ibnbd_sess_tx_bytes,
+	&clm_ibnbd_sess_inflights,
+	&clm_ibnbd_sess_side,
+	&clm_ibnbd_sess_dir,
+	NULL
+};
+
 static struct table_column *def_clms_sessions_clt[] = {
 	&clm_ibnbd_sess_sessname,
 	&clm_ibnbd_sess_state,
@@ -939,10 +967,10 @@ static int parse_all(int argc, char **argv, int i, const struct sarg *sarg)
 	       ARRSIZE(all_clms_devices_clt) * sizeof(all_clms_devices[0]));
 	memcpy(&args.clms_devices_srv, &all_clms_devices_srv,
 	       ARRSIZE(all_clms_devices_srv) * sizeof(all_clms_devices[0]));
-	memcpy(&args.clms_sessions_clt, &all_clms_sessions,
-	       ARRSIZE(all_clms_sessions) * sizeof(all_clms_sessions[0]));
-	memcpy(&args.clms_sessions_srv, &all_clms_sessions,
-	       ARRSIZE(all_clms_sessions) * sizeof(all_clms_sessions[0]));
+	memcpy(&args.clms_sessions_clt, &all_clms_sessions_clt,
+	       ARRSIZE(all_clms_sessions_clt) * sizeof(all_clms_sessions[0]));
+	memcpy(&args.clms_sessions_srv, &all_clms_sessions_srv,
+	       ARRSIZE(all_clms_sessions_srv) * sizeof(all_clms_sessions[0]));
 	memcpy(&args.clms_paths_clt, &all_clms_paths,
 	       ARRSIZE(all_clms_paths) * sizeof(all_clms_paths[0]));
 	memcpy(&args.clms_paths_srv, &all_clms_paths,
@@ -2185,10 +2213,10 @@ static int parse_devices_clms(const char *arg)
 {
 	int rc_clt, rc_srv;
 
-	rc_clt = table_extend_columns(arg, ",", all_clms_devices,
+	rc_clt = table_extend_columns(arg, ",", all_clms_devices_clt,
 				      args.clms_devices_clt, CLM_MAX_CNT);
 
-	rc_srv = table_extend_columns(arg, ",", all_clms_devices,
+	rc_srv = table_extend_columns(arg, ",", all_clms_devices_srv,
 				      args.clms_devices_srv, CLM_MAX_CNT);
 
 	return rc_clt && rc_srv;
@@ -2198,10 +2226,10 @@ static int parse_sessions_clms(const char *arg)
 {
 	int rc_clt, rc_srv;
 
-	rc_clt = table_extend_columns(arg, ",", all_clms_sessions,
+	rc_clt = table_extend_columns(arg, ",", all_clms_sessions_clt,
 				      args.clms_sessions_clt, CLM_MAX_CNT);
 
-	rc_srv = table_extend_columns(arg, ",", all_clms_sessions,
+	rc_srv = table_extend_columns(arg, ",", all_clms_sessions_srv,
 				      args.clms_sessions_srv, CLM_MAX_CNT);
 	return rc_clt && rc_srv;
 }
