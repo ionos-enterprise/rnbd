@@ -674,10 +674,10 @@ CLM_P(state, "State", FLD_STR, ibnbd_path_state_to_str, 'l', CNRM, CBLD,
 	"Name of the path");
 CLM_P(pathname, "Path name", FLD_STR, NULL, 'l', CNRM, CNRM,
 	"Path name");
-CLM_P(cltaddr, "Clt Addr", FLD_STR, NULL, 'l', CNRM, CNRM,
-	"Client address");
-CLM_P(srvaddr, "Srv Addr", FLD_STR, NULL, 'l', CNRM, CNRM,
-	"Server address");
+CLM_P(cltaddr, "Client Address", FLD_STR, NULL, 'l', CNRM, CNRM,
+	"Client address of the path");
+CLM_P(srvaddr, "Server Address", FLD_STR, NULL, 'l', CNRM, CNRM,
+	"Server address of the path");
 CLM_P(hca_name, "HCA", FLD_STR, NULL, 'l', CNRM, CNRM, "HCA name");
 CLM_P(hca_port, "Port", FLD_VAL, NULL, 'r', CNRM, CNRM, "HCA port");
 CLM_P(rx_bytes, "RX", FLD_NUM, size_to_str, 'r', CNRM, CNRM, "Bytes received");
@@ -1581,72 +1581,132 @@ static int list_sessions(void)
 	return 0;
 }
 
-static int list_paths(void)
+static void list_paths_csv(struct ibnbd_sess **sessions,
+			   struct table_column **cs)
 {
-	struct table_column **cs;
-	int i, j, rc = 0, sess_num;
+	int i, j;
 
-	switch (args.ibnbdmode) {
-	case IBNBD_CLIENT:
-	case IBNBD_BOTH:
-		cs = args.clms_paths_clt;
-		break;
-	case IBNBD_SERVER:
-		cs = args.clms_paths_srv;
-		break;
-	default:
-		assert(0);
+	if (!args.noheaders_set)
+		table_header_print_csv(cs);
+
+	for (i = 0; sessions[i]; i++)
+		for (j = 0; j < sessions[i]->path_cnt; j++)
+			table_row_print(&sessions[i]->paths[j],
+					FMT_CSV, "", cs, 0, 0, 0);
+}
+
+static void list_paths_json(struct ibnbd_sess **sessions,
+			    struct table_column **cs)
+{
+	int i, j;
+
+	printf("[\n");
+
+	for (i = 0; sessions[i]; i++) {
+		for (j = 0; j < sessions[i]->path_cnt; j++) {
+			if (i || j)
+				printf(",\n");
+			table_row_print(&sessions[i]->paths[j],
+					FMT_JSON, "\t\t", cs, 0, 0, 0);
+		}
 	}
 
-	sess_num = ARRSIZE(sessions) - 1;
+	printf("\n\t]");
+}
+
+static void list_paths_xml(struct ibnbd_sess **sessions,
+			   struct table_column **cs)
+{
+	int i, j;
+
+	for (i = 0; sessions[i]; i++) {
+		for (j = 0; j < sessions[i]->path_cnt; j++) {
+			printf("\t<path>\n");
+			table_row_print(&sessions[i]->paths[j], FMT_XML,
+					"\t\t", cs, 0, 0, 0);
+			printf("\t</path>\n");
+		}
+	}
+}
+
+
+static int list_paths(void)
+{
+	int clt_s_num, srv_s_num;
+
+	for (clt_s_num = 0; sess_clt[clt_s_num]; clt_s_num++)
+		;
+
+	for (srv_s_num = 0; sess_srv[srv_s_num]; srv_s_num++)
+		;
 
 	switch (args.fmt) {
 	case FMT_CSV:
-		if (!args.noheaders_set)
-			table_header_print_csv(cs);
+		if (args.ibnbdmode == IBNBD_BOTH)
+			printf("Outgoing paths:\n");
 
-		for (i = 0; i < sess_num; i++)
-			for (j = 0; j < sessions[i]->path_cnt; j++)
-				table_row_print(&sessions[i]->paths[j],
-						FMT_CSV, "", cs, 0, 0, 0);
+		if (args.ibnbdmode & IBNBD_CLIENT)
+			list_paths_csv(sess_clt, args.clms_paths_clt);
 
+		if (args.ibnbdmode == IBNBD_BOTH)
+			printf("Incoming paths:\n");
+
+		if (args.ibnbdmode & IBNBD_SERVER)
+			list_paths_csv(sess_srv, args.clms_paths_srv);
 		break;
 	case FMT_JSON:
-		printf("{ \"paths\": [\n");
+		printf("{\n");
 
-		for (i = 0; i < sess_num; i++) {
-			for (j = 0; j < sessions[i]->path_cnt; j++) {
-				if (i)
-					printf(",\n");
-				table_row_print(&sessions[i]->paths[j],
-						FMT_JSON, "\t", cs, 0, 0, 0);
-			}
+		if (args.ibnbdmode & IBNBD_CLIENT) {
+			printf("\t\"outgoing paths\": ");
+			list_paths_json(sess_clt, args.clms_paths_clt);
 		}
 
-		printf("\n] }\n");
+		if (args.ibnbdmode == IBNBD_BOTH)
+			printf(",");
+
+		printf("\n");
+
+		if (args.ibnbdmode & IBNBD_SERVER) {
+			printf("\t\"incoming paths\": ");
+			list_paths_json(sess_srv, args.clms_paths_srv);
+		}
+
+		printf("\n}\n");
+
 		break;
 	case FMT_XML:
-		printf("<paths>\n");
-
-		for (i = 0; i < sess_num; i++) {
-			for (j = 0; j < sessions[i]->path_cnt; j++) {
-				printf("\t<path>\n");
-				table_row_print(&sessions[i]->paths[j], FMT_XML,
-						"\t\t", cs, 0, 0, 0);
-				printf("\t</path>\n");
-			}
+		if (args.ibnbdmode & IBNBD_CLIENT) {
+			printf("<outgoing paths>\n");
+			list_paths_xml(sess_clt, args.clms_paths_clt);
+			printf("</outgoing paths>\n");
 		}
-
-		printf("</paths>\n");
+		if (args.ibnbdmode & IBNBD_SERVER) {
+			printf("<incoming paths>\n");
+			list_paths_xml(sess_srv, args.clms_paths_srv);
+			printf("</incoming paths>\n");
+		}
 
 		break;
 	case FMT_TERM:
 	default:
-		rc = list_paths_term(sessions, sess_num, cs, 0);
+		if (args.ibnbdmode == IBNBD_BOTH)
+			printf("%s%s%s\n", CLR(trm, CDIM, "Outgoing paths"));
+
+		if (args.ibnbdmode & IBNBD_CLIENT)
+			list_paths_term(sess_clt, clt_s_num,
+					args.clms_paths_clt, args.tree_set);
+
+		if (args.ibnbdmode == IBNBD_BOTH)
+			printf("%s%s%s\n", CLR(trm, CDIM, "Incoming paths"));
+
+		if (args.ibnbdmode & IBNBD_SERVER)
+			list_paths_term(sess_srv, srv_s_num,
+					args.clms_paths_srv, args.tree_set);
 		break;
 	}
 
-	return rc;
+	return 0;
 }
 
 static int cmd_list(void)
