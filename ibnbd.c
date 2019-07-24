@@ -1154,9 +1154,9 @@ static void help_list(struct cmd *cmd)
 
 static int clm_cnt(struct table_column **cs)
 {
-	int i = 0;
+	int i;
 
-	while (cs[i++])
+	for (i = 0; cs[i]; i++)
 		;
 
 	return i;
@@ -1164,13 +1164,11 @@ static int clm_cnt(struct table_column **cs)
 
 static int has_num(struct table_column **cs)
 {
-	int i = 0;
+	int i;
 
-	while (cs[i]) {
+	for (i = 0; cs[i]; i++)
 		if (cs[i]->m_type == FLD_NUM)
 			return 1;
-		i++;
-	}
 
 	return 0;
 }
@@ -1186,17 +1184,13 @@ static int list_devices_term(struct ibnbd_sess_dev **sds,
 		.dev = &d_total,
 		.mapping_path = ""
 	};
-	struct ibnbd_sess_dev *sd;
 	struct table_fld *flds;
-	int i = 0, cs_cnt;
-	int dev_num = 0;
+	int i, cs_cnt, dev_num;
 
 	cs_cnt = clm_cnt(cs);
 
-	while (sds[dev_num++])
+	for (dev_num = 0; sds[dev_num]; dev_num++)
 		;
-
-	dev_num = dev_num - 1;
 
 	if (!has_num(cs))
 		args.nototals_set = 1;
@@ -1207,10 +1201,10 @@ static int list_devices_term(struct ibnbd_sess_dev **sds,
 		return -ENOMEM;
 	}
 
-	for (i = 0, sd = sds[i]; sd; sd = sds[++i]) {
-		table_row_stringify(sd, flds + i * cs_cnt, cs, 1, 0);
-		total.dev->rx_sect += sd->dev->rx_sect;
-		total.dev->tx_sect += sd->dev->tx_sect;
+	for (i = 0; sds[i]; i++) {
+		table_row_stringify(sds[i], flds + i * cs_cnt, cs, 1, 0);
+		total.dev->rx_sect += sds[i]->dev->rx_sect;
+		total.dev->tx_sect += sds[i]->dev->tx_sect;
 	}
 
 	if (!args.nototals_set)
@@ -1680,14 +1674,13 @@ static int cmd_list(void)
  */
 static struct ibnbd_sess_dev *find_device(char *name)
 {
-	struct ibnbd_sess_dev *sd;
-	int i = 0;
+	int i;
 
-	while ((sd = sds[i++]))
-		if (!strcmp(sd->mapping_path, name) ||
-		    !strcmp(sd->dev->devname, name) ||
-		    !strcmp(sd->dev->devpath, name))
-			return sd;
+	for (i = 0; sds[i]; i++)
+		if (!strcmp(sds[i]->mapping_path, name) ||
+		    !strcmp(sds[i]->dev->devname, name) ||
+		    !strcmp(sds[i]->dev->devpath, name))
+			return sds[i];
 
 	return NULL;
 }
@@ -1747,18 +1740,17 @@ static int show_device(char *devname)
  */
 static struct ibnbd_sess *find_session(char *name)
 {
-	struct ibnbd_sess *s;
-	int i = 0;
 	char *at;
+	int i;
 
-	while ((s = sessions[i++])) {
-		if (!strcmp(name, s->sessname))
-			return s;
+	for (i = 0; sessions[i]; i++) {
+		if (!strcmp(name, sessions[i]->sessname))
+			return sessions[i];
 
-		at = strchr(s->sessname, '@');
+		at = strchr(sessions[i]->sessname, '@');
 		if (at) {
 			if (!strcmp(name, at + 1))
-				return s;
+				return sessions[i];
 		}
 	}
 
@@ -1767,8 +1759,7 @@ static struct ibnbd_sess *find_session(char *name)
 
 static struct ibnbd_path *find_path_by_sess_port(char *name)
 {
-	struct ibnbd_sess *s;
-	int i = 0, j, port;
+	int i, j, port;
 	char *at;
 
 	at = strrchr(name, ':');
@@ -1778,11 +1769,11 @@ static struct ibnbd_path *find_path_by_sess_port(char *name)
 	if (sscanf(at + 1, "%d\n", &port) != 1)
 		return NULL;
 
-	while ((s = sessions[i++]))
-		if (!strncmp(name, s->sessname, at - name))
-			for (j = 0; j < s->path_cnt; j++)
-				if (s->paths[j].hca_port == port)
-					return &s->paths[j];
+	for (i = 0; sessions[i]; i++)
+		if (!strncmp(name, sessions[i]->sessname, at - name))
+			for (j = 0; j < sessions[i]->path_cnt; j++)
+				if (sessions[i]->paths[j].hca_port == port)
+					return &sessions[i]->paths[j];
 
 	return NULL;
 }
@@ -1793,32 +1784,31 @@ static struct ibnbd_path *find_path_by_sess_port(char *name)
  */
 static struct ibnbd_path *find_path_by_sess_srvaddr(char *name)
 {
-	struct ibnbd_sess *s;
-	int i = 0, j;
+	int i, j;
 	char *at;
 
 	at = strrchr(name, ':');
 	if (!at)
 		return NULL;
 
-	while ((s = sessions[i++]))
-		if (!strncmp(name, s->sessname, at - name))
-			for (j = 0; j < s->path_cnt; j++)
-				if (!strcmp(s->paths[j].srvaddr, at + 1))
-					return &s->paths[j];
+	for (i = 0; sessions[i]; i++)
+		if (!strncmp(name, sessions[i]->sessname, at - name))
+			for (j = 0; j < sessions[i]->path_cnt; j++)
+				if (!strcmp(sessions[i]->paths[j].srvaddr,
+					    at + 1))
+					return &sessions[i]->paths[j];
 
 	return NULL;
 }
 
 static struct ibnbd_path *find_path_by_pathname(char *name)
 {
-	struct ibnbd_sess *s;
-	int i = 0, j;
+	int i, j;
 
-	while ((s = sessions[i++]))
-		for (j = 0; j < s->path_cnt; j++)
-			if (!strcmp(s->paths[j].pathname, name))
-				return &s->paths[j];
+	for (i = 0; sessions[i]; i++)
+		for (j = 0; j < sessions[i]->path_cnt; j++)
+			if (!strcmp(sessions[i]->paths[j].pathname, name))
+				return &sessions[i]->paths[j];
 
 	return NULL;
 }
@@ -2059,11 +2049,9 @@ static void help_map(struct cmd *cmd)
 		  "Address, name or session name of the server");
 
 	printf("\nOptions:\n");
-	print_opt("{iomode}",
-		  "IO Mode to use on server side: fileio|blockio."
+	print_opt("{iomode}", "IO Mode to use on server side: fileio|blockio."
 		  " Default: blockio");
-	print_opt("{rw}",
-		  "Access permission on server side: ro|rw|migration."
+	print_opt("{rw}", "Access permission on server side: ro|rw|migration."
 		  " Default: rw");
 	print_sarg_descr("verbose");
 	print_sarg_descr("help");
@@ -2242,8 +2230,7 @@ static void init_args(void)
 
 static void default_args(void)
 {
-	struct ibnbd_sess *s;
-	int i = 0;
+	int i;
 
 	if (!args.lstmode_set)
 		args.lstmode = LST_DEVICES;
@@ -2255,35 +2242,32 @@ static void default_args(void)
 		args.prec = 3;
 
 	if (!args.ibnbdmode_set) {
-		while ((s = sessions[i++])) {
-			if (s->side == IBNBD_CLT)
+		for (i = 0; sessions[i]; i++)
+			if (sessions[i]->side == IBNBD_CLT)
 				args.ibnbdmode |= IBNBD_CLIENT;
-			if (s->side == IBNBD_SRV)
+			else
 				args.ibnbdmode |= IBNBD_SERVER;
-		}
 	}
 }
 
 int ibnbd_read_sysfs(void)
 {
-	int i = 0, clt = 0, srv = 0;
-	struct ibnbd_sess_dev *sd;
-	struct ibnbd_sess *s;
+	int i, clt, srv;
 
-	while ((s = sessions[i++]))
-		if (s->side == IBNBD_CLT)
-			sess_clt[clt++] = s;
+	for (i = 0, clt = 0, srv = 0; sessions[i]; i++)
+		if (sessions[i]->side == IBNBD_CLT)
+			sess_clt[clt++] = sessions[i];
 		else
-			sess_srv[srv++] = s;
+			sess_srv[srv++] = sessions[i];
 
 	sess_clt[clt] = NULL;
 	sess_srv[srv] = NULL;
 
-	for (i = 0, clt = 0, srv = 0, sd = sds[0]; sd; sd = sds[++i])
-		if (sd->sess->side == IBNBD_CLT)
-			sds_clt[clt++] = sd;
+	for (i = 0, clt = 0, srv = 0; sds[i]; i++)
+		if (sds[i]->sess->side == IBNBD_CLT)
+			sds_clt[clt++] = sds[i];
 		else
-			sds_srv[srv++] = sd;
+			sds_srv[srv++] = sds[i];
 
 	sds_clt[clt] = NULL;
 	sds_srv[srv] = NULL;
