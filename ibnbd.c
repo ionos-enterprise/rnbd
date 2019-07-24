@@ -674,9 +674,9 @@ CLM_P(state, "State", FLD_STR, ibnbd_path_state_to_str, 'l', CNRM, CBLD,
 	"Name of the path");
 CLM_P(pathname, "Path name", FLD_STR, NULL, 'l', CNRM, CNRM,
 	"Path name");
-CLM_P(cltaddr, "Client Address", FLD_STR, NULL, 'l', CNRM, CNRM,
+CLM_P(cltaddr, "Client Addr", FLD_STR, NULL, 'l', CNRM, CNRM,
 	"Client address of the path");
-CLM_P(srvaddr, "Server Address", FLD_STR, NULL, 'l', CNRM, CNRM,
+CLM_P(srvaddr, "Server Addr", FLD_STR, NULL, 'l', CNRM, CNRM,
 	"Server address of the path");
 CLM_P(hca_name, "HCA", FLD_STR, NULL, 'l', CNRM, CNRM, "HCA name");
 CLM_P(hca_port, "Port", FLD_VAL, NULL, 'r', CNRM, CNRM, "HCA port");
@@ -744,6 +744,32 @@ static struct table_column *all_clms_paths[] = {
 	&clm_ibnbd_path_tx_bytes,
 	&clm_ibnbd_path_inflights,
 	&clm_ibnbd_path_reconnects,
+	NULL
+};
+
+static struct table_column *all_clms_paths_clt[] = {
+	&clm_ibnbd_path_sessname,
+	&clm_ibnbd_path_cltaddr,
+	&clm_ibnbd_path_srvaddr,
+	&clm_ibnbd_path_hca_name,
+	&clm_ibnbd_path_hca_port,
+	&clm_ibnbd_path_state,
+	&clm_ibnbd_path_rx_bytes,
+	&clm_ibnbd_path_tx_bytes,
+	&clm_ibnbd_path_inflights,
+	&clm_ibnbd_path_reconnects,
+	NULL
+};
+
+static struct table_column *all_clms_paths_srv[] = {
+	&clm_ibnbd_path_sessname,
+	&clm_ibnbd_path_cltaddr,
+	&clm_ibnbd_path_srvaddr,
+	&clm_ibnbd_path_hca_name,
+	&clm_ibnbd_path_hca_port,
+	&clm_ibnbd_path_rx_bytes,
+	&clm_ibnbd_path_tx_bytes,
+	&clm_ibnbd_path_inflights,
 	NULL
 };
 
@@ -947,10 +973,10 @@ static int parse_all(int argc, char **argv, int i, const struct sarg *sarg)
 	       ARRSIZE(all_clms_sessions_clt) * sizeof(all_clms_sessions[0]));
 	memcpy(&args.clms_sessions_srv, &all_clms_sessions_srv,
 	       ARRSIZE(all_clms_sessions_srv) * sizeof(all_clms_sessions[0]));
-	memcpy(&args.clms_paths_clt, &all_clms_paths,
-	       ARRSIZE(all_clms_paths) * sizeof(all_clms_paths[0]));
-	memcpy(&args.clms_paths_srv, &all_clms_paths,
-	       ARRSIZE(all_clms_paths) * sizeof(all_clms_paths[0]));
+	memcpy(&args.clms_paths_clt, &all_clms_paths_clt,
+	       ARRSIZE(all_clms_paths_clt) * sizeof(all_clms_paths[0]));
+	memcpy(&args.clms_paths_srv, &all_clms_paths_srv,
+	       ARRSIZE(all_clms_paths_srv) * sizeof(all_clms_paths[0]));
 
 
 	return i + 1;
@@ -1131,15 +1157,15 @@ static void help_list(struct cmd *cmd)
 	print_opt("", "Default: devices.");
 	help_fields();
 
-	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "List of devices:"));
+	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Devices Fields"));
 	print_fields(def_clms_devices_clt, def_clms_devices_srv,
 		     all_clms_devices);
 
-	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "List of sessions:"));
+	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Session Fields"));
 	print_fields(def_clms_sessions_clt, def_clms_sessions_srv,
 		     all_clms_sessions);
 
-	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "List of paths:"));
+	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Paths Fields"));
 	print_fields(def_clms_paths_clt, def_clms_paths_srv, all_clms_paths);
 
 	printf("\n%sProvide 'all' to print all available fields\n", HPRE);
@@ -2078,15 +2104,15 @@ static void help_show(struct cmd *cmd)
 	print_opt("{port}", "HCA port in the format \"port=<n>\"");
 	help_fields();
 
-	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "Device fields:"));
+	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Device Fields"));
 	print_fields(def_clms_devices_clt, def_clms_devices_srv,
 		     all_clms_devices);
 
-	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "Sessions fields:"));
+	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Sessions Fields"));
 	print_fields(def_clms_sessions_clt, def_clms_sessions_srv,
 		     all_clms_sessions);
 
-	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "Paths fields:"));
+	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Paths Fields"));
 	print_fields(def_clms_paths_clt, def_clms_paths_srv, all_clms_paths);
 
 	printf("\n%sProvide 'all' to print all available fields\n", HPRE);
@@ -2262,10 +2288,10 @@ static int parse_paths_clms(const char *arg)
 {
 	int rc_clt, rc_srv;
 
-	rc_clt = table_extend_columns(arg, ",", all_clms_paths,
+	rc_clt = table_extend_columns(arg, ",", all_clms_paths_clt,
 				      args.clms_paths_clt, CLM_MAX_CNT);
 
-	rc_srv = table_extend_columns(arg, ",", all_clms_paths,
+	rc_srv = table_extend_columns(arg, ",", all_clms_paths_srv,
 				      args.clms_paths_srv, CLM_MAX_CNT);
 	return rc_clt && rc_srv;
 }
