@@ -2264,6 +2264,11 @@ int main(int argc, char **argv)
 	 * (for those who is used to type ibnbd dev map or ibnbd session list)
 	 */
 	i = parse_lst(argc, argv, i, NULL);
+	/*
+	 * try finding clt/srv preceding the command
+	 * (for those who is used to type ibnbd clt list or ibnbd srv sess list)
+	 */
+	i = parse_mode(argc, argv, i, NULL);
 
 	cmd = find_cmd(argv[i], cmds);
 	if (!cmd) {
