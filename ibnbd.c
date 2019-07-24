@@ -479,6 +479,31 @@ static struct table_column *all_clms_devices[] = {
 	NULL
 };
 
+static struct table_column *all_clms_devices_clt[] = {
+	&clm_ibnbd_sess_dev_sessname,
+	&clm_ibnbd_sess_dev_mapping_path,
+	&clm_ibnbd_dev_devname,
+	&clm_ibnbd_dev_devpath,
+	&clm_ibnbd_dev_state,
+	&clm_ibnbd_sess_dev_access_mode,
+	&clm_ibnbd_dev_iomode,
+	&clm_ibnbd_dev_rx_sect,
+	&clm_ibnbd_dev_tx_sect,
+	NULL
+};
+
+static struct table_column *all_clms_devices_srv[] = {
+	&clm_ibnbd_sess_dev_sessname,
+	&clm_ibnbd_sess_dev_mapping_path,
+	&clm_ibnbd_dev_devname,
+	&clm_ibnbd_dev_devpath,
+	&clm_ibnbd_sess_dev_access_mode,
+	&clm_ibnbd_dev_iomode,
+	&clm_ibnbd_dev_rx_sect,
+	&clm_ibnbd_dev_tx_sect,
+	NULL
+};
+
 static struct table_column *def_clms_devices_clt[] = {
 	&clm_ibnbd_sess_dev_sessname,
 	&clm_ibnbd_sess_dev_mapping_path,
@@ -910,10 +935,10 @@ static int parse_unit(int argc, char **argv, int i, const struct sarg *sarg)
 
 static int parse_all(int argc, char **argv, int i, const struct sarg *sarg)
 {
-	memcpy(&args.clms_devices_clt, &all_clms_devices,
-	       ARRSIZE(all_clms_devices) * sizeof(all_clms_devices[0]));
-	memcpy(&args.clms_devices_srv, &all_clms_devices,
-	       ARRSIZE(all_clms_devices) * sizeof(all_clms_devices[0]));
+	memcpy(&args.clms_devices_clt, &all_clms_devices_clt,
+	       ARRSIZE(all_clms_devices_clt) * sizeof(all_clms_devices[0]));
+	memcpy(&args.clms_devices_srv, &all_clms_devices_srv,
+	       ARRSIZE(all_clms_devices_srv) * sizeof(all_clms_devices[0]));
 	memcpy(&args.clms_sessions_clt, &all_clms_sessions,
 	       ARRSIZE(all_clms_sessions) * sizeof(all_clms_sessions[0]));
 	memcpy(&args.clms_sessions_srv, &all_clms_sessions,
