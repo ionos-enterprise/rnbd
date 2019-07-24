@@ -252,16 +252,16 @@ struct args {
 	enum fmt_type fmt;
 	short fmt_set;
 
-	unsigned iomode;
+	unsigned int iomode;
 	short iomode_set;
 
-	unsigned lstmode;
+	unsigned int lstmode;
 	short lstmode_set;
 
-	unsigned showmode;
+	unsigned int showmode;
 	short showmode_set;
 
-	unsigned ibnbdmode;
+	unsigned int ibnbdmode;
 	short ibnbdmode_set;
 
 	short ro;
@@ -300,7 +300,6 @@ static int sect_to_byte_unit(char *str, size_t len, uint64_t v, int humanize)
 		if (args.unit_set)
 			return i_to_str_unit(v << 9, str, len, args.unit_id,
 					     args.prec);
-
 		else
 			return i_to_str(v << 9, str, len, args.prec);
 	else
@@ -325,9 +324,10 @@ static int size_to_str(char *str, size_t len, enum color *clr, void *v,
 	    align, h_clr, c_clr, m_descr, sizeof(m_header) - 1, 0)
 
 static int sd_state_to_str(char *str, size_t len, enum color *clr, void *v,
-		           int humanize)
+			   int humanize)
 {
-	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev, sess);
+	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
+						 sess);
 
 	if (!strcmp("open", sd->dev->state))
 		*clr = CGRN;
@@ -338,7 +338,7 @@ static int sd_state_to_str(char *str, size_t len, enum color *clr, void *v,
 }
 
 CLM_SD(mapping_path, "Mapping Path", FLD_STR, NULL, 'l', CNRM, CBLD,
-       "Mapping name of the remote device");
+	"Mapping name of the remote device");
 
 static int sd_access_mode_to_str(char *str, size_t len, enum color *clr,
 				  void *v, int humanize)
@@ -364,7 +364,8 @@ static int sd_access_mode_to_str(char *str, size_t len, enum color *clr,
 static int sdd_iomode_to_str(char *str, size_t len, enum color *clr, void *v,
 			     int humanize)
 {
-	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev, sess);
+	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
+						 sess);
 	enum ibnbd_iomode mode = sd->dev->iomode;
 
 	*clr = CNRM;
@@ -380,13 +381,14 @@ static int sdd_iomode_to_str(char *str, size_t len, enum color *clr, void *v,
 	}
 }
 
-CLM_SD(access_mode, "Access Mode", FLD_STR, sd_access_mode_to_str, 'l', CNRM, CNRM,
-       "RW mode of the device: ro, rw or migration");
+CLM_SD(access_mode, "Access Mode", FLD_STR, sd_access_mode_to_str, 'l', CNRM,
+	CNRM, "RW mode of the device: ro, rw or migration");
 
 static int sd_devname_to_str(char *str, size_t len, enum color *clr,
 			     void *v, int humanize)
 {
-	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev, sess);
+	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
+						 sess);
 
 	return snprintf(str, len, "%s", sd->dev->devname);
 }
@@ -398,7 +400,8 @@ static struct table_column clm_ibnbd_dev_devname =
 static int sd_devpath_to_str(char *str, size_t len, enum color *clr,
 			     void *v, int humanize)
 {
-	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev, sess);
+	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
+						 sess);
 
 	return snprintf(str, len, "%s", sd->dev->devpath);
 }
@@ -408,13 +411,15 @@ static struct table_column clm_ibnbd_dev_devpath =
 		CNRM, CNRM, "Device path under /dev/. I.e. /dev/ibnbd0");
 
 static struct table_column clm_ibnbd_dev_iomode =
-	_CLM_SD("iomode", sess, "IO mode", FLD_STR, sdd_iomode_to_str, 'l',
-		CNRM, CNRM, "IO submission mode of the target device: file/block");
+	_CLM_SD("iomode", sess, "IO mode", FLD_STR,
+		sdd_iomode_to_str, 'l',	CNRM, CNRM,
+		"IO submission mode of the target device: file/block");
 
 static int sd_rx_to_str(char *str, size_t len, enum color *clr, void *v,
 		       int humanize)
 {
-	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev, sess);
+	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
+						 sess);
 
 	*clr = CNRM;
 
@@ -428,7 +433,8 @@ static struct table_column clm_ibnbd_dev_rx_sect =
 static int sd_tx_to_str(char *str, size_t len, enum color *clr, void *v,
 		       int humanize)
 {
-	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev, sess);
+	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
+						 sess);
 
 	*clr = CNRM;
 
@@ -441,13 +447,14 @@ static struct table_column clm_ibnbd_dev_tx_sect =
 
 
 static struct table_column clm_ibnbd_dev_state =
-	_CLM_SD("state", sess, "State", FLD_STR, sd_state_to_str, 'l', CNRM, CNRM,
-	"State of the IBNBD device. (client only)");
+	_CLM_SD("state", sess, "State", FLD_STR, sd_state_to_str, 'l', CNRM,
+		CNRM, "State of the IBNBD device. (client only)");
 
 static int dev_sessname_to_str(char *str, size_t len, enum color *clr,
 			       void *v, int humanize)
 {
-	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev, sess);
+	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
+						 sess);
 
 	if (!sd->sess)
 		return 0;
@@ -495,37 +502,42 @@ static struct table_column *def_clms_devices_srv[] = {
 	CLM(ibnbd_sess, m_name, m_header, m_type, tostr, align, h_clr, c_clr, \
 	    m_descr, sizeof(m_header) - 1, 0)
 
-#define _CLM_S(s_name, m_name, m_header, m_type, tostr, align, h_clr, c_clr, m_descr) \
-	_CLM(ibnbd_sess, s_name, m_name, m_header, m_type, tostr, align, h_clr, c_clr, \
-	    m_descr, sizeof(m_header) - 1, 0)
+#define _CLM_S(s_name, m_name, m_header, m_type, tostr, align, h_clr, c_clr, \
+	       m_descr) \
+	_CLM(ibnbd_sess, s_name, m_name, m_header, m_type, tostr, align, \
+	     h_clr, c_clr, m_descr, sizeof(m_header) - 1, 0)
 
 CLM_S(sessname, "Session name", FLD_STR, NULL, 'l', CNRM, CBLD,
-       "Name of the session");
+	"Name of the session");
 CLM_S(mp_short, "MP", FLD_STR, NULL, 'l', CNRM, CNRM,
-       "Multipath policy (short)");
+	"Multipath policy (short)");
 CLM_S(mp, "MP Policy", FLD_STR, NULL, 'l', CNRM, CNRM,
-       "Multipath policy");
+	"Multipath policy");
 CLM_S(path_cnt, "Path cnt", FLD_NUM, NULL, 'r', CNRM, CNRM,
-       "Number of paths");
+	"Number of paths");
 CLM_S(act_path_cnt, "Act path cnt", FLD_NUM, NULL, 'r', CNRM, CNRM,
-       "Number of active paths");
-CLM_S(rx_bytes, "RX", FLD_NUM, size_to_str, 'r', CNRM, CNRM, "Bytes received");
+	"Number of active paths");
+CLM_S(rx_bytes, "RX", FLD_NUM, size_to_str, 'r', CNRM, CNRM,
+	"Bytes received");
 CLM_S(tx_bytes, "TX", FLD_NUM, size_to_str, 'r', CNRM, CNRM, "Bytes send");
 CLM_S(inflights, "Inflights", FLD_NUM, NULL, 'r', CNRM, CNRM, "Inflights");
 CLM_S(reconnects, "Reconnects", FLD_NUM, NULL, 'r', CNRM, CNRM, "Reconnects");
 CLM_S(path_uu, "PS", FLD_STR, NULL, 'l', CNRM, CNRM,
-      "Up (U) or down (_) state of every path");
+	"Up (U) or down (_) state of every path");
 
 static int act_path_cnt_to_state(char *str, size_t len, enum color *clr,
 				    void *v, int humanize)
 {
-	if (*(int *)v) {
+	int act_path_cnt = *(int *)v;
+
+	if (act_path_cnt) {
 		*clr = CGRN;
 		return snprintf(str, len, "connected");
-	} else {
-		*clr = CRED;
-		return snprintf(str, len, "disconnected");
 	}
+
+	*clr = CRED;
+
+	return snprintf(str, len, "disconnected");
 }
 
 static struct table_column clm_ibnbd_sess_state =
@@ -550,7 +562,7 @@ static int sess_side_to_str(char *str, size_t len, enum color *clr,
 }
 
 CLM_S(side, "Side", FLD_STR, sess_side_to_str, 'l', CNRM, CNRM,
-      "Direction of the session: client or server");
+	"Direction of the session: client or server");
 
 static int sess_side_to_dir(char *str, size_t len, enum color *clr,
 			    void *v, int humanize)
@@ -560,16 +572,16 @@ static int sess_side_to_dir(char *str, size_t len, enum color *clr,
 	*clr = CNRM;
 	switch (s->side) {
 	case IBNBD_CLT:
-		return snprintf(str, len, "→");
+		return snprintf(str, len, "-->");
 	case IBNBD_SRV:
-		return snprintf(str, len, "←");
+		return snprintf(str, len, "<--");
 	default:
 		assert(0);
 	}
 }
 
 static struct table_column clm_ibnbd_sess_dir =
-	_CLM_S("dir", side, "↔", FLD_STR,
+	_CLM_S("dir", side, "Direction", FLD_STR,
 		sess_side_to_dir, 'l', CNRM, CNRM,
 		"Direction of the session: in- or outcoming");
 
@@ -630,13 +642,13 @@ static int ibnbd_path_state_to_str(char *str, size_t len, enum color *clr,
 }
 
 CLM_P(state, "State", FLD_STR, ibnbd_path_state_to_str, 'l', CNRM, CBLD,
-       "Name of the path");
+	"Name of the path");
 CLM_P(pathname, "Path name", FLD_STR, NULL, 'l', CNRM, CNRM,
-      "Path name");
+	"Path name");
 CLM_P(cltaddr, "Clt Addr", FLD_STR, NULL, 'l', CNRM, CNRM,
-      "Client address");
+	"Client address");
 CLM_P(srvaddr, "Srv Addr", FLD_STR, NULL, 'l', CNRM, CNRM,
-      "Server address");
+	"Server address");
 CLM_P(hca_name, "HCA", FLD_STR, NULL, 'l', CNRM, CNRM, "HCA name");
 CLM_P(hca_port, "Port", FLD_VAL, NULL, 'r', CNRM, CNRM, "HCA port");
 CLM_P(rx_bytes, "RX", FLD_NUM, size_to_str, 'r', CNRM, CNRM, "Bytes received");
@@ -657,9 +669,10 @@ static int path_to_sessname(char *str, size_t len, enum color *clr,
 		return snprintf(str, len, "%s", "");
 }
 
-#define _CLM_P(s_name, m_name, m_header, m_type, tostr, align, h_clr, c_clr, m_descr) \
-	_CLM(ibnbd_path, s_name, m_name, m_header, m_type, tostr, align, h_clr, c_clr, \
-	    m_descr, sizeof(m_header) - 1, 0)
+#define _CLM_P(s_name, m_name, m_header, m_type, tostr, align, h_clr, c_clr, \
+	       m_descr) \
+	_CLM(ibnbd_path, s_name, m_name, m_header, m_type, tostr, align, \
+	     h_clr, c_clr, m_descr, sizeof(m_header) - 1, 0)
 
 static struct table_column clm_ibnbd_path_sessname =
 	_CLM_P("sessname", sess, "Sessname", FLD_STR, path_to_sessname, 'l',
@@ -1114,8 +1127,8 @@ static int clm_cnt(struct table_column **cs)
 {
 	int i = 0;
 
-	while (cs[i])
-		i++;
+	while (cs[i++])
+		;
 
 	return i;
 }
@@ -1151,8 +1164,10 @@ static int list_devices_term(struct ibnbd_sess_dev **sds,
 
 	cs_cnt = clm_cnt(cs);
 
-	while ((sd = sds[dev_num++]));
-	dev_num--;
+	while (sds[dev_num++])
+		;
+
+	dev_num = dev_num - 1;
 
 	if (!has_num(cs))
 		args.nototals_set = 1;
@@ -1236,7 +1251,7 @@ static void list_devices_xml(struct ibnbd_sess_dev **sds,
 	}
 }
 
-static int list_devices()
+static int list_devices(void)
 {
 	switch (args.fmt) {
 	case FMT_CSV:
@@ -1254,7 +1269,7 @@ static int list_devices()
 
 		break;
 	case FMT_JSON:
-		printf("{ \n");
+		printf("{\n");
 
 		if (args.ibnbdmode & IBNBD_CLIENT) {
 			printf("\t\"imports\": ");
@@ -1262,9 +1277,9 @@ static int list_devices()
 		}
 
 		if (args.ibnbdmode == IBNBD_BOTH)
-			printf(", \n");
-		else
-			printf("\n");
+			printf(",");
+
+		printf("\n");
 
 		if (args.ibnbdmode & IBNBD_SERVER) {
 			printf("\t\"exports\": ");
@@ -1290,13 +1305,13 @@ static int list_devices()
 	case FMT_TERM:
 	default:
 		if (args.ibnbdmode == IBNBD_BOTH)
-			printf("――――――――――――――――――Imports―――――――――――――――――\n");
+			printf("----------------- imports ----------------\n");
 
 		if (args.ibnbdmode & IBNBD_CLIENT)
 			list_devices_term(sds_clt, args.clms_devices_clt);
 
 		if (args.ibnbdmode == IBNBD_BOTH)
-			printf("――――――――――――――――――Exports―――――――――――――――――\n");
+			printf("----------------- exports ----------------\n");
 
 		if (args.ibnbdmode & IBNBD_SERVER)
 			list_devices_term(sds_srv, args.clms_devices_srv);
@@ -1344,9 +1359,8 @@ static int list_paths_term(struct ibnbd_sess **sessions, int sess_num,
 		}
 	}
 
-	if (!args.nototals_set) {
+	if (!args.nototals_set)
 		table_row_stringify(&total, flds + fld_cnt, cs, 1, 0);
-	}
 
 	if (!args.noheaders_set && !tree)
 		table_header_print_term("", cs, trm, 'a');
@@ -1434,7 +1448,7 @@ static int list_sessions_term(struct ibnbd_sess **sessions, int sess_num,
 	return 0;
 }
 
-static int list_sessions()
+static int list_sessions(void)
 {
 	struct table_column **cs;
 	int i, rc = 0, sess_num;
@@ -1458,9 +1472,8 @@ static int list_sessions()
 		if (!args.noheaders_set)
 			table_header_print_csv(cs);
 
-		for (i = 0; i < sess_num; i++) {
+		for (i = 0; i < sess_num; i++)
 			table_row_print(sessions[i], FMT_CSV, "", cs, 0, 0, 0);
-		}
 		break;
 	case FMT_JSON:
 		printf("{ \"sessions\": [\n");
@@ -1468,7 +1481,8 @@ static int list_sessions()
 		for (i = 0; i < sess_num; i++) {
 			if (i)
 				printf(",\n");
-			table_row_print(sessions[i], FMT_JSON, "\t", cs, 0, 0, 0);
+			table_row_print(sessions[i], FMT_JSON,
+					"\t", cs, 0, 0, 0);
 		}
 
 		printf("\n] }\n");
@@ -1478,7 +1492,8 @@ static int list_sessions()
 
 		for (i = 0; i < sess_num; i++) {
 			printf("\t<session>\n");
-			table_row_print(sessions[i], FMT_XML, "\t\t", cs, 0, 0, 0);
+			table_row_print(sessions[i], FMT_XML,
+					"\t\t", cs, 0, 0, 0);
 			printf("\t</session>\n");
 		}
 
@@ -1494,7 +1509,7 @@ static int list_sessions()
 	return rc;
 }
 
-static int list_paths()
+static int list_paths(void)
 {
 	struct table_column **cs;
 	int i, j, rc = 0, sess_num;
@@ -1520,8 +1535,8 @@ static int list_paths()
 
 		for (i = 0; i < sess_num; i++)
 			for (j = 0; j < sessions[i]->path_cnt; j++)
-				table_row_print(&sessions[i]->paths[j], FMT_CSV,
-						"", cs, 0, 0, 0);
+				table_row_print(&sessions[i]->paths[j],
+						FMT_CSV, "", cs, 0, 0, 0);
 
 		break;
 	case FMT_JSON:
@@ -1531,8 +1546,8 @@ static int list_paths()
 			for (j = 0; j < sessions[i]->path_cnt; j++) {
 				if (i)
 					printf(",\n");
-				table_row_print(&sessions[i]->paths[j], FMT_JSON,
-						"\t", cs, 0, 0, 0);
+				table_row_print(&sessions[i]->paths[j],
+						FMT_JSON, "\t", cs, 0, 0, 0);
 			}
 		}
 
@@ -1739,16 +1754,17 @@ static struct ibnbd_path *find_path(char *name)
 {
 	struct ibnbd_path *p;
 
-	if ((p = find_path_by_sess_port(name)))
+	p = find_path_by_sess_port(name);
+	if (p)
 		return p;
 
-	if ((p = find_path_by_pathname(name)))
+	p = find_path_by_pathname(name);
+	if (p)
 		return p;
 
-	if ((p = find_path_by_sess_srvaddr(name)))
-		return p;
+	p = find_path_by_sess_srvaddr(name);
 
-	return NULL;
+	return p;
 }
 
 static int get_showmode(char *name, enum showmode *mode)
@@ -1920,22 +1936,27 @@ static void help_show(struct cmd *cmd)
 	printf("\nArguments:\n");
 	print_opt("<name>", "Name of the local or remote block device,");
 	print_opt("", " session name, path name or remote hostname.");
-	print_opt("", "I.e. ibnbd0, /dev/ibnbd0, d12aef94-4110-4321-9373-3be8494a557b,"
+	print_opt("", "I.e. ibnbd0, /dev/ibnbd0,"
+		      " d12aef94-4110-4321-9373-3be8494a557b,"
 		      " ps401a-1@st401b-2, st401b-2, <ip1>@<ip2>, etc.");
-	print_opt("", "In order to display path information, path name or identifier");
+	print_opt("", "In order to display path information,"
+		      " path name or identifier");
 	print_opt("", "has to be provided, i.e. st401b-2:1.");
 
 	printf("\nOptions:\n");
 	print_opt("{path}", "Path name (<addr>@<addr>) or address (<addr>),");
-	print_opt("", "where addr can be of the form [ip:]<ipv4>, ip:<ipv6>, gid:<gid>");
+	print_opt("", "where addr can be of the form [ip:]<ipv4>,"
+		      " ip:<ipv6>, gid:<gid>");
 	print_opt("{port}", "HCA port in the format \"port=<n>\"");
 	help_fields();
 
 	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "Device fields:"));
-	print_fields(def_clms_devices_clt, def_clms_devices_srv, all_clms_devices);
+	print_fields(def_clms_devices_clt, def_clms_devices_srv,
+		     all_clms_devices);
 
 	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "Sessions fields:"));
-	print_fields(def_clms_sessions_clt, def_clms_sessions_srv, all_clms_sessions);
+	print_fields(def_clms_sessions_clt, def_clms_sessions_srv,
+		     all_clms_sessions);
 
 	printf("%s%s%s%s\n\n", HPRE, CLR(trm, CUND, "Paths fields:"));
 	print_fields(def_clms_paths_clt, def_clms_paths_srv, all_clms_paths);
@@ -1944,7 +1965,8 @@ static void help_show(struct cmd *cmd)
 
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
-	print_opt("{mode}", "Information to print: device|session|path. Default: device.");
+	print_opt("{mode}", "Information to print: device|session|path."
+			    " Default: device.");
 
 	print_sarg_descr("help");
 }
@@ -1955,13 +1977,16 @@ static void help_map(struct cmd *cmd)
 
 	printf("\nArguments:\n");
 	print_opt("<path>", "Name of the device to be mapped");
-	print_opt("from <server>", "Address, name or session name of the server");
+	print_opt("from <server>",
+		  "Address, name or session name of the server");
 
 	printf("\nOptions:\n");
 	print_opt("{iomode}",
-		  "IO Mode to use on server side: fileio|blockio. Default: blockio");
+		  "IO Mode to use on server side: fileio|blockio."
+		  " Default: blockio");
 	print_opt("{rw}",
-		  "Access permission on server side: ro|rw|migration. Default: rw");
+		  "Access permission on server side: ro|rw|migration."
+		  " Default: rw");
 	print_sarg_descr("verbose");
 	print_sarg_descr("help");
 }
@@ -2067,7 +2092,7 @@ static void handle_unknown_sarg(char *sarg, struct sarg *sargs)
 
 static int parse_precision(char *str)
 {
-	unsigned prec;
+	unsigned int prec;
 	char e;
 
 	if (strncmp(str, "prec", 4))
