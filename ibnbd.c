@@ -589,27 +589,6 @@ static int sess_side_to_str(char *str, size_t len, enum color *clr,
 CLM_S(side, "Side", FLD_STR, sess_side_to_str, 'l', CNRM, CNRM,
 	"Direction of the session: client or server");
 
-static int sess_side_to_dir(char *str, size_t len, enum color *clr,
-			    void *v, int humanize)
-{
-	struct ibnbd_sess *s = container_of(v, struct ibnbd_sess, side);
-
-	*clr = CNRM;
-	switch (s->side) {
-	case IBNBD_CLT:
-		return snprintf(str, len, "-->");
-	case IBNBD_SRV:
-		return snprintf(str, len, "<--");
-	default:
-		assert(0);
-	}
-}
-
-static struct table_column clm_ibnbd_sess_dir =
-	_CLM_S("dir", side, "Direction", FLD_STR,
-		sess_side_to_dir, 'l', CNRM, CNRM,
-		"Direction of the session: in- or outcoming");
-
 static struct table_column *all_clms_sessions[] = {
 	&clm_ibnbd_sess_sessname,
 	&clm_ibnbd_sess_path_cnt,
@@ -623,7 +602,6 @@ static struct table_column *all_clms_sessions[] = {
 	&clm_ibnbd_sess_inflights,
 	&clm_ibnbd_sess_reconnects,
 	&clm_ibnbd_sess_side,
-	&clm_ibnbd_sess_dir,
 	NULL
 };
 
@@ -640,7 +618,6 @@ static struct table_column *all_clms_sessions_clt[] = {
 	&clm_ibnbd_sess_inflights,
 	&clm_ibnbd_sess_reconnects,
 	&clm_ibnbd_sess_side,
-	&clm_ibnbd_sess_dir,
 	NULL
 };
 
@@ -651,7 +628,6 @@ static struct table_column *all_clms_sessions_srv[] = {
 	&clm_ibnbd_sess_tx_bytes,
 	&clm_ibnbd_sess_inflights,
 	&clm_ibnbd_sess_side,
-	&clm_ibnbd_sess_dir,
 	NULL
 };
 
