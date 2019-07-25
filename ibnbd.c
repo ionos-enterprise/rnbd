@@ -398,7 +398,7 @@ static void print_usage(const char *program_name, const struct cmd *cmds)
 static void print_help(const char *program_name, const struct cmd *cmds)
 {
 	print_usage(program_name, cmds);
-	printf("\nAdministration utility for the IBNBD/IBTRS driver.\n");
+	printf("\nIBNBD command line utility.\n");
 	printf("\nSubcommands:\n");
 	do
 		printf("     %-*s%s\n", 20, (*cmds).cmd, (*cmds).short_d);
@@ -460,7 +460,7 @@ static void help_list(struct cmd *cmd)
 	print_opt("", "Default: devices.");
 	help_fields();
 
-	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Devices Fields"));
+	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Device Fields"));
 	print_fields(def_clms_devices_clt, def_clms_devices_srv,
 		     all_clms_devices);
 
@@ -468,7 +468,7 @@ static void help_list(struct cmd *cmd)
 	print_fields(def_clms_sessions_clt, def_clms_sessions_srv,
 		     all_clms_sessions);
 
-	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Paths Fields"));
+	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Path Fields"));
 	print_fields(def_clms_paths_clt, def_clms_paths_srv, all_clms_paths);
 
 	printf("\n%sProvide 'all' to print all available fields\n", HPRE);
@@ -717,10 +717,10 @@ static int list_paths_term(struct ibnbd_sess **sessions, int sess_num,
 	fld_cnt = 0;
 	for (i = 0; i < sess_num; i++) {
 		for (j = 0; j < sessions[i]->path_cnt; j++) {
-			table_flds_print_term(!tree ? "" :
-					      j < sessions[i]->path_cnt - 1 ?
-					      "├─ " : "└─ ", flds + fld_cnt,
-					      cs, trm, 0);
+			table_flds_print_term(
+				!tree ? "" : j < sessions[i]->path_cnt - 1 ?
+				"├─ " : "└─ ",
+				flds + fld_cnt, cs, trm, 0);
 			fld_cnt += cs_cnt;
 		}
 	}
@@ -1192,11 +1192,13 @@ static int show_device(char *devname)
 		} else {
 			if (ds_imp[0]) {
 				printf("%s%s%s\n", CLR(trm, CDIM, "Imports"));
-				list_devices_term(ds_imp, args.clms_devices_clt);
+				list_devices_term(ds_imp,
+						  args.clms_devices_clt);
 			}
 			if (ds_exp[0]) {
 				printf("%s%s%s\n", CLR(trm, CDIM, "Exports"));
-				list_devices_term(ds_exp, args.clms_devices_srv);
+				list_devices_term(ds_exp,
+						  args.clms_devices_srv);
 			}
 		}
 		break;
@@ -1476,8 +1478,9 @@ static void help_show(struct cmd *cmd)
 	cmd_print_usage(cmd, "<name> [path] ");
 
 	printf("\nArguments:\n");
-	print_opt("<name>", "Name of the local or remote block device,");
-	print_opt("", " session name, path name or remote hostname.");
+	print_opt("<name>",
+		  "Name of a local or a remote block device,"
+		  " session name, path name or remote hostname.");
 	print_opt("", "I.e. ibnbd0, /dev/ibnbd0,"
 		      " d12aef94-4110-4321-9373-3be8494a557b,"
 		      " ps401a-1@st401b-2, st401b-2, <ip1>@<ip2>, etc.");
@@ -1486,10 +1489,6 @@ static void help_show(struct cmd *cmd)
 	print_opt("", "has to be provided, i.e. st401b-2:1.");
 
 	printf("\nOptions:\n");
-	print_opt("{path}", "Path name (<addr>@<addr>) or address (<addr>),");
-	print_opt("", "where addr can be of the form [ip:]<ipv4>,"
-		      " ip:<ipv6>, gid:<gid>");
-	print_opt("{port}", "HCA port in the format \"port=<n>\"");
 	help_fields();
 
 	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Device Fields"));
@@ -1505,6 +1504,7 @@ static void help_show(struct cmd *cmd)
 
 	printf("\n%sProvide 'all' to print all available fields\n", HPRE);
 
+	print_opt("{mode}", "Information to print: device|session|path");
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
 	print_opt("{mode}", "Information to print: device|session|path."
@@ -1515,14 +1515,17 @@ static void help_show(struct cmd *cmd)
 
 static void help_map(struct cmd *cmd)
 {
-	cmd_print_usage(cmd, "<path> from <server>");
+	cmd_print_usage(cmd, "<path> from <server> ");
 
 	printf("\nArguments:\n");
-	print_opt("<path>", "Name of the device to be mapped");
+	print_opt("<device>", "Path to the device to be mapped on server side");
 	print_opt("from <server>",
 		  "Address, name or session name of the server");
 
 	printf("\nOptions:\n");
+	print_opt("<path>", "Path to establish: [src_addr,]dst_addr");
+	print_opt("", "Address is ip:<ipv4>, ip:<ipv6> or gid:<gid>");
+
 	print_opt("{iomode}", "IO Mode to use on server side: fileio|blockio."
 		  " Default: blockio");
 	print_opt("{rw}", "Access permission on server side: ro|rw|migration."
@@ -1537,19 +1540,170 @@ static int cmd_map(void)
 	return 0;
 }
 
-static struct cmd cmds[] = {
-	{"list", "List ibnbd block- and transport information",
-		 "List ibnbd block- and transport information: "
-		 "devices, sessions, paths, etc.", cmd_list, NULL, help_list},
-	{"show", "Show information about a device, a session or a path",
-		 "Show information about an ibnbd block- or transport- item: "
-		 "device, session or path.", cmd_show, parse_name, help_show},
-	{"map", "Map a device from a remote machine",
-		 "Map a device from a remote machine",
-		 cmd_map, parse_name, help_map},
-	{"help", "Display help", "Display help message and exit.",
-		cmd_help, NULL, NULL},
+static void help_unmap(struct cmd *cmd)
+{
+	cmd_print_usage(cmd, "<device name or path or mapping path> ");
 
+	printf("\nArguments:\n");
+	print_opt("<device>", "Name of the device to be unmapped");
+
+	printf("\nOptions:\n");
+	print_sarg_descr("force");
+	print_sarg_descr("verbose");
+	print_sarg_descr("help");
+}
+
+static int cmd_unmap(void)
+{
+	printf("TODO\n");
+	return 0;
+}
+
+static void help_remap(struct cmd *cmd)
+{
+	cmd_print_usage(cmd, "<devname|sessname> ");
+
+	printf("\nArguments:\n");
+	print_opt("<identifier>",
+		  "Identifier of a device to be remapped. Or"
+		  " identifier of a session to remap all devices on.");
+
+	printf("\nOptions:\n");
+	print_sarg_descr("force");
+	print_sarg_descr("verbose");
+	print_sarg_descr("help");
+}
+
+static int cmd_remap(void)
+{
+	printf("TODO\n");
+	return 0;
+}
+
+static void help_reconnect(struct cmd *cmd)
+{
+	cmd_print_usage(cmd, "<path or session> ");
+
+	printf("\nArguments:\n");
+	print_opt("<identifier>",
+		  "Name or identifier of a session or of a path:");
+	print_opt("", "[sessname], [pathname], [sessname:port], etc.");
+
+	printf("\nOptions:\n");
+	print_sarg_descr("verbose");
+	print_sarg_descr("help");
+}
+
+static int cmd_reconnect(void)
+{
+	printf("TODO\n");
+	return 0;
+}
+
+static void help_disconnect(struct cmd *cmd)
+{
+	cmd_print_usage(cmd, "<path or session> ");
+
+	printf("\nArguments:\n");
+	print_opt("<identifier>",
+		  "Name or identifier of a session or of a path:");
+	print_opt("", "[sessname], [pathname], [sessname:port], etc.");
+
+	printf("\nOptions:\n");
+	print_sarg_descr("verbose");
+	print_sarg_descr("help");
+}
+
+static int cmd_disconnect(void)
+{
+	printf("TODO\n");
+	return 0;
+}
+
+static void help_addpath(struct cmd *cmd)
+{
+	cmd_print_usage(cmd, "<session> <path> ");
+
+	printf("\nArguments:\n");
+	print_opt("<session>",
+		  "Name of the session to add the new path to");
+	print_opt("<path>",
+		  "Path to be added: [src_addr,]dst_addr");
+	print_opt("", "Address is of the form ip:<ipv4>, ip:<ipv6> or gid:<gid>");
+
+	printf("\nOptions:\n");
+	print_sarg_descr("verbose");
+	print_sarg_descr("help");
+}
+
+static int cmd_addpath(void)
+{
+	printf("TODO\n");
+	return 0;
+}
+
+static void help_delpath(struct cmd *cmd)
+{
+	cmd_print_usage(cmd, "<path> ");
+
+	printf("\nArguments:\n");
+	print_opt("<path>",
+		  "Name or any unique identifier of a path:");
+	print_opt("", "[pathname], [sessname:port], etc.");
+
+	printf("\nOptions:\n");
+	print_sarg_descr("verbose");
+	print_sarg_descr("help");
+}
+
+static int cmd_delpath(void)
+{
+	printf("TODO\n");
+	return 0;
+}
+
+static struct cmd cmds[] = {
+	{"list",
+		"List block device or transport related information",
+		"List block device or transport related information: "
+		"devices, sessions, paths, etc.",
+		cmd_list, NULL, help_list},
+	{"show",
+		"Show information about a device, a session or a path",
+		"Show information about an ibnbd block- or transport- item: "
+		"device, session or path.",
+		cmd_show, parse_name, help_show},
+	{"map",
+		"Map a device from a given server",
+		"Map a device from a given server",
+		 cmd_map, parse_name, help_map},
+	{"unmap",
+		"Unmap an imported device",
+		"Umap a given imported device",
+		cmd_unmap, parse_name, help_unmap},
+	{"remap",
+		"Remap an imported device",
+		"Remove the imported device and map it again",
+		 cmd_remap, parse_name, help_remap},
+	{"disconnect",
+		"Disconnect a path or a session",
+		"Disconnect a path or all paths on a given session",
+		cmd_disconnect, parse_name, help_disconnect},
+	{"reconnect",
+		"Reconnect a path or a session",
+		"Disconnect and connect again a path or a whole session",
+		 cmd_reconnect, parse_name, help_reconnect},
+	{"addpath",
+		"Add a path to an existing session",
+		"Add a new path to an existing session",
+		 cmd_addpath, parse_name, help_addpath},
+	{"delpath",
+		"Delete a path",
+		"Delete a given path from the corresponding session",
+		 cmd_delpath, parse_name, help_delpath},
+	{"help", "Display help",
+		 "Display help message and exit.",
+		 cmd_help, NULL, NULL},
 	{ 0 }
 };
 
