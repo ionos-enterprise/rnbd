@@ -1,11 +1,9 @@
 #include <stdio.h>
 #include <errno.h>
 #include <inttypes.h>
-#include <stdarg.h>
 #include <string.h>
 #include <unistd.h>	/* for isatty() */
 #include <assert.h>
-#include <dirent.h>
 
 #include "levenshtein.h"
 #include "table.h"
