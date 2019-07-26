@@ -60,7 +60,7 @@ struct ibnbd_sess {
 
 	/* paths */
 	int 		  path_cnt;	/* path count */
-	struct ibnbd_path paths[];	/* paths */
+	struct ibnbd_path *paths[];	/* paths */
 };
 
 enum ibnbd_exp_imp {
@@ -81,7 +81,83 @@ struct ibnbd_sess_dev {
  * Fake example data. Should be partially read from sysfs and partially
  * calculated instead.
  */
-static struct ibnbd_sess s = {
+
+static struct ibnbd_sess g_s, g_s1, g_s2;
+static struct ibnbd_path g_p[] = {
+	{.sess = &g_s,
+	 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5@"
+		     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
+	 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5",
+	 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
+	 .hca_name = "mlx4_0",
+	 .hca_port = 1,
+	 .state = "connected",
+	 .tx_bytes = 1023,
+	 .rx_bytes = 377000,
+	 .inflights = 100500,
+	 .reconnects = 2
+	},
+	{.sess = &g_s,
+	 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6@"
+		     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
+	 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
+	 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
+	 .hca_name = "mlx4_0",
+	 .hca_port = 2,
+	 .state = "disconnected",
+	 .tx_bytes = 0,
+	 .rx_bytes = 0,
+	 .inflights = 0,
+	 .reconnects = 3
+	},
+	{.sess = &g_s1,
+	 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6@"
+		     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
+	 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
+	 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
+	 .hca_name = "mlx4_0",
+	 .hca_port = 2,
+	 .state = "connected",
+	 .tx_bytes = 1023,
+	 .rx_bytes = 0,
+	 .inflights = 100500,
+	 .reconnects = 4
+	},
+	{.sess = &g_s2,
+	 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5@"
+		     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
+	 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5",
+	 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
+	 .state = "connected",
+	 .hca_name = "mlx4_0",
+	 .hca_port = 1,
+	 .tx_bytes = 0,
+	 .rx_bytes = 377000,
+	 .inflights = 0,
+	},
+	{.sess = &g_s2,
+	 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6@"
+		     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
+	 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
+	 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
+	 .state = "connected",
+	 .hca_name = "mlx4_0",
+	 .hca_port = 2,
+	 .tx_bytes = 1023,
+	 .rx_bytes = 0,
+	 .inflights = 100500,
+	}
+};
+
+static struct ibnbd_path *g_paths[] = {
+	&g_p[0],
+	&g_p[1],
+	&g_p[2],
+	&g_p[3],
+	&g_p[4],
+};
+
+static struct ibnbd_sess g_s = {
 	.side	  = IBNBD_CLT,
 	.sessname = "ps401a-3@st401b-3",
 	.mp = "round-robin",
@@ -94,36 +170,12 @@ static struct ibnbd_sess s = {
 	.reconnects = 5,
 	.path_uu = "U_",
 	.paths = {
-		{.sess = &s,
-		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5@"
-			     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
-		 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5",
-		 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
-		 .hca_name = "mlx4_0",
-		 .hca_port = 1,
-		 .state = "connected",
-		 .tx_bytes = 1023,
-		 .rx_bytes = 377000,
-		 .inflights = 100500,
-		 .reconnects = 2
-		},
-		{.sess = &s,
-		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6@"
-			     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
-		 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
-		 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
-		 .hca_name = "mlx4_0",
-		 .hca_port = 2,
-		 .state = "disconnected",
-		 .tx_bytes = 0,
-		 .rx_bytes = 0,
-		 .inflights = 0,
-		 .reconnects = 3
-		}
+		&g_p[0],
+		&g_p[1]
 	}
 };
 
-static struct ibnbd_sess s1 = {
+static struct ibnbd_sess g_s1 = {
 	.side	  = IBNBD_CLT,
 	.sessname = "ps401a-3@st401b-4",
 	.mp = "min-inflight",
@@ -136,23 +188,11 @@ static struct ibnbd_sess s1 = {
 	.reconnects = 5,
 	.path_uu = "U",
 	.paths = {
-		{.sess = &s1,
-		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6@"
-			     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
-		 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
-		 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
-		 .hca_name = "mlx4_0",
-		 .hca_port = 2,
-		 .state = "connected",
-		 .tx_bytes = 1023,
-		 .rx_bytes = 0,
-		 .inflights = 100500,
-		 .reconnects = 4
-		}
+		&g_p[2]
 	}
 };
 
-static struct ibnbd_sess s2 = {
+static struct ibnbd_sess g_s2 = {
 	.side	  = IBNBD_SRV,
 	.sessname = "ps401a-1@ps401a-3",
 	.mp = "min-inflight",
@@ -165,43 +205,19 @@ static struct ibnbd_sess s2 = {
 	.reconnects = 5,
 	.path_uu = "UU",
 	.paths = {
-		{.sess = &s2,
-		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5@"
-			     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
-		 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5",
-		 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
-		 .state = "connected",
-		 .hca_name = "mlx4_0",
-		 .hca_port = 1,
-		 .tx_bytes = 0,
-		 .rx_bytes = 377000,
-		 .inflights = 0,
-		},
-		{.sess = &s2,
-		 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6@"
-			     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
-		 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
-		 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
-		 .state = "connected",
-		 .hca_name = "mlx4_0",
-		 .hca_port = 2,
-		 .tx_bytes = 1023,
-		 .rx_bytes = 0,
-		 .inflights = 100500,
-		}
+		&g_p[3],
+		&g_p[4]
 	}
 };
 
-static struct ibnbd_sess *sessions[] = {
-	&s,
-	&s1,
-	&s2,
+static struct ibnbd_sess *g_sessions[] = {
+	&g_s,
+	&g_s1,
+	&g_s2,
 	NULL
 };
-static struct ibnbd_sess *sess_clt[ARRSIZE(sessions)];
-static struct ibnbd_sess *sess_srv[ARRSIZE(sessions)];
 
-static struct ibnbd_dev d[] = {
+static struct ibnbd_dev g_d[] = {
 	{.devname = "ibnbd0",
 	 .devpath = "/dev/ibnbd0",
 	 .iomode = IBNBD_FILEIO,
@@ -239,50 +255,45 @@ static struct ibnbd_dev d[] = {
 	},
 };
 
-static struct ibnbd_sess_dev sess_devs[] = {
+static struct ibnbd_sess_dev g_sess_devs[] = {
 	{.mapping_path = "112b5fc0-91f5-4157-8603-777f8e733f1f",
 	 .access_mode = IBNBD_RW,
-	 .sess = &s,
-	 .dev = &d[0]
+	 .sess = &g_s,
+	 .dev = &g_d[0]
 	},
 	{.mapping_path = "8f749d51-c7c2-41cc-a55e-4fca8b97de73",
 	 .access_mode = IBNBD_RO,
-	 .sess = &s1,
-	 .dev = &d[1]
+	 .sess = &g_s1,
+	 .dev = &g_d[1]
 	},
 	{.mapping_path = "ecf6bfd0-3dae-46a3-9a1b-e61225920185",
 	 .access_mode = IBNBD_MIGRATION,
-	 .sess = &s1,
-	 .dev = &d[2]
+	 .sess = &g_s1,
+	 .dev = &g_d[2]
 	},
 	{.mapping_path = "ecf6bfd0-3dae-46a3-9a1b-e61225920185",
 	 .access_mode = IBNBD_RW,
-	 .sess = &s2,
-	 .dev = &d[4]
+	 .sess = &g_s2,
+	 .dev = &g_d[4]
 	},
 	{.mapping_path = "ecf6bfd0-3dae-46a3-9a1b-e61225920185",
 	 .access_mode = IBNBD_RW,
-	 .sess = &s2,
-	 .dev = &d[3]
+	 .sess = &g_s2,
+	 .dev = &g_d[3]
 	},
 	{.mapping_path = "ecf6bfd0-3dae-46a3-9a1b-e61225920185",
 	 .access_mode = IBNBD_RW,
-	 .sess = &s,
-	 .dev = &d[3]
+	 .sess = &g_s,
+	 .dev = &g_d[3]
 	},
 };
 
-static struct ibnbd_sess_dev *sds[] = {
-	&sess_devs[0],
-	&sess_devs[1],
-	&sess_devs[2],
-	&sess_devs[3],
-	&sess_devs[4],
-	&sess_devs[5],
+static struct ibnbd_sess_dev *g_sds[] = {
+	&g_sess_devs[0],
+	&g_sess_devs[1],
+	&g_sess_devs[2],
+	&g_sess_devs[3],
+	&g_sess_devs[4],
+	&g_sess_devs[5],
 	NULL
 };
-
-static struct ibnbd_sess_dev *sds_clt[ARRSIZE(sds)];
-static struct ibnbd_sess_dev *sds_srv[ARRSIZE(sds)];
-
-
