@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>	/* for isatty() */
 #include <assert.h>
+#include <stdbool.h>
 
 #include "levenshtein.h"
 #include "table.h"
@@ -28,6 +29,13 @@
 		if (args.verbose_set) \
 			printf(fmt, ##__VA_ARGS__); \
 	} while (0)
+
+static struct ibnbd_sess_dev *sds_clt[ARRSIZE(g_sds)];
+static struct ibnbd_sess_dev *sds_srv[ARRSIZE(g_sds)];
+static struct ibnbd_sess *sess_clt[ARRSIZE(g_sessions)];
+static struct ibnbd_sess *sess_srv[ARRSIZE(g_sessions)];
+static struct ibnbd_path *paths_clt[ARRSIZE(g_paths)];
+static struct ibnbd_path *paths_srv[ARRSIZE(g_paths)];
 
 /*
  * True if STDOUT is a terminal
@@ -688,22 +696,19 @@ static int list_devices(struct ibnbd_sess_dev **s_clt,
 	return 0;
 }
 
-static int list_paths_term(struct ibnbd_sess **sessions, int sess_num,
+static int list_paths_term(struct ibnbd_path **paths, int path_cnt,
 			   struct table_column **cs, int tree)
 {
-	int i, j, cs_cnt, path_cnt = 0, fld_cnt = 0;
-	struct table_fld *flds;
 	struct ibnbd_path total = {
 		.rx_bytes = 0,
 		.tx_bytes = 0,
 		.inflights = 0,
 		.reconnects = 0
 	};
+	int i, cs_cnt, fld_cnt = 0;
+	struct table_fld *flds;
 
 	cs_cnt = clm_cnt(cs);
-
-	for (i = 0; i < sess_num; i++)
-		path_cnt += sessions[i]->path_cnt;
 
 	flds = calloc((path_cnt + 1) * cs_cnt, sizeof(*flds));
 	if (!flds) {
@@ -711,18 +716,15 @@ static int list_paths_term(struct ibnbd_sess **sessions, int sess_num,
 		return -ENOMEM;
 	}
 
-	for (i = 0; i < sess_num; i++) {
-		for (j = 0; j < sessions[i]->path_cnt; j++) {
-			table_row_stringify(&sessions[i]->paths[j],
-					    flds + fld_cnt, cs, 1, 0);
+	for (i = 0; i < path_cnt; i++) {
+		table_row_stringify(paths[i], flds + fld_cnt, cs, 1, 0);
 
-			fld_cnt += cs_cnt;
+		fld_cnt += cs_cnt;
 
-			total.rx_bytes += sessions[i]->paths[j].rx_bytes;
-			total.tx_bytes += sessions[i]->paths[j].tx_bytes;
-			total.inflights += sessions[i]->paths[j].inflights;
-			total.reconnects += sessions[i]->paths[j].reconnects;
-		}
+		total.rx_bytes += paths[i]->rx_bytes;
+		total.tx_bytes += paths[i]->tx_bytes;
+		total.inflights += paths[i]->inflights;
+		total.reconnects += paths[i]->reconnects;
 	}
 
 	if (!args.nototals_set)
@@ -732,14 +734,11 @@ static int list_paths_term(struct ibnbd_sess **sessions, int sess_num,
 		table_header_print_term("", cs, trm, 'a');
 
 	fld_cnt = 0;
-	for (i = 0; i < sess_num; i++) {
-		for (j = 0; j < sessions[i]->path_cnt; j++) {
-			table_flds_print_term(
-				!tree ? "" : j < sessions[i]->path_cnt - 1 ?
-				"├─ " : "└─ ",
-				flds + fld_cnt, cs, trm, 0);
-			fld_cnt += cs_cnt;
-		}
+	for (i = 0; i < path_cnt; i++) {
+		table_flds_print_term(
+			!tree ? "" : i < path_cnt - 1 ?
+			"├─ " : "└─ ", flds + fld_cnt, cs, trm, 0);
+		fld_cnt += cs_cnt;
 	}
 
 	if (!args.nototals_set && has_num(cs) && !tree) {
@@ -800,7 +799,8 @@ static int list_sessions_term(struct ibnbd_sess **sessions,
 		table_flds_print_term("", flds + i * cs_cnt,
 				      cs, trm, 0);
 		if (tree)
-			list_paths_term(&sessions[i], 1,
+			list_paths_term(sessions[i]->paths,
+					sessions[i]->path_cnt,
 					clms_paths_shortdesc, 1);
 	}
 
@@ -939,129 +939,121 @@ static int list_sessions(struct ibnbd_sess **s_clt, struct ibnbd_sess **s_srv)
 	return 0;
 }
 
-static void list_paths_csv(struct ibnbd_sess **sessions,
+static void list_paths_csv(struct ibnbd_path **paths,
 			   struct table_column **cs)
 {
-	int i, j;
+	int i;
 
 	if (!args.noheaders_set)
 		table_header_print_csv(cs);
 
-	for (i = 0; sessions[i]; i++)
-		for (j = 0; j < sessions[i]->path_cnt; j++)
-			table_row_print(&sessions[i]->paths[j],
-					FMT_CSV, "", cs, 0, 0, 0);
+	for (i = 0; paths[i]; i++)
+		table_row_print(paths[i], FMT_CSV, "", cs, 0, 0, 0);
 }
 
-static void list_paths_json(struct ibnbd_sess **sessions,
+static void list_paths_json(struct ibnbd_path **paths,
 			    struct table_column **cs)
 {
-	int i, j;
+	int i;
 
 	printf("[\n");
 
-	for (i = 0; sessions[i]; i++) {
-		for (j = 0; j < sessions[i]->path_cnt; j++) {
-			if (i || j)
-				printf(",\n");
-			table_row_print(&sessions[i]->paths[j],
-					FMT_JSON, "\t\t", cs, 0, 0, 0);
-		}
+	for (i = 0; paths[i]; i++) {
+		if (i)
+			printf(",\n");
+		table_row_print(paths[i], FMT_JSON, "\t\t", cs, 0, 0, 0);
 	}
 
 	printf("\n\t]");
 }
 
-static void list_paths_xml(struct ibnbd_sess **sessions,
+static void list_paths_xml(struct ibnbd_path **paths,
 			   struct table_column **cs)
 {
-	int i, j;
+	int i;
 
-	for (i = 0; sessions[i]; i++) {
-		for (j = 0; j < sessions[i]->path_cnt; j++) {
-			printf("\t<path>\n");
-			table_row_print(&sessions[i]->paths[j], FMT_XML,
-					"\t\t", cs, 0, 0, 0);
-			printf("\t</path>\n");
-		}
+	for (i = 0; paths[i]; i++) {
+		printf("\t<path>\n");
+		table_row_print(paths[i], FMT_XML, "\t\t", cs, 0, 0, 0);
+		printf("\t</path>\n");
 	}
 }
 
 
-static int list_paths(struct ibnbd_sess **s_clt, struct ibnbd_sess **s_srv)
+static int list_paths(struct ibnbd_path **p_clt, struct ibnbd_path **p_srv)
 {
-	int clt_s_num = 0, srv_s_num = 0;
+	int clt_p_num = 0, srv_p_num = 0;
 
 	if (args.ibnbdmode & IBNBD_CLIENT)
-		for (clt_s_num = 0; s_clt[clt_s_num]; clt_s_num++)
+		for (clt_p_num = 0; p_clt[clt_p_num]; clt_p_num++)
 			;
 
 	if (args.ibnbdmode & IBNBD_SERVER)
-		for (srv_s_num = 0; s_srv[srv_s_num]; srv_s_num++)
+		for (srv_p_num = 0; p_srv[srv_p_num]; srv_p_num++)
 			;
 
 	switch (args.fmt) {
 	case FMT_CSV:
-		if (clt_s_num && srv_s_num)
+		if (clt_p_num && srv_p_num)
 			printf("Outgoing paths:\n");
 
-		if (clt_s_num)
-			list_paths_csv(s_clt, args.clms_paths_clt);
+		if (clt_p_num)
+			list_paths_csv(p_clt, args.clms_paths_clt);
 
-		if (clt_s_num && srv_s_num)
+		if (clt_p_num && srv_p_num)
 			printf("Incoming paths:\n");
 
-		if (srv_s_num)
-			list_paths_csv(s_srv, args.clms_paths_srv);
+		if (srv_p_num)
+			list_paths_csv(p_srv, args.clms_paths_srv);
 		break;
 	case FMT_JSON:
 		printf("{\n");
 
-		if (clt_s_num) {
+		if (clt_p_num) {
 			printf("\t\"outgoing paths\": ");
-			list_paths_json(s_clt, args.clms_paths_clt);
+			list_paths_json(p_clt, args.clms_paths_clt);
 		}
 
-		if (clt_s_num && srv_s_num)
+		if (clt_p_num && srv_p_num)
 			printf(",");
 
 		printf("\n");
 
-		if (srv_s_num) {
+		if (srv_p_num) {
 			printf("\t\"incoming paths\": ");
-			list_paths_json(s_srv, args.clms_paths_srv);
+			list_paths_json(p_srv, args.clms_paths_srv);
 		}
 
 		printf("\n}\n");
 
 		break;
 	case FMT_XML:
-		if (clt_s_num) {
+		if (clt_p_num) {
 			printf("<outgoing paths>\n");
-			list_paths_xml(s_clt, args.clms_paths_clt);
+			list_paths_xml(p_clt, args.clms_paths_clt);
 			printf("</outgoing paths>\n");
 		}
-		if (srv_s_num) {
+		if (srv_p_num) {
 			printf("<incoming paths>\n");
-			list_paths_xml(s_srv, args.clms_paths_srv);
+			list_paths_xml(p_srv, args.clms_paths_srv);
 			printf("</incoming paths>\n");
 		}
 
 		break;
 	case FMT_TERM:
 	default:
-		if (clt_s_num && srv_s_num)
+		if (clt_p_num && srv_p_num)
 			printf("%s%s%s\n", CLR(trm, CDIM, "Outgoing paths"));
 
-		if (clt_s_num)
-			list_paths_term(s_clt, clt_s_num,
+		if (clt_p_num)
+			list_paths_term(p_clt, clt_p_num,
 					args.clms_paths_clt, args.tree_set);
 
-		if (clt_s_num && srv_s_num)
+		if (clt_p_num && srv_p_num)
 			printf("%s%s%s\n", CLR(trm, CDIM, "Incoming paths"));
 
-		if (srv_s_num)
-			list_paths_term(s_srv, srv_s_num,
+		if (srv_p_num)
+			list_paths_term(p_srv, srv_p_num,
 					args.clms_paths_srv, args.tree_set);
 		break;
 	}
@@ -1082,27 +1074,38 @@ static int cmd_list(void)
 		rc = list_sessions(sess_clt, sess_srv);
 		break;
 	case LST_PATHS:
-		rc = list_paths(sess_clt, sess_srv);
+		rc = list_paths(paths_clt, paths_srv);
 		break;
 	}
 
 	return rc;
 }
 
+static bool match_device(struct ibnbd_sess_dev *d, char *name)
+{
+	if (!strcmp(d->mapping_path, name) ||
+	    !strcmp(d->dev->devname, name) ||
+	    !strcmp(d->dev->devpath, name))
+		return true;
+
+	return false;
+}
+
 /*
  * Find first ibnbd device by device name, path or mapping path
  */
-static struct ibnbd_sess_dev *find_device(char *name)
+static bool device_exists(char *name)
 {
 	int i;
 
-	for (i = 0; sds[i]; i++)
-		if (!strcmp(sds[i]->mapping_path, name) ||
-		    !strcmp(sds[i]->dev->devname, name) ||
-		    !strcmp(sds[i]->dev->devpath, name))
-			return sds[i];
+	for (i = 0; sds_clt[i]; i++)
+		if (match_device(sds_clt[i], name))
+			return true;
+	for (i = 0; sds_srv[i]; i++)
+		if (match_device(sds_srv[i], name))
+			return true;
 
-	return NULL;
+	return false;
 }
 
 static int find_devices(char *name, struct ibnbd_sess_dev **devs,
@@ -1110,13 +1113,9 @@ static int find_devices(char *name, struct ibnbd_sess_dev **devs,
 {
 	int i, cnt = 0;
 
-	for (i = 0; devs[i]; i++) {
-		if (!strcmp(devs[i]->mapping_path, name) ||
-		    !strcmp(devs[i]->dev->devname, name) ||
-		    !strcmp(devs[i]->dev->devpath, name)) {
+	for (i = 0; devs[i]; i++)
+		if (match_device(devs[i], name))
 			res[cnt++] = devs[i];
-		}
-	}
 
 	res[cnt] = NULL;
 
@@ -1146,13 +1145,13 @@ static int show_device(char *devname)
 	struct table_column **cs;
 	int cnt, ret = 0;
 
-	ds_imp = calloc(ARRSIZE(sds), sizeof(sds[0]));
+	ds_imp = calloc(ARRSIZE(g_sds), sizeof(g_sds[0]));
 	if (!ds_imp) {
 		ERR("Failed to alloc memory\n");
 		return -ENOMEM;
 	}
 
-	ds_exp = calloc(ARRSIZE(sds), sizeof(sds[0]));
+	ds_exp = calloc(ARRSIZE(g_sds), sizeof(g_sds[0]));
 	if (!ds_exp) {
 		ERR("Failed to alloc memory\n");
 		ret = -ENOMEM;
@@ -1194,7 +1193,8 @@ static int show_device(char *devname)
 	case FMT_TERM:
 	default:
 		table_row_stringify(ds[0], flds, cs, 1, 0);
-		table_entry_print_term("", flds, cs, table_get_max_h_width(cs), trm);
+		table_entry_print_term("", flds, cs, table_get_max_h_width(cs),
+				       trm);
 
 		break;
 	}
@@ -1206,56 +1206,48 @@ free_imp:
 	return ret;
 }
 
-/*
- * Find a session by name or hostname
- */
-static struct ibnbd_sess *find_session(char *name)
+static bool match_sess(struct ibnbd_sess *s, char *name)
 {
 	char *at;
+
+	if (!strcmp(name, s->sessname))
+		return true;
+
+	at = strchr(s->sessname, '@');
+	if (at && (!strcmp(name, at + 1) ||
+		   !strncmp(name, s->sessname, strlen(name))))
+			return true;
+	return false;
+}
+
+static bool session_exists(char *name)
+{
 	int i;
 
-	for (i = 0; sessions[i]; i++) {
-		if (!strcmp(name, sessions[i]->sessname))
-			return sessions[i];
+	for (i = 0; sess_clt[i]; i++)
+		if (match_sess(sess_clt[i], name))
+			return true;
+	for (i = 0; sess_srv[i]; i++)
+		if (match_sess(sess_srv[i], name))
+			return true;
 
-		at = strchr(sessions[i]->sessname, '@');
-		if (at) {
-			if (!strcmp(name, at + 1) ||
-			    !strncmp(name, sessions[i]->sessname,
-				     at - sessions[i]->sessname))
-				return sessions[i];
-		}
-	}
-
-	return NULL;
+	return false;
 }
 
 static int find_sessions(char *name, struct ibnbd_sess **ss,
 			 struct ibnbd_sess **res)
 {
 	int i, cnt = 0;
-	char *at;
 
-	for (i = 0; ss[i]; i++) {
-		if (strcmp(name, ss[i]->sessname)) {
-			at = strchr(ss[i]->sessname, '@');
-			if (!at)
-				continue;
-
-			if (strcmp(name, at + 1) &&
-			    strncmp(name, ss[i]->sessname, strlen(name)))
-				continue;
-		}
-		res[cnt++] = ss[i];
-	}
+	for (i = 0; ss[i]; i++)
+		if (match_sess(ss[i], name))
+			res[cnt++] = ss[i];
 
 	res[cnt] = NULL;
 
 	return cnt;
 }
-/*
- * Find all sessions matching name
- */
+
 static int find_sessions_all(char *name, struct ibnbd_sess **ss_clt,
 			     struct ibnbd_sess **ss_srv)
 {
@@ -1270,91 +1262,93 @@ static int find_sessions_all(char *name, struct ibnbd_sess **ss_clt,
 	return cnt;
 }
 
-static struct ibnbd_path *find_path_by_sess_port(char *name)
+static bool match_path(struct ibnbd_path *p, char *name)
 {
-	int i, j, port;
+	int port;
 	char *at;
 
-	at = strrchr(name, ':');
-	if (!at)
-		return NULL;
-
-	if (sscanf(at + 1, "%d\n", &port) != 1)
-		return NULL;
-
-	for (i = 0; sessions[i]; i++)
-		if (!strncmp(name, sessions[i]->sessname, at - name))
-			for (j = 0; j < sessions[i]->path_cnt; j++)
-				if (sessions[i]->paths[j].hca_port == port)
-					return &sessions[i]->paths[j];
-
-	return NULL;
-}
-
-/*
- * FIXME: This might deliver multiple paths on both:
- * client and server. GID contains colons so it won't work.
- */
-static struct ibnbd_path *find_path_by_sess_srvaddr(char *name)
-{
-	int i, j;
-	char *at;
+	if (!strcmp(p->pathname, name))
+		return true;
+	if (!strcmp(name, p->sess->sessname))
+		return true;
+	if (!strcmp(name, p->cltaddr))
+		return true;
+	if (!strcmp(name, p->srvaddr))
+		return true;
+	if (sscanf(name, "%d\n", &port) == 1 &&
+	    p->hca_port == port)
+		return true;
+	if (!strcmp(name, p->hca_name))
+		return true;
 
 	at = strrchr(name, ':');
-	if (!at)
-		return NULL;
+	if (at) {
+		if (strncmp(p->sess->sessname, name,
+			    strlen(p->sess->sessname)))
+			return false;
 
-	for (i = 0; sessions[i]; i++)
-		if (!strncmp(name, sessions[i]->sessname, at - name))
-			for (j = 0; j < sessions[i]->path_cnt; j++)
-				if (!strcmp(sessions[i]->paths[j].srvaddr,
-					    at + 1))
-					return &sessions[i]->paths[j];
+		if (sscanf(at + 1, "%d\n", &port) == 1 && p->hca_port == port)
+			return true;
+		if (!strcmp(at + 1, p->srvaddr))
+			return true;
+		if (!strcmp(at + 1, p->cltaddr))
+			return true;
+		if (!strcmp(at + 1, p->hca_name))
+			return true;
+	}
 
-	return NULL;
+	return false;
 }
 
-static struct ibnbd_path *find_path_by_pathname(char *name)
+static bool path_exists(char *name)
 {
-	int i, j;
+	int i;
 
-	for (i = 0; sessions[i]; i++)
-		for (j = 0; j < sessions[i]->path_cnt; j++)
-			if (!strcmp(sessions[i]->paths[j].pathname, name))
-				return &sessions[i]->paths[j];
+	for (i = 0; paths_clt[i]; i++)
+		if (match_path(paths_clt[i], name))
+			return true;
+	for (i = 0; paths_srv[i]; i++)
+		if (match_path(paths_srv[i], name))
+			return true;
 
-	return NULL;
+	return false;
 }
 
-/*
- * Find a path by pathname, sessname:port, sessname:dstaddr/cltaddr,
- * sessname:hca_name:port, sesname:hca, check if uninque
- * TODO
- */
-static struct ibnbd_path *find_path(char *name)
+static int find_paths(char *name, struct ibnbd_path **pp,
+		      struct ibnbd_path **res)
 {
-	struct ibnbd_path *p;
+	int i, cnt = 0;
 
-	p = find_path_by_sess_port(name);
-	if (p)
-		return p;
+	for (i = 0; pp[i]; i++)
+		if (match_path(pp[i], name))
+			res[cnt++] = pp[i];
 
-	p = find_path_by_pathname(name);
-	if (p)
-		return p;
+	res[cnt] = NULL;
 
-	p = find_path_by_sess_srvaddr(name);
-
-	return p;
+	return cnt;
 }
+
+static int find_paths_all(char *name, struct ibnbd_path **pp_clt,
+			  struct ibnbd_path **pp_srv)
+{
+	int cnt = 0;
+
+	if (args.ibnbdmode & IBNBD_CLIENT)
+		cnt += find_paths(name, paths_clt, pp_clt);
+	if (args.ibnbdmode & IBNBD_SERVER)
+		cnt += find_paths(name, paths_srv, pp_srv);
+
+	return cnt;
+}
+
 
 static int get_showmode(char *name, enum showmode *mode)
 {
-	if (find_device(name))
+	if (device_exists(name))
 		*mode = SHOW_DEVICE;
-	else if (find_session(name))
+	else if (session_exists(name))
 		*mode = SHOW_SESSION;
-	else if (find_path(name))
+	else if (path_exists(name))
 		*mode = SHOW_PATH;
 	else
 		return -ENOENT;
@@ -1364,51 +1358,65 @@ static int get_showmode(char *name, enum showmode *mode)
 
 static int show_path(char *pathname)
 {
+	struct ibnbd_path **pp_clt, **pp_srv, **pp;
 	struct table_fld flds[CLM_MAX_CNT];
-	struct ibnbd_path *path;
 	struct table_column **cs;
+	int cnt, res = 0;
 
-	path = find_path(pathname);
-
-	if (!path) {
-		ERR("Path %s not found\n", pathname);
-		return -ENOENT;
+	pp_clt = calloc(ARRSIZE(paths_clt), sizeof(paths_clt[0]));
+	if (!pp_clt) {
+		ERR("Failed to alloc memory\n");
+		return -ENOMEM;
 	}
 
-	switch (path->sess->side) {
-	case IBNBD_CLT:
+	pp_srv = calloc(ARRSIZE(paths_srv), sizeof(paths_srv[0]));
+	if (!pp_srv) {
+		ERR("Failed to alloc memory\n");
+		res = -ENOMEM;
+		goto free_clt;
+	}
+
+	cnt = find_paths_all(pathname, pp_clt, pp_srv);
+	if (!cnt) {
+		ERR("Found no paths matching '%s'\n", pathname);
+		res = -ENOENT;
+		goto free_srv;
+	}
+	if (cnt > 1) {
+		INF("There are multiple paths matching '%s':\n", pathname);
+		res = list_paths(pp_clt, pp_srv);
+		goto free_srv;
+	}
+	if (pp_clt[0]) {
+		pp = pp_clt;
 		cs = args.clms_paths_clt;
-		break;
-	case IBNBD_SRV:
+	} else {
+		pp = pp_srv;
 		cs = args.clms_paths_srv;
-		break;
-	default:
-		assert(0);
 	}
 
 	switch (args.fmt) {
 	case FMT_CSV:
-		if (!args.noheaders_set)
-			table_header_print_csv(cs);
-		table_row_print(path, FMT_CSV, "", cs, 0, 0, 0);
+		list_paths_csv(pp, cs);
 		break;
 	case FMT_JSON:
-		table_row_print(path, FMT_JSON, "", cs, 0, 0, 0);
-		printf("\n");
+		list_paths_json(pp, cs);
 		break;
 	case FMT_XML:
-		table_row_print(path, FMT_XML, "", cs, 0, 0, 0);
+		list_paths_xml(pp, cs);
 		break;
 	case FMT_TERM:
 	default:
-		table_row_stringify(path, flds, cs, 1, 0);
+		table_row_stringify(pp[0], flds, cs, 1, 0);
 		table_entry_print_term("", flds, cs,
 				       table_get_max_h_width(cs), trm);
 		break;
 	}
-
-
-	return 0;
+free_srv:
+	free(pp_srv);
+free_clt:
+	free(pp_clt);
+	return res;
 }
 
 static int show_session(char *sessname)
@@ -1418,13 +1426,13 @@ static int show_session(char *sessname)
 	struct table_column **cs, **ps;
 	int cnt, res = 0;
 
-	ss_clt = calloc(ARRSIZE(sessions), sizeof(sessions[0]));
+	ss_clt = calloc(ARRSIZE(sess_clt), sizeof(sess_clt[0]));
 	if (!ss_clt) {
 		ERR("Failed to alloc memory\n");
 		return -ENOMEM;
 	}
 
-	ss_srv = calloc(ARRSIZE(sessions), sizeof(sessions[0]));
+	ss_srv = calloc(ARRSIZE(sess_srv), sizeof(sess_srv[0]));
 	if (!ss_srv) {
 		ERR("Failed to alloc memory\n");
 		res = -ENOMEM;
@@ -1469,7 +1477,7 @@ static int show_session(char *sessname)
 				       table_get_max_h_width(cs), trm);
 		printf("%s%s%s %s(%s)%s\n", CLR(trm, CBLD, ss[0]->sessname),
 		       CLR(trm, CBLD, ss[0]->mp_short));
-		list_paths_term(ss, 1, ps, 1);
+		list_paths_term(ss[0]->paths, ss[0]->path_cnt, ps, 1);
 
 		break;
 	}
@@ -1754,9 +1762,10 @@ static struct cmd cmds[] = {
 		"Delete a path",
 		"Delete a given path from the corresponding session",
 		 cmd_delpath, parse_name, help_delpath},
-	{"help", "Display help",
-		 "Display help message and exit.",
-		 cmd_help, NULL, NULL},
+	{"help",
+		"Display help",
+		"Display help message and exit.",
+		cmd_help, NULL, NULL},
 	{ 0 }
 };
 
@@ -1911,8 +1920,6 @@ static void init_args(void)
 
 static void default_args(void)
 {
-	int i;
-
 	if (!args.lstmode_set)
 		args.lstmode = LST_DEVICES;
 
@@ -1923,32 +1930,41 @@ static void default_args(void)
 		args.prec = 3;
 
 	if (!args.ibnbdmode_set) {
-		for (i = 0; sessions[i]; i++)
-			if (sessions[i]->side == IBNBD_CLT)
-				args.ibnbdmode |= IBNBD_CLIENT;
-			else
-				args.ibnbdmode |= IBNBD_SERVER;
+		if (sess_clt[0])
+			args.ibnbdmode |= IBNBD_CLIENT;
+		if (sess_srv[0])
+			args.ibnbdmode |= IBNBD_SERVER;
 	}
 }
+
 
 int ibnbd_read_sysfs(void)
 {
 	int i, clt, srv;
 
-	for (i = 0, clt = 0, srv = 0; sessions[i]; i++)
-		if (sessions[i]->side == IBNBD_CLT)
-			sess_clt[clt++] = sessions[i];
+	for (i = 0, clt = 0, srv = 0; g_sessions[i]; i++)
+		if (g_sessions[i]->side == IBNBD_CLT)
+			sess_clt[clt++] = g_sessions[i];
 		else
-			sess_srv[srv++] = sessions[i];
+			sess_srv[srv++] = g_sessions[i];
 
 	sess_clt[clt] = NULL;
 	sess_srv[srv] = NULL;
 
-	for (i = 0, clt = 0, srv = 0; sds[i]; i++)
-		if (sds[i]->sess->side == IBNBD_CLT)
-			sds_clt[clt++] = sds[i];
+	for (i = 0, clt = 0, srv = 0; g_paths[i]; i++)
+		if (g_paths[i]->sess->side == IBNBD_CLT)
+			paths_clt[clt++] = g_paths[i];
 		else
-			sds_srv[srv++] = sds[i];
+			paths_srv[srv++] = g_paths[i];
+
+	paths_clt[clt] = NULL;
+	paths_srv[srv] = NULL;
+
+	for (i = 0, clt = 0, srv = 0; g_sds[i]; i++)
+		if (g_sds[i]->sess->side == IBNBD_CLT)
+			sds_clt[clt++] = g_sds[i];
+		else
+			sds_srv[srv++] = g_sds[i];
 
 	sds_clt[clt] = NULL;
 	sds_srv[srv] = NULL;
@@ -2051,7 +2067,6 @@ int main(int argc, char **argv)
 		i = ret;
 	}
 
-	default_args();
 	/*
 	 * Read stuff from sysfs
 	 */
@@ -2060,6 +2075,8 @@ int main(int argc, char **argv)
 		ERR("Failed to read sysfs entries: %d\n", ret);
 		goto out;
 	}
+
+	default_args();
 
 	ret = 0;
 	if (args.help_set && cmd->help)

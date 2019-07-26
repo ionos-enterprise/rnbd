@@ -18,11 +18,11 @@ enum ibnbd_side {
 };
 
 /*
- * IBNBD block device, client side
+ * A block device expoted or imported
  */
 struct ibnbd_dev {
 	char 		  devname[NAME_MAX]; /* file under /dev/ */
-	char 		  devpath[NAME_MAX]; /* /dev/ibnbd<x> */
+	char 		  devpath[NAME_MAX]; /* /dev/ibnbd<x>, /dev/ram<x> */
 	enum ibnbd_iomode iomode;	     /* access file/block */
 	int		  rx_sect;	     /* from /sys/block/../stats */
 	int		  tx_sect;	     /* from /sys/block/../stats */
@@ -63,19 +63,12 @@ struct ibnbd_sess {
 	struct ibnbd_path *paths[];	/* paths */
 };
 
-enum ibnbd_exp_imp {
-	IBNBD_EXPORT,
-	IBNBD_IMPORT
-};
-
 struct ibnbd_sess_dev {
 	struct ibnbd_sess	*sess;			/* session */
 	char			mapping_path[NAME_MAX]; /* name for mapping */
 	enum ibnbd_access_mode	access_mode; 		/* ro/rw/migration */
 	struct ibnbd_dev	*dev;			/* ibnbd block device */
-	enum ibnbd_exp_imp	dir;			/* is it src or dst ? */
 };
-
 
 /*
  * Fake example data. Should be partially read from sysfs and partially
@@ -112,9 +105,9 @@ static struct ibnbd_path g_p[] = {
 	},
 	{.sess = &g_s1,
 	 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6@"
-		     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
+		     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f7",
 	 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
-	 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
+	 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f7",
 	 .hca_name = "mlx4_0",
 	 .hca_port = 2,
 	 .state = "connected",
@@ -124,10 +117,10 @@ static struct ibnbd_path g_p[] = {
 	 .reconnects = 4
 	},
 	{.sess = &g_s2,
-	 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5@"
-		     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
-	 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5",
-	 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
+	 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0aa@"
+		     "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5",
+	 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0aa",
+	 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5",
 	 .state = "connected",
 	 .hca_name = "mlx4_0",
 	 .hca_port = 1,
@@ -136,10 +129,10 @@ static struct ibnbd_path g_p[] = {
 	 .inflights = 0,
 	},
 	{.sess = &g_s2,
-	 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6@"
+	 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0bb@"
 		     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
-	 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
-	 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
+	 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0bb",
+	 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
 	 .state = "connected",
 	 .hca_name = "mlx4_0",
 	 .hca_port = 2,
