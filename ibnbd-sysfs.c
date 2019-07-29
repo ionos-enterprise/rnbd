@@ -89,7 +89,7 @@ int get_ibnbd_dev_sysfs(char *path, struct ibnbd_dev *dev)
 
 	memset(val, 0, 1024);
 	get_sysnode(val, new_path, "io_mode");
-	dev->io_mode = atoi(val);
+	strcpy(dev->io_mode, val);
 
 	memset(val, 0, 1024);
 	get_sysnode(val, new_path, "state");

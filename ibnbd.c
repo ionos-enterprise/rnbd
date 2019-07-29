@@ -53,7 +53,7 @@ struct args {
 	enum fmt_type fmt;
 	short fmt_set;
 
-	unsigned int iomode;
+	char iomode[64];
 	short iomode_set;
 
 	unsigned int lstmode;
@@ -156,12 +156,11 @@ static int parse_fmt(int argc, char **argv, int i, const struct sarg *sarg)
 
 static int parse_iomode(int argc, char **argv, int i, const struct sarg *sarg)
 {
-	if (!strcasecmp(argv[i], "blockio"))
-		args.iomode = IBNBD_BLOCKIO;
-	else if (!strcasecmp(argv[i], "fileio"))
-		args.iomode = IBNBD_FILEIO;
-	else
+	if (strcasecmp(argv[i], "blockio") &&
+	    strcasecmp(argv[i], "fileio"))
 		return i;
+
+	strcpy(args.iomode, argv[i]);
 
 	args.iomode_set = 1;
 
@@ -1271,9 +1270,9 @@ static bool match_path(struct ibnbd_path *p, char *name)
 		return true;
 	if (!strcmp(name, p->sess->sessname))
 		return true;
-	if (!strcmp(name, p->cltaddr))
+	if (!strcmp(name, p->src_addr))
 		return true;
-	if (!strcmp(name, p->srvaddr))
+	if (!strcmp(name, p->dst_addr))
 		return true;
 	if (sscanf(name, "%d\n", &port) == 1 &&
 	    p->hca_port == port)
@@ -1289,9 +1288,9 @@ static bool match_path(struct ibnbd_path *p, char *name)
 
 		if (sscanf(at + 1, "%d\n", &port) == 1 && p->hca_port == port)
 			return true;
-		if (!strcmp(at + 1, p->srvaddr))
+		if (!strcmp(at + 1, p->dst_addr))
 			return true;
-		if (!strcmp(at + 1, p->cltaddr))
+		if (!strcmp(at + 1, p->src_addr))
 			return true;
 		if (!strcmp(at + 1, p->hca_name))
 			return true;

@@ -57,24 +57,14 @@ static int sd_access_mode_to_str(char *str, size_t len, enum color *clr,
 	}
 }
 
-static int sdd_iomode_to_str(char *str, size_t len, enum color *clr, void *v,
+static int sdd_io_mode_to_str(char *str, size_t len, enum color *clr, void *v,
 			     int humanize)
 {
 	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
 						 sess);
-	enum ibnbd_iomode mode = sd->dev->iomode;
-
 	*clr = CNRM;
 
-	switch (mode) {
-	case IBNBD_FILEIO:
-		return snprintf(str, len, "fileio");
-	case IBNBD_BLOCKIO:
-		return snprintf(str, len, "blockio");
-	default:
-		*clr = CUND;
-		return snprintf(str, len, "%d", mode);
-	}
+	return snprintf(str, len, "%s", sd->dev->io_mode);
 }
 
 CLM_SD(access_mode, "Access Mode", FLD_STR, sd_access_mode_to_str, 'l', CNRM,
@@ -106,9 +96,9 @@ static struct table_column clm_ibnbd_dev_devpath =
 	_CLM_SD("devpath", sess, "Device path", FLD_STR, sd_devpath_to_str, 'l',
 		CNRM, CNRM, "Device path under /dev/. I.e. /dev/ibnbd0");
 
-static struct table_column clm_ibnbd_dev_iomode =
-	_CLM_SD("iomode", sess, "IO mode", FLD_STR,
-		sdd_iomode_to_str, 'l',	CNRM, CNRM,
+static struct table_column clm_ibnbd_dev_io_mode =
+	_CLM_SD("io_mode", sess, "IO mode", FLD_STR,
+		sdd_io_mode_to_str, 'l', CNRM, CNRM,
 		"IO submission mode of the target device: file/block");
 
 static int sd_rx_to_str(char *str, size_t len, enum color *clr, void *v,
@@ -195,7 +185,7 @@ static struct table_column *all_clms_devices[] = {
 	&clm_ibnbd_dev_devpath,
 	&clm_ibnbd_dev_state,
 	&clm_ibnbd_sess_dev_access_mode,
-	&clm_ibnbd_dev_iomode,
+	&clm_ibnbd_dev_io_mode,
 	&clm_ibnbd_dev_rx_sect,
 	&clm_ibnbd_dev_tx_sect,
 	&clm_ibnbd_sess_dev_direction,
@@ -209,7 +199,7 @@ static struct table_column *all_clms_devices_clt[] = {
 	&clm_ibnbd_dev_devpath,
 	&clm_ibnbd_dev_state,
 	&clm_ibnbd_sess_dev_access_mode,
-	&clm_ibnbd_dev_iomode,
+	&clm_ibnbd_dev_io_mode,
 	&clm_ibnbd_dev_rx_sect,
 	&clm_ibnbd_dev_tx_sect,
 	&clm_ibnbd_sess_dev_direction,
@@ -222,7 +212,7 @@ static struct table_column *all_clms_devices_srv[] = {
 	&clm_ibnbd_dev_devname,
 	&clm_ibnbd_dev_devpath,
 	&clm_ibnbd_sess_dev_access_mode,
-	&clm_ibnbd_dev_iomode,
+	&clm_ibnbd_dev_io_mode,
 	&clm_ibnbd_dev_rx_sect,
 	&clm_ibnbd_dev_tx_sect,
 	&clm_ibnbd_sess_dev_direction,
@@ -235,7 +225,7 @@ static struct table_column *def_clms_devices_clt[] = {
 	&clm_ibnbd_dev_devname,
 	&clm_ibnbd_dev_state,
 	&clm_ibnbd_sess_dev_access_mode,
-	&clm_ibnbd_dev_iomode,
+	&clm_ibnbd_dev_io_mode,
 	NULL
 };
 
@@ -244,7 +234,7 @@ static struct table_column *def_clms_devices_srv[] = {
 	&clm_ibnbd_sess_dev_mapping_path,
 	&clm_ibnbd_dev_devname,
 	&clm_ibnbd_sess_dev_access_mode,
-	&clm_ibnbd_dev_iomode,
+	&clm_ibnbd_dev_io_mode,
 	NULL
 };
 
@@ -399,9 +389,9 @@ CLM_P(state, "State", FLD_STR, ibnbd_path_state_to_str, 'l', CNRM, CBLD,
 	"Name of the path");
 CLM_P(pathname, "Path name", FLD_STR, NULL, 'l', CNRM, CNRM,
 	"Path name");
-CLM_P(cltaddr, "Client Addr", FLD_STR, NULL, 'l', CNRM, CNRM,
+CLM_P(src_addr, "Client Addr", FLD_STR, NULL, 'l', CNRM, CNRM,
 	"Client address of the path");
-CLM_P(srvaddr, "Server Addr", FLD_STR, NULL, 'l', CNRM, CNRM,
+CLM_P(dst_addr, "Server Addr", FLD_STR, NULL, 'l', CNRM, CNRM,
 	"Server address of the path");
 CLM_P(hca_name, "HCA", FLD_STR, NULL, 'l', CNRM, CNRM, "HCA name");
 CLM_P(hca_port, "Port", FLD_VAL, NULL, 'r', CNRM, CNRM, "HCA port");
@@ -468,8 +458,8 @@ static struct table_column clm_ibnbd_path_direction =
 static struct table_column *all_clms_paths[] = {
 	&clm_ibnbd_path_sessname,
 	&clm_ibnbd_path_pathname,
-	&clm_ibnbd_path_cltaddr,
-	&clm_ibnbd_path_srvaddr,
+	&clm_ibnbd_path_src_addr,
+	&clm_ibnbd_path_dst_addr,
 	&clm_ibnbd_path_hca_name,
 	&clm_ibnbd_path_hca_port,
 	&clm_ibnbd_path_state,
@@ -483,8 +473,8 @@ static struct table_column *all_clms_paths[] = {
 
 static struct table_column *all_clms_paths_clt[] = {
 	&clm_ibnbd_path_sessname,
-	&clm_ibnbd_path_cltaddr,
-	&clm_ibnbd_path_srvaddr,
+	&clm_ibnbd_path_src_addr,
+	&clm_ibnbd_path_dst_addr,
 	&clm_ibnbd_path_hca_name,
 	&clm_ibnbd_path_hca_port,
 	&clm_ibnbd_path_state,
@@ -498,8 +488,8 @@ static struct table_column *all_clms_paths_clt[] = {
 
 static struct table_column *all_clms_paths_srv[] = {
 	&clm_ibnbd_path_sessname,
-	&clm_ibnbd_path_cltaddr,
-	&clm_ibnbd_path_srvaddr,
+	&clm_ibnbd_path_src_addr,
+	&clm_ibnbd_path_dst_addr,
 	&clm_ibnbd_path_hca_name,
 	&clm_ibnbd_path_hca_port,
 	&clm_ibnbd_path_rx_bytes,
@@ -513,7 +503,7 @@ static struct table_column *def_clms_paths_clt[] = {
 	&clm_ibnbd_path_sessname,
 	&clm_ibnbd_path_hca_name,
 	&clm_ibnbd_path_hca_port,
-	&clm_ibnbd_path_srvaddr,
+	&clm_ibnbd_path_dst_addr,
 	&clm_ibnbd_path_state,
 	&clm_ibnbd_path_tx_bytes,
 	&clm_ibnbd_path_rx_bytes,
@@ -526,7 +516,7 @@ static struct table_column *def_clms_paths_srv[] = {
 	&clm_ibnbd_path_sessname,
 	&clm_ibnbd_path_hca_name,
 	&clm_ibnbd_path_hca_port,
-	&clm_ibnbd_path_cltaddr,
+	&clm_ibnbd_path_src_addr,
 	&clm_ibnbd_path_tx_bytes,
 	&clm_ibnbd_path_rx_bytes,
 	&clm_ibnbd_path_inflights,
@@ -536,7 +526,7 @@ static struct table_column *def_clms_paths_srv[] = {
 static struct table_column *clms_paths_sess_clt[] = {
 	&clm_ibnbd_path_hca_name,
 	&clm_ibnbd_path_hca_port,
-	&clm_ibnbd_path_srvaddr,
+	&clm_ibnbd_path_dst_addr,
 	&clm_ibnbd_path_state,
 	NULL
 };
@@ -544,7 +534,7 @@ static struct table_column *clms_paths_sess_clt[] = {
 static struct table_column *clms_paths_sess_srv[] = {
 	&clm_ibnbd_path_hca_name,
 	&clm_ibnbd_path_hca_port,
-	&clm_ibnbd_path_cltaddr,
+	&clm_ibnbd_path_src_addr,
 	NULL
 };
 

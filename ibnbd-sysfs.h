@@ -1,11 +1,6 @@
 
 #include <limits.h>
 
-enum ibnbd_iomode {
-	IBNBD_BLOCKIO,
-	IBNBD_FILEIO
-};
-
 enum ibnbd_access_mode {
 	IBNBD_RO,
 	IBNBD_RW,
@@ -22,8 +17,8 @@ enum ibnbd_side {
  */
 struct ibnbd_dev {
 	char 		  devname[NAME_MAX]; /* file under /dev/ */
-	char 		  devpath[NAME_MAX]; /* /dev/ibnbd<x>, /dev/ram<x> */
-	enum ibnbd_iomode iomode;	     /* access file/block */
+	char 		  devpath[PATH_MAX]; /* /dev/ibnbd<x>, /dev/ram<x> */
+	char		  io_mode[NAME_MAX]; /* access file/block */
 	int		  rx_sect;	     /* from /sys/block/../stats */
 	int		  tx_sect;	     /* from /sys/block/../stats */
 	char		  state[NAME_MAX];   /* ../ibnbd/state sysfs entry */
@@ -32,8 +27,8 @@ struct ibnbd_dev {
 struct ibnbd_path {
 	struct ibnbd_sess *sess;	      /* parent session */
 	char		  pathname[NAME_MAX]; /* path appears in sysfs */
-	char		  cltaddr[NAME_MAX];  /* client address */
-	char		  srvaddr[NAME_MAX];  /* server address */
+	char		  src_addr[NAME_MAX];  /* client address */
+	char		  dst_addr[NAME_MAX];  /* server address */
 	char		  hca_name[NAME_MAX]; /* hca name */
 	int		  hca_port;	      /* hca port */
 	char		  state[NAME_MAX];    /* state sysfs entry */
@@ -80,8 +75,8 @@ static struct ibnbd_path g_p[] = {
 	{.sess = &g_s,
 	 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5@"
 		     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
-	 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5",
-	 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
+	 .src_addr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5",
+	 .dst_addr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f5",
 	 .hca_name = "mlx4_0",
 	 .hca_port = 1,
 	 .state = "connected",
@@ -93,8 +88,8 @@ static struct ibnbd_path g_p[] = {
 	{.sess = &g_s,
 	 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6@"
 		     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
-	 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
-	 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
+	 .src_addr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
+	 .dst_addr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
 	 .hca_name = "mlx4_0",
 	 .hca_port = 2,
 	 .state = "disconnected",
@@ -106,8 +101,8 @@ static struct ibnbd_path g_p[] = {
 	{.sess = &g_s1,
 	 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6@"
 		     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f7",
-	 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
-	 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f7",
+	 .src_addr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
+	 .dst_addr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0f7",
 	 .hca_name = "mlx4_0",
 	 .hca_port = 2,
 	 .state = "connected",
@@ -119,8 +114,8 @@ static struct ibnbd_path g_p[] = {
 	{.sess = &g_s2,
 	 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0aa@"
 		     "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5",
-	 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0aa",
-	 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5",
+	 .src_addr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0aa",
+	 .dst_addr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d5",
 	 .state = "connected",
 	 .hca_name = "mlx4_0",
 	 .hca_port = 1,
@@ -131,8 +126,8 @@ static struct ibnbd_path g_p[] = {
 	{.sess = &g_s2,
 	 .pathname = "gid:fe80:0000:0000:0000:0002:c903:0010:c0bb@"
 		     "gid:fe80:0000:0000:0000:0002:c903:0010:c0f6",
-	 .cltaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0bb",
-	 .srvaddr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
+	 .src_addr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0bb",
+	 .dst_addr = "gid:fe80:0000:0000:0000:0002:c903:0010:c0d6",
 	 .state = "connected",
 	 .hca_name = "mlx4_0",
 	 .hca_port = 2,
@@ -213,35 +208,35 @@ static struct ibnbd_sess *g_sessions[] = {
 static struct ibnbd_dev g_d[] = {
 	{.devname = "ibnbd0",
 	 .devpath = "/dev/ibnbd0",
-	 .iomode = IBNBD_FILEIO,
+	 .io_mode = "fileio",
 	 .rx_sect = 190,
 	 .tx_sect = 2342,
 	 .state = "open"
 	},
 	{.devname = "ibnbd1",
 	 .devpath = "/dev/ibnbd1",
-	 .iomode = IBNBD_BLOCKIO,
+	 .io_mode = "blockio",
 	 .rx_sect = 190,
 	 .tx_sect = 2342,
 	 .state = "open"
 	},
 	{.devname = "ibnbd2",
 	 .devpath = "/dev/ibnbd2",
-	 .iomode = IBNBD_BLOCKIO,
+	 .io_mode = "blockio",
 	 .rx_sect = 190,
 	 .tx_sect = 2342,
 	 .state = "closed"
 	},
 	{.devname = "ibnbd3",
 	 .devpath = "/dev/ibnbd3",
-	 .iomode = IBNBD_BLOCKIO,
+	 .io_mode = "blockio",
 	 .rx_sect = 1904,
 	 .tx_sect = 23423,
 	 .state = "open"
 	},
 	{.devname = "ram0",
 	 .devpath = "/dev/ram0",
-	 .iomode = IBNBD_BLOCKIO,
+	 .io_mode = "blockio",
 	 .rx_sect = 190,
 	 .tx_sect = 2342,
 	 .state = "closed"
