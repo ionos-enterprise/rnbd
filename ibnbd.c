@@ -956,7 +956,7 @@ static void list_paths_json(struct ibnbd_path **paths,
 {
 	int i;
 
-	printf("[\n");
+	printf("\n\t[\n");
 
 	for (i = 0; paths[i]; i++) {
 		if (i)
@@ -1401,6 +1401,7 @@ static int show_path(char *pathname)
 		break;
 	case FMT_JSON:
 		list_paths_json(pp, cs);
+		printf("\n");
 		break;
 	case FMT_XML:
 		list_paths_xml(pp, cs);
