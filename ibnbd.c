@@ -144,6 +144,8 @@ static int parse_fmt(int argc, char **argv, int i, const struct sarg *sarg)
 		args.fmt = FMT_JSON;
 	else if (!strcasecmp(argv[i], "xml"))
 		args.fmt = FMT_XML;
+	else if (!strcasecmp(argv[i], "term"))
+		args.fmt = FMT_TERM;
 	else
 		return i;
 
@@ -319,6 +321,7 @@ static struct sarg sargs[] = {
 	{"xml", "Print in XML format", parse_fmt, NULL},
 	{"csv", "Print in CSV format", parse_fmt, NULL},
 	{"json", "Print in JSON format", parse_fmt, NULL},
+	{"term", "Print for terminal", parse_fmt, NULL},
 	{"ro", "Readonly", parse_rw, NULL},
 	{"rw", "Writable", parse_rw, NULL},
 	{"migration", "Writable (migration)", parse_rw, NULL},
