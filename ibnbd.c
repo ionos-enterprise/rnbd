@@ -597,7 +597,7 @@ static void list_devices_json(struct ibnbd_sess_dev **sds,
 	printf("[\n");
 
 	for (i = 0; sds[i]; i++) {
-		if (i > 1)
+		if (i)
 			printf(",\n");
 		table_row_print(sds[i], FMT_JSON, "\t\t", cs, 0, 0, 0);
 	}
@@ -1183,22 +1183,19 @@ static int show_device(char *devname)
 	switch (args.fmt) {
 	case FMT_CSV:
 		list_devices_csv(ds, cs);
-
 		break;
 	case FMT_JSON:
 		list_devices_json(ds, cs);
-
+		printf("\n");
 		break;
 	case FMT_XML:
 		list_devices_xml(ds, cs);
-
 		break;
 	case FMT_TERM:
 	default:
 		table_row_stringify(ds[0], flds, cs, 1, 0);
 		table_entry_print_term("", flds, cs, table_get_max_h_width(cs),
 				       trm);
-
 		break;
 	}
 
@@ -1470,6 +1467,7 @@ static int show_session(char *sessname)
 		break;
 	case FMT_JSON:
 		list_sessions_json(ss, cs);
+		printf("\n");
 		break;
 	case FMT_XML:
 		list_sessions_xml(ss, cs);
