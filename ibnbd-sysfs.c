@@ -150,14 +150,6 @@ int get_ibnbd_dev_sysfs(char *path, struct ibnbd_dev *dev)
 	get_sysnode(val, new_path, "state");
 	strcpy(dev->state, val);
 
-	memset(val, 0, 1024);
-	get_sysnode(val, new_path, "session");
-	strcpy(dev->sessname, val);
-
-	memset(val, 0, 1024);
-	get_sysnode(val, new_path, "mapping_path");
-	strcpy(dev->mapping_path, val);
-
 	return 1;
 }
 
@@ -283,8 +275,6 @@ int get_ibnbd_sess_dev_sysfs(char *path, struct ibnbd_dev *dev)
 /* test set/get sysfs nodes */
 int main(int argc, char *argv[])
 {
-	enum ibnbd_fd_type type;
-	enum ibnbd_exp_imp mode;
 	int path_num;
 	char **paths;
 	int i;
