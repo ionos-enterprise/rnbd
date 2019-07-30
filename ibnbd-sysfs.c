@@ -1,6 +1,61 @@
+#include <errno.h>
+#include <string.h> /* for strdup() */
+#include <stdio.h> /* for printf() */
+#include <stdlib.h> /* for free() */
+#include <sys/stat.h> /* for stat() */
+#include <sys/types.h> /* for open() */
+#include <fcntl.h> /* for open() */
+#include <dirent.h> /* for opendir() */
+#include <unistd.h> /* for write() */
+#include <stdarg.h>
+
 #include "ibnbd-sysfs.h"
 
 struct stat st;
+
+int printf_sysfs(char *dir, char *entry, const char *format, ...)
+{
+	char path[PATH_MAX];
+	va_list args;
+	FILE *f;
+	int ret;
+
+	snprintf(path, sizeof(path), "%s/%s", dir, entry);
+
+	f = fopen(path,"w");
+	if (!f)
+		return -1;
+
+	va_start(args, format);
+	ret = vfprintf(f, format, args);
+	va_end(args);
+
+	fclose(f);
+
+	return ret;
+}
+
+int scanf_sysfs(char *dir, char *entry, const char *format, ...)
+{
+	char path[PATH_MAX];
+	va_list args;
+	FILE *f;
+	int ret;
+
+	snprintf(path, sizeof(path), "%s/%s", dir, entry);
+
+	f = fopen(path,"r");
+	if (!f)
+		return -1;
+
+	va_start(args, format);
+	ret = vfscanf(f, format, args);
+	va_end(args);
+
+	fclose(f);
+
+	return ret;
+}
 
 /* get the row-th str in val, return to dst */
 void get_str(char *src, char **dst, int row)
