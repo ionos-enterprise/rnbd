@@ -164,7 +164,8 @@ int get_ibnbd_dev_sysfs(char *path, struct ibnbd_dev *dev)
 /*
  * path: like /sys/class/ibtrs-client/ or /sys/class/ibtrs-server/
  */
-int get_ibnbd_session_sysfs(char *path, char *sess_name, struct ibnbd_sess *sess, char **path_name)
+int get_ibnbd_session_sysfs(char *path, char *sess_name,
+			    struct ibnbd_sess *sess, char **path_name)
 {
 	char val[1024], new_path[1024], *ret;
 	DIR *dir;
@@ -193,7 +194,8 @@ int get_ibnbd_session_sysfs(char *path, char *sess_name, struct ibnbd_sess *sess
                                 strcat(new_path, entry->d_name);
 
                                 if (stat(new_path, &st) != 0)
-                                        fprintf(stderr, "stat() error on %s: %s\n", new_path, strerror(errno));
+                                        fprintf(stderr, "stat() error on %s: %s\n",
+						new_path, strerror(errno));
                                 else if (S_ISDIR(st.st_mode)) {
 					path_name[i] = malloc(strlen(entry->d_name) * sizeof(char));
 					strcpy(path_name[i++], entry->d_name);
@@ -249,7 +251,8 @@ int get_ibnbd_path_sysfs(char *sess_sysfs, char *path_name,
 	get_sysnode(val, rdma_sysfs, "rdma");
 
 	val1 = strdup(val);
-	/* parse the return val to get rx_bytes, tx_bytes, inflights and reconnects */
+	/* parse the return val to get rx_bytes, tx_bytes,
+	 * inflights and reconnects */
 	get_str(val1, &ret, 1);
 	path->rx_bytes = atoi(ret);
 	sess->rx_bytes += path->rx_bytes;
@@ -275,7 +278,7 @@ int get_ibnbd_path_sysfs(char *sess_sysfs, char *path_name,
 
 int get_ibnbd_sess_dev_sysfs(char *path, struct ibnbd_dev *dev)
 {
-
+	return 0;
 }
 
 /* test set/get sysfs nodes */
@@ -284,7 +287,6 @@ int main(int argc, char *argv[])
 	enum ibnbd_fd_type type;
 	enum ibnbd_exp_imp mode;
 	int path_num;
-	char *read_value;
 	char **paths;
 	int i;
 
@@ -296,7 +298,8 @@ int main(int argc, char *argv[])
 	free(dev);
 
 	struct ibnbd_sess *sess = malloc(sizeof(struct ibnbd_sess));
-	path_num = get_ibnbd_session_sysfs("/sys/class/ibtrs-client", "gjiang", sess, paths);
+	path_num = get_ibnbd_session_sysfs("/sys/class/ibtrs-client",
+					   "gjiang", sess, paths);
 	sess->path_cnt = path_num;
 
 	struct ibnbd_path *path = malloc(sizeof(struct ibnbd_path));
