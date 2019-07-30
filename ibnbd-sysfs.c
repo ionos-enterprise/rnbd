@@ -130,6 +130,11 @@ int get_ibnbd_dev_sysfs(char *path, struct ibnbd_dev *dev)
 {
 	char val[1024], *val1, new_path[PATH_MAX], *ret;
 
+	if (stat(path, &st) != 0) {
+		printf("%s doesn't exist\n", path);
+		return -ENODEV;
+	}
+
 	get_sysnode(val, path, "/stat");
 	val1 = strdup(val);
 	/* parse the return val, rx_sect is the first one and tx_sect is the 5th */
