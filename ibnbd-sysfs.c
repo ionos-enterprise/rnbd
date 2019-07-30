@@ -69,10 +69,10 @@ void get_str(char *src, char **dst, int row)
 
 int set_sysnode(char *val, char *path, char *sysname)
 {
-	char sysfs_path[MAX_SYSFS_PATH_LEN];
+	char sysfs_path[PATH_MAX];
 	int fd, n;
 
-	snprintf(sysfs_path, MAX_SYSFS_PATH_LEN, "%s/%s", path, sysname);
+	snprintf(sysfs_path, PATH_MAX, "%s/%s", path, sysname);
 	if (stat(sysfs_path, &st) != 0) {
 		printf("%s doesn't exist\n", sysfs_path);
 		return -ENODEV;
@@ -96,10 +96,10 @@ int set_sysnode(char *val, char *path, char *sysname)
 
 int get_sysnode(char *val, char *path, char *sysname)
 {
-	char sysfs_path[MAX_SYSFS_PATH_LEN];
+	char sysfs_path[PATH_MAX];
 	int fd, n;
 
-	snprintf(sysfs_path, MAX_SYSFS_PATH_LEN, "%s/%s", path, sysname);
+	snprintf(sysfs_path, PATH_MAX, "%s/%s", path, sysname);
 	if (stat(sysfs_path, &st) != 0) {
 		printf("%s doesn't exist\n", sysfs_path);
 		return -ENODEV;
@@ -128,7 +128,7 @@ int get_sysnode(char *val, char *path, char *sysname)
  */
 int get_ibnbd_dev_sysfs(char *path, struct ibnbd_dev *dev)
 {
-	char val[1024], *val1, new_path[1024], *ret;
+	char val[1024], *val1, new_path[PATH_MAX], *ret;
 
 	get_sysnode(val, path, "/stat");
 	val1 = strdup(val);
@@ -140,7 +140,7 @@ int get_ibnbd_dev_sysfs(char *path, struct ibnbd_dev *dev)
 	free(val1);
 
 	/* path changed to /sys/block/ibnbd0/ibnbd/ */
-	snprintf(new_path, MAX_SYSFS_PATH_LEN, "%s/%s", path, "ibnbd");
+	snprintf(new_path, PATH_MAX, "%s/%s", path, "ibnbd");
 
 	memset(val, 0, 1024);
 	get_sysnode(val, new_path, "io_mode");
@@ -167,12 +167,12 @@ int get_ibnbd_dev_sysfs(char *path, struct ibnbd_dev *dev)
 int get_ibnbd_session_sysfs(char *path, char *sess_name,
 			    struct ibnbd_sess *sess, char **path_name)
 {
-	char val[1024], new_path[1024], *ret;
+	char val[1024], new_path[PATH_MAX];
 	DIR *dir;
 	struct dirent *entry;
 	int i = 0;
 
-	snprintf(new_path, MAX_SYSFS_PATH_LEN, "%s/%s", path, sess_name);
+	snprintf(new_path, PATH_MAX, "%s/%s", path, sess_name);
 	if (stat(new_path, &st) != 0) {
 		printf("%s doesn't exist\n", new_path);
 		return -ENODEV;
@@ -216,9 +216,9 @@ int get_ibnbd_session_sysfs(char *path, char *sess_name,
 int get_ibnbd_path_sysfs(char *sess_sysfs, char *path_name,
 			 struct ibnbd_sess *sess, struct ibnbd_path *path)
 {
-	char val[1024], *val1, path_sysfs[1024], rdma_sysfs[1024], *ret;
+	char val[1024], *val1, path_sysfs[PATH_MAX], *ret;
 
-	snprintf(path_sysfs, MAX_SYSFS_PATH_LEN, "%s/paths/%s", sess_sysfs, path_name);
+	snprintf(path_sysfs, PATH_MAX, "%s/paths/%s", sess_sysfs, path_name);
 	if (stat(path_sysfs, &st) != 0) {
 		printf("%s doesn't exist\n", path_sysfs);
 		return -ENODEV;
@@ -246,9 +246,8 @@ int get_ibnbd_path_sysfs(char *sess_sysfs, char *path_name,
 	strcpy(path->state, val);
 
 	/* get rx_bytes, tx_bytes, inflights and reconnects from stats/rdma */
-	snprintf(rdma_sysfs, MAX_SYSFS_PATH_LEN, "%s/%s", path_sysfs, "stats/");
 	memset(val, 0, 1024);
-	get_sysnode(val, rdma_sysfs, "rdma");
+	get_sysnode(val, path_sysfs, "/stats/rdma");
 
 	val1 = strdup(val);
 	/* parse the return val to get rx_bytes, tx_bytes,
