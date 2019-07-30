@@ -278,7 +278,7 @@ int get_ibnbd_sess_dev_sysfs(char *path, struct ibnbd_dev *dev)
 }
 
 /* test set/get sysfs nodes */
-int main(int argc, char *argv[])
+int bla(int argc, char *argv[])
 {
 	int path_num;
 	char **paths;
