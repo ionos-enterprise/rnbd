@@ -291,14 +291,10 @@ static int sess_side_to_direction(char *str, size_t len, enum color *clr,
 	struct ibnbd_sess *s = container_of(v, struct ibnbd_sess, side);
 
 	*clr = CNRM;
-	switch (s->side) {
-	case IBNBD_CLT:
+	if (s->side == IBNBD_CLT)
 		return snprintf(str, len, "outgoing");
-	case IBNBD_SRV:
+	else
 		return snprintf(str, len, "incoming");
-	default:
-		assert(0);
-	}
 }
 
 CLM_S(side, "Direction", FLD_STR, sess_side_to_direction, 'l', CNRM, CNRM,
