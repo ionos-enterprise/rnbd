@@ -755,7 +755,7 @@ static int list_paths_term(struct ibnbd_path **paths, int path_cnt,
 }
 
 static int list_sessions_term(struct ibnbd_sess **sessions,
-			      struct table_column **cs, int tree)
+			      struct table_column **cs)
 {
 	struct ibnbd_sess total = {
 		.act_path_cnt = 0,
@@ -800,7 +800,7 @@ static int list_sessions_term(struct ibnbd_sess **sessions,
 	for (i = 0; sessions[i]; i++) {
 		table_flds_print_term("", flds + i * cs_cnt,
 				      cs, trm, 0);
-		if (tree)
+		if (args.tree_set)
 			list_paths_term(sessions[i]->paths,
 					sessions[i]->path_cnt,
 					clms_paths_shortdesc, 1);
@@ -926,15 +926,13 @@ static int list_sessions(struct ibnbd_sess **s_clt, struct ibnbd_sess **s_srv)
 			printf("%s%s%s\n", CLR(trm, CDIM, "Outgoing sessions"));
 
 		if (clt_s_num)
-			list_sessions_term(s_clt, args.clms_sessions_clt,
-					   args.tree_set);
+			list_sessions_term(s_clt, args.clms_sessions_clt);
 
 		if (clt_s_num && srv_s_num)
 			printf("%s%s%s\n", CLR(trm, CDIM, "Incoming sessions"));
 
 		if (srv_s_num)
-			list_sessions_term(s_srv, args.clms_sessions_srv,
-					   args.tree_set);
+			list_sessions_term(s_srv, args.clms_sessions_srv);
 		break;
 	}
 
