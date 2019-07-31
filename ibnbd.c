@@ -1147,13 +1147,13 @@ static int show_device(char *devname)
 	struct table_column **cs;
 	int cnt, ret = 0;
 
-	ds_imp = calloc(ARRSIZE(g_sds), sizeof(g_sds[0]));
+	ds_imp = calloc(ARRSIZE(sds_clt), sizeof(sds_clt[0]));
 	if (!ds_imp) {
 		ERR("Failed to alloc memory\n");
 		return -ENOMEM;
 	}
 
-	ds_exp = calloc(ARRSIZE(g_sds), sizeof(g_sds[0]));
+	ds_exp = calloc(ARRSIZE(sds_srv), sizeof(sds_srv[0]));
 	if (!ds_exp) {
 		ERR("Failed to alloc memory\n");
 		ret = -ENOMEM;
