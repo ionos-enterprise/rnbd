@@ -65,6 +65,30 @@ struct ibnbd_sess_dev {
 	struct ibnbd_dev	*dev;			/* ibnbd block device */
 };
 
+void ibnbd_sysfs_free_all(struct ibnbd_sess_dev **sds_clt,
+			  struct ibnbd_sess_dev **sds_srv,
+			  struct ibnbd_sess **sess_clt,
+			  struct ibnbd_sess **sess_srv,
+			  struct ibnbd_path **paths_clt,
+			  struct ibnbd_path **paths_srv);
+
+int ibnbd_sysfs_alloc_all(struct ibnbd_sess_dev **sds_clt,
+			  struct ibnbd_sess_dev **sds_srv,
+			  struct ibnbd_sess **sess_clt,
+			  struct ibnbd_sess **sess_srv,
+			  struct ibnbd_path **paths_clt,
+			  struct ibnbd_path **paths_srv);
+/*
+ * Read all the stuff from sysfs.
+ * Use ibnbd_sysfs_alloc_all() before and ibnbd_sysfs_free_all() after.
+ */
+int ibnbd_sysfs_read_all(struct ibnbd_sess_dev **sds_clt,
+			 struct ibnbd_sess_dev **sds_srv,
+			 struct ibnbd_sess **sess_clt,
+			 struct ibnbd_sess **sess_srv,
+			 struct ibnbd_path **paths_clt,
+			 struct ibnbd_path **paths_srv);
+
 /*
  * Fake example data. Should be partially read from sysfs and partially
  * calculated instead.

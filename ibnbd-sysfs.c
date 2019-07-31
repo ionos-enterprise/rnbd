@@ -307,3 +307,116 @@ int bla(int argc, char *argv[])
 
 	return 1;
 }
+
+static void ibnbd_sysfs_free(struct ibnbd_sess_dev **sds,
+			     struct ibnbd_sess **sess,
+			     struct ibnbd_path **paths)
+{
+	int i;
+
+	for (i = 0; sds[i]; i++) {
+		free(sds[i]->dev);
+		free(sds[i]);
+	}
+	free(sds);
+
+	for (i = 0; sess[i]; i++)
+		free(sess[i]);
+	free(sess);
+
+	for (i = 0; paths[i]; i++)
+		free(paths[i]);
+	free(paths);
+}
+
+void ibnbd_sysfs_free_all(struct ibnbd_sess_dev **sds_clt,
+			  struct ibnbd_sess_dev **sds_srv,
+			  struct ibnbd_sess **sess_clt,
+			  struct ibnbd_sess **sess_srv,
+			  struct ibnbd_path **paths_clt,
+			  struct ibnbd_path **paths_srv)
+{
+	ibnbd_sysfs_free(sds_clt, sess_clt, paths_clt);
+	ibnbd_sysfs_free(sds_srv, sess_srv, paths_srv);
+}
+
+static int ibnbd_sysfs_alloc(struct ibnbd_sess_dev **sds,
+			     struct ibnbd_sess **sess,
+			     struct ibnbd_path **paths,
+			     const char *sds_path,
+			     const char *sess_path)
+{
+	int ret = 0;
+
+	return ret;
+}
+
+#define PATH_SDS_CLT "/sys/class/ibnbd-client/ctl/devices/"
+#define PATH_SESS_CLT "/sys/class/ibtrs-client/"
+#define PATH_SDS_SRV "/sys/class/ibnbd-server/ctl/devices/"
+#define PATH_SESS_SRV "/sys/class/ibtrs-server/"
+
+int ibnbd_sysfs_alloc_all(struct ibnbd_sess_dev **sds_clt,
+			  struct ibnbd_sess_dev **sds_srv,
+			  struct ibnbd_sess **sess_clt,
+			  struct ibnbd_sess **sess_srv,
+			  struct ibnbd_path **paths_clt,
+			  struct ibnbd_path **paths_srv)
+{
+	int ret = 0;
+
+	ret = ibnbd_sysfs_alloc(sds_clt, sess_clt, paths_clt,
+				PATH_SDS_CLT, PATH_SESS_CLT);
+	if (ret)
+		return ret;
+
+	ret = ibnbd_sysfs_alloc(sds_srv, sess_srv, paths_srv,
+				PATH_SDS_SRV, PATH_SESS_SRV);
+	if (ret)
+		ibnbd_sysfs_free(sds_clt, sess_clt, paths_clt);
+
+	return ret;
+}
+
+static int ibnbd_sysfs_read_clt(struct ibnbd_sess_dev **sds_clt,
+				struct ibnbd_sess **sess_clt,
+				struct ibnbd_path **paths_clt)
+{
+	int ret = 0;
+
+	return ret;
+}
+
+static int ibnbd_sysfs_read_srv(struct ibnbd_sess_dev **sds_srv,
+				struct ibnbd_sess **sess_srv,
+				struct ibnbd_path **paths_srv)
+{
+	int ret = 0;
+
+	return ret;
+}
+
+
+/*
+ * Read all the stuff from sysfs.
+ * Use ibnbd_sysfs_alloc_all() before and ibnbd_sysfs_free_all() after.
+ */
+int ibnbd_sysfs_read_all(struct ibnbd_sess_dev **sds_clt,
+			 struct ibnbd_sess_dev **sds_srv,
+			 struct ibnbd_sess **sess_clt,
+			 struct ibnbd_sess **sess_srv,
+			 struct ibnbd_path **paths_clt,
+			 struct ibnbd_path **paths_srv)
+{
+	int ret = 0;
+
+	ret = ibnbd_sysfs_read_clt(sds_clt, sess_clt, paths_clt);
+	if (ret)
+		return ret;
+
+	ret = ibnbd_sysfs_read_srv(sds_srv, sess_srv, paths_srv);
+	if (ret)
+		ibnbd_sysfs_free(sds_clt, sess_clt, paths_clt);
+
+	return ret;
+}
