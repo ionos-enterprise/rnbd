@@ -340,14 +340,75 @@ void ibnbd_sysfs_free_all(struct ibnbd_sess_dev **sds_clt,
 	ibnbd_sysfs_free(sds_srv, sess_srv, paths_srv);
 }
 
+static int dir_cnt(const char *dir)
+{
+	struct dirent *entry;
+	int cnt = 0;
+	DIR *dirp;
+
+	dirp = opendir(dir);
+	if (!dirp)
+		return -ENOENT;
+
+	for (entry = readdir(dirp); entry; entry = readdir(dirp))
+		if (entry->d_type == DT_DIR)
+			cnt++;
+
+	closedir(dirp);
+
+	return cnt;
+}
+
+static int ibnbd_sysfs_path_cnt(const char *sdir)
+{
+	struct dirent *sess, *path;
+	char pdir[PATH_MAX];
+	DIR *sp, *pp;
+	int cnt = 0;
+
+	sp = opendir(sdir);
+	if (!sp)
+		return -ENOENT;
+
+	for (sess = readdir(sp); sess; sess = readdir(sp)) {
+		if (sess->d_type != DT_DIR)
+			continue;
+
+		sprintf(pdir, "%s/paths/", sess->d_name);
+		pp = opendir(pdir);
+		if (!pp)
+			return -ENOENT;
+		for (path = readdir(pp); path; path = readdir(pp))
+			if (path->d_type == DT_DIR)
+				cnt++;
+		closedir(pp);
+	}
+	closedir(sp);
+
+	return cnt;
+}
+
 static int ibnbd_sysfs_alloc(struct ibnbd_sess_dev **sds,
 			     struct ibnbd_sess **sess,
 			     struct ibnbd_path **paths,
 			     const char *sds_path,
 			     const char *sess_path)
 {
-	int ret = 0;
+	int ret = 0, sds_cnt, sess_cnt, path_cnt;
 
+	sds_cnt = dir_cnt(sds_path);
+	if (sds_cnt < 0)
+		return sds_cnt;
+
+	sess_cnt = dir_cnt(sess_path);
+	if (sess_cnt < 0)
+		return sess_cnt;
+
+	path_cnt = ibnbd_sysfs_path_cnt(sess_path);
+	if (path_cnt < 0)
+		return path_cnt;
+
+	printf("sds=%d, sess=%d, path=%d\n", sds_cnt, sess_cnt, path_cnt);
 	return ret;
 }
 
@@ -395,7 +456,6 @@ static int ibnbd_sysfs_read_srv(struct ibnbd_sess_dev **sds_srv,
 
 	return ret;
 }
-
 
 /*
  * Read all the stuff from sysfs.
