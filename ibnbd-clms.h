@@ -1,13 +1,13 @@
 #include "table.h"
 
-int sect_to_byte_unit(char *str, size_t len, uint64_t v, int humanize);
+int i_to_byte_unit(char *str, size_t len, uint64_t v, int humanize);
 
-static int size_to_str(char *str, size_t len, enum color *clr, void *v,
+static int byte_to_str(char *str, size_t len, enum color *clr, void *v,
 		       int humanize)
 {
 	*clr = CNRM;
 
-	return sect_to_byte_unit(str, len, *(int *)v, humanize);
+	return i_to_byte_unit(str, len, *(int *)v, humanize);
 }
 
 #define CLM_SD(m_name, m_header, m_type, tostr, align, h_clr, c_clr, m_descr) \
@@ -113,7 +113,7 @@ static int sd_rx_to_str(char *str, size_t len, enum color *clr, void *v,
 
 	*clr = CNRM;
 
-	return sect_to_byte_unit(str, len, sd->dev->rx_sect, humanize);
+	return i_to_byte_unit(str, len, sd->dev->rx_sect << 9, humanize);
 }
 
 static struct table_column clm_ibnbd_dev_rx_sect =
@@ -146,7 +146,7 @@ static int sd_tx_to_str(char *str, size_t len, enum color *clr, void *v,
 
 	*clr = CNRM;
 
-	return sect_to_byte_unit(str, len, sd->dev->tx_sect, humanize);
+	return i_to_byte_unit(str, len, sd->dev->tx_sect << 9, humanize);
 }
 
 static struct table_column clm_ibnbd_dev_tx_sect =
@@ -284,9 +284,9 @@ CLM_S(path_cnt, "Path cnt", FLD_NUM, NULL, 'r', CNRM, CNRM,
 	"Number of paths");
 CLM_S(act_path_cnt, "Act path cnt", FLD_NUM, NULL, 'r', CNRM, CNRM,
 	"Number of active paths");
-CLM_S(rx_bytes, "RX", FLD_NUM, size_to_str, 'r', CNRM, CNRM,
+CLM_S(rx_bytes, "RX", FLD_NUM, byte_to_str, 'r', CNRM, CNRM,
 	"Bytes received");
-CLM_S(tx_bytes, "TX", FLD_NUM, size_to_str, 'r', CNRM, CNRM, "Bytes send");
+CLM_S(tx_bytes, "TX", FLD_NUM, byte_to_str, 'r', CNRM, CNRM, "Bytes send");
 CLM_S(inflights, "Inflights", FLD_NUM, NULL, 'r', CNRM, CNRM, "Inflights");
 CLM_S(reconnects, "Reconnects", FLD_NUM, NULL, 'r', CNRM, CNRM, "Reconnects");
 CLM_S(path_uu, "PS", FLD_STR, NULL, 'l', CNRM, CNRM,
@@ -423,8 +423,8 @@ CLM_P(dst_addr, "Server Addr", FLD_STR, NULL, 'l', CNRM, CNRM,
 	"Server address of the path");
 CLM_P(hca_name, "HCA", FLD_STR, NULL, 'l', CNRM, CNRM, "HCA name");
 CLM_P(hca_port, "Port", FLD_VAL, NULL, 'r', CNRM, CNRM, "HCA port");
-CLM_P(rx_bytes, "RX", FLD_NUM, size_to_str, 'r', CNRM, CNRM, "Bytes received");
-CLM_P(tx_bytes, "TX", FLD_NUM, size_to_str, 'r', CNRM, CNRM, "Bytes send");
+CLM_P(rx_bytes, "RX", FLD_NUM, byte_to_str, 'r', CNRM, CNRM, "Bytes received");
+CLM_P(tx_bytes, "TX", FLD_NUM, byte_to_str, 'r', CNRM, CNRM, "Bytes send");
 CLM_P(inflights, "Inflights", FLD_NUM, NULL, 'r', CNRM, CNRM, "Inflights");
 CLM_P(reconnects, "Reconnects", FLD_NUM, NULL, 'r', CNRM, CNRM, "Reconnects");
 

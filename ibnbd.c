@@ -95,16 +95,16 @@ struct args {
 
 static struct args args;
 
-int sect_to_byte_unit(char *str, size_t len, uint64_t v, int humanize)
+int i_to_byte_unit(char *str, size_t len, uint64_t v, int humanize)
 {
 	if (humanize)
 		if (args.unit_set)
-			return i_to_str_unit(v << 9, str, len, args.unit_id,
+			return i_to_str_unit(v, str, len, args.unit_id,
 					     args.prec);
 		else
-			return i_to_str(v << 9, str, len, args.prec);
+			return i_to_str(v, str, len, args.prec);
 	else
-		return snprintf(str, len, "%" PRIu64, v << 9);
+		return snprintf(str, len, "%" PRIu64, v);
 }
 
 int path_to_shortdesc(char *str, size_t len, enum color *clr,
