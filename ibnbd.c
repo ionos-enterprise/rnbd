@@ -30,12 +30,12 @@
 			printf(fmt, ##__VA_ARGS__); \
 	} while (0)
 
-static struct ibnbd_sess_dev *sds_clt[ARRSIZE(g_sds)];
-static struct ibnbd_sess_dev *sds_srv[ARRSIZE(g_sds)];
-static struct ibnbd_sess *sess_clt[ARRSIZE(g_sessions)];
-static struct ibnbd_sess *sess_srv[ARRSIZE(g_sessions)];
-static struct ibnbd_path *paths_clt[ARRSIZE(g_paths)];
-static struct ibnbd_path *paths_srv[ARRSIZE(g_paths)];
+static struct ibnbd_sess_dev **sds_clt;
+static struct ibnbd_sess_dev **sds_srv;
+static struct ibnbd_sess **sess_clt;
+static struct ibnbd_sess **sess_srv;
+static struct ibnbd_path **paths_clt;
+static struct ibnbd_path **paths_srv;
 
 /*
  * True if STDOUT is a terminal
@@ -1145,14 +1145,16 @@ static int show_device(char *devname)
 	struct table_column **cs;
 	int cnt, ret = 0;
 
-	ds_imp = calloc(ARRSIZE(sds_clt), sizeof(sds_clt[0]));
-	if (!ds_imp) {
+	for (cnt = 0; sds_clt[cnt]; cnt++);
+	ds_imp = calloc(cnt + 1, sizeof(*ds_imp));
+	if (cnt && !ds_imp) {
 		ERR("Failed to alloc memory\n");
 		return -ENOMEM;
 	}
 
-	ds_exp = calloc(ARRSIZE(sds_srv), sizeof(sds_srv[0]));
-	if (!ds_exp) {
+	for (cnt = 0; sds_srv[cnt]; cnt++);
+	ds_exp = calloc(cnt + 1, sizeof(*ds_exp));
+	if (cnt && !ds_exp) {
 		ERR("Failed to alloc memory\n");
 		ret = -ENOMEM;
 		goto free_imp;
@@ -1360,14 +1362,16 @@ static int show_path(char *pathname)
 	struct table_column **cs;
 	int cnt, res = 0;
 
-	pp_clt = calloc(ARRSIZE(paths_clt), sizeof(paths_clt[0]));
-	if (!pp_clt) {
+	for (cnt = 0; paths_clt[cnt]; cnt++);
+	pp_clt = calloc(cnt + 1, sizeof(*pp_clt));
+	if (cnt && !pp_clt) {
 		ERR("Failed to alloc memory\n");
 		return -ENOMEM;
 	}
 
-	pp_srv = calloc(ARRSIZE(paths_srv), sizeof(paths_srv[0]));
-	if (!pp_srv) {
+	for (cnt = 0; paths_srv[cnt]; cnt++);
+	pp_srv = calloc(cnt + 1, sizeof(*pp_srv));
+	if (cnt && !pp_srv) {
 		ERR("Failed to alloc memory\n");
 		res = -ENOMEM;
 		goto free_clt;
@@ -1424,13 +1428,15 @@ static int show_session(char *sessname)
 	struct table_column **cs, **ps;
 	int cnt, res = 0;
 
-	ss_clt = calloc(ARRSIZE(sess_clt), sizeof(sess_clt[0]));
+	for (cnt = 0; sess_clt[cnt]; cnt++);
+	ss_clt = calloc(cnt + 1, sizeof(*ss_clt));
 	if (!ss_clt) {
 		ERR("Failed to alloc memory\n");
 		return -ENOMEM;
 	}
 
-	ss_srv = calloc(ARRSIZE(sess_srv), sizeof(sess_srv[0]));
+	for (cnt = 0; sess_srv[cnt]; cnt++);
+	ss_srv = calloc(cnt + 1, sizeof(*ss_srv));
 	if (!ss_srv) {
 		ERR("Failed to alloc memory\n");
 		res = -ENOMEM;
@@ -1936,41 +1942,6 @@ static void default_args(void)
 	}
 }
 
-
-int ibnbd_read_sysfs(void)
-{
-	int i, clt, srv;
-
-	for (i = 0, clt = 0, srv = 0; g_sessions[i]; i++)
-		if (g_sessions[i]->side == IBNBD_CLT)
-			sess_clt[clt++] = g_sessions[i];
-		else
-			sess_srv[srv++] = g_sessions[i];
-
-	sess_clt[clt] = NULL;
-	sess_srv[srv] = NULL;
-
-	for (i = 0, clt = 0, srv = 0; g_paths[i]; i++)
-		if (g_paths[i]->sess->side == IBNBD_CLT)
-			paths_clt[clt++] = g_paths[i];
-		else
-			paths_srv[srv++] = g_paths[i];
-
-	paths_clt[clt] = NULL;
-	paths_srv[srv] = NULL;
-
-	for (i = 0, clt = 0, srv = 0; g_sds[i]; i++)
-		if (g_sds[i]->sess->side == IBNBD_CLT)
-			sds_clt[clt++] = g_sds[i];
-		else
-			sds_srv[srv++] = g_sds[i];
-
-	sds_clt[clt] = NULL;
-	sds_srv[srv] = NULL;
-
-	return 0;
-}
-
 int main(int argc, char **argv)
 {
 	int ret = 0, i, rcd, rcs, rcp;
@@ -2066,13 +2037,18 @@ int main(int argc, char **argv)
 		i = ret;
 	}
 
-	/*
-	 * Read stuff from sysfs
-	 */
-	ret = ibnbd_read_sysfs();
+	ret = ibnbd_sysfs_alloc_all(&sds_clt, &sds_srv, &sess_clt, &sess_srv,
+				    &paths_clt, &paths_srv);
+	if (ret) {
+		ERR("Failed to alloc memory for sysfs entries: %d\n", ret);
+		goto out;
+	}
+
+	ret = ibnbd_sysfs_read_all(sds_clt, sds_srv, sess_clt, sess_srv,
+				   paths_clt, paths_srv);
 	if (ret) {
 		ERR("Failed to read sysfs entries: %d\n", ret);
-		goto out;
+		goto free;
 	}
 
 	default_args();
@@ -2084,11 +2060,13 @@ int main(int argc, char **argv)
 		if (args.ibnbdmode == IBNBD_NONE) {
 			ERR("ibnbd modules not loaded\n");
 			ret = -ENOENT;
-			goto out;
+			goto free;
 		}
 		ret = cmd->func();
 	}
-
+free:
+	ibnbd_sysfs_free_all(sds_clt, sds_srv, sess_clt, sess_srv,
+			     paths_clt, paths_srv);
 out:
 	return ret;
 }

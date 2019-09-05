@@ -76,6 +76,8 @@ static int sd_devname_to_str(char *str, size_t len, enum color *clr,
 	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
 						 sess);
 
+	*clr = CNRM;
+
 	return snprintf(str, len, "%s", sd->dev->devname);
 }
 
@@ -88,6 +90,8 @@ static int sd_devpath_to_str(char *str, size_t len, enum color *clr,
 {
 	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
 						 sess);
+
+	*clr = CNRM;
 
 	return snprintf(str, len, "%s", sd->dev->devpath);
 }
@@ -123,6 +127,8 @@ static int sd_to_shortdesc(char *str, size_t len, enum color *clr,
 						 sess);
 	if (!sd->dev)
 		return 0;
+
+	*clr = CNRM;
 
 	return snprintf(str, len, "%s (%s)", sd->mapping_path,
 			sd->dev->devname);
