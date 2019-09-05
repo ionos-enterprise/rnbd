@@ -210,33 +210,34 @@ int ibnbd_sysfs_alloc_all(struct ibnbd_sess_dev ***sds_clt,
 struct ibnbd_dev *find_or_add_dev(char *syspath,
 			          struct ibnbd_dev **devs)
 {
-	char *devname, *real;
+	char *devname, *r, rpath[PATH_MAX];
 	int i;
 
-	real = realpath(syspath, NULL);
-	if (!real)
+	r = realpath(syspath, rpath);
+	if (!r)
 		return NULL;
 
-	devname = basename(real);
+	devname = basename(rpath);
 
 	for (i = 0; devs[i]; i++)
 		if (!strcmp(devname, devs[i]->devname))
-			break;
+			return devs[i];
 
-	if (!devs[i]) {
-		devs[i] = calloc(1, sizeof(**devs));
-		if (!devs[i]) {
-			free(real);
-			return NULL;
-		}
-		devs[i + 1] = NULL;
+	devs[i] = calloc(1, sizeof(**devs));
+	if (!devs[i])
+		return NULL;
 
-		strcpy(devs[i]->devname, devname);
-		snprintf(devs[i]->devpath, sizeof(devs[i]->devpath),
-				"/dev/%s", devname);
-	}
+	devs[i + 1] = NULL;
 
-	free(real);
+	strcpy(devs[i]->devname, devname);
+	snprintf(devs[i]->devpath, sizeof(devs[i]->devpath),
+		 "/dev/%s", devname);
+	scanf_sysfs(rpath, "stat", "%d %*d %*d %*d %d", &devs[i]->rx_sect,
+		    &devs[i]->tx_sect);
+	strcat(rpath, "/ibnbd/");
+	scanf_sysfs(rpath, "io_mode", "%s", devs[i]->io_mode);
+	scanf_sysfs(rpath, "state", "%s", devs[i]->state);
+
 	return devs[i];
 }
 
@@ -250,15 +251,13 @@ struct ibnbd_sess *find_or_add_sess(char *syspath,
 
 	for (i = 0; sess[i]; i++)
 		if (!strcmp(sessname, sess[i]->sessname))
-			break;
+			return sess[i];
 
-	if (!sess[i]) {
-		sess[i] = calloc(1, sizeof(**sess));
-		if (!sess[i])
-			return NULL;
+	sess[i] = calloc(1, sizeof(**sess));
+	if (!sess[i])
+		return NULL;
 
-		strcpy(sess[i]->sessname, sessname);
-	}
+	strcpy(sess[i]->sessname, sessname);
 
 	return sess[i];
 }
@@ -295,7 +294,7 @@ static int ibnbd_sysfs_read_clt(struct ibnbd_sess_dev **sds,
 				struct ibnbd_path **paths,
 				struct ibnbd_dev **devs)
 {
-	char tmp[PATH_MAX], ppath[PATH_MAX], sessname[NAME_MAX];
+	char tmp[PATH_MAX], ppath[PATH_MAX], sessname[NAME_MAX], a[128];
 	struct dirent *dent, *pent;
 	struct ibnbd_sess_dev *sd;
 	struct ibnbd_sess *s;
@@ -317,19 +316,22 @@ static int ibnbd_sysfs_read_clt(struct ibnbd_sess_dev **sds,
 		d = find_or_add_dev(tmp, devs);
 		if (!d)
 			return -ENOMEM;
-		scanf_sysfs(tmp, "stat", "%d %*d %*d %*d %d",
-			    &d->rx_sect, &d->tx_sect);
-		strcat(tmp, "/ibnbd/");
-		scanf_sysfs(tmp, "io_mode", "%s", d->io_mode);
-		scanf_sysfs(tmp, "state", "%s", d->state);
 
 		/* read sess_dev */
+		strcat(tmp, "/ibnbd/");
 		sd = add_sess_dev(sds);
 		if (!sd)
 			return -ENOMEM;
 		sd->dev = d;
 		scanf_sysfs(tmp, "mapping_path", "%s", sd->mapping_path);
-		scanf_sysfs(tmp, "access_mode", "%s", sd->access_mode);
+		scanf_sysfs(tmp, "access_mode", "%s", a);
+		if (!strcmp(a, "ro"))
+			sd->access_mode = IBNBD_RO;
+		else if (!strcmp(a, "rw"))
+			sd->access_mode = IBNBD_RW;
+		else
+			sd->access_mode = IBNBD_MIGRATION;
+
 		scanf_sysfs(tmp, "session", "%s", sessname);
 
 		/* read session */
@@ -338,6 +340,9 @@ static int ibnbd_sysfs_read_clt(struct ibnbd_sess_dev **sds,
 		if (!s)
 			return -ENOMEM;
 		sd->sess = s;
+
+		if (s->mp[0] != 0)
+			continue;
 
 		s->side = IBNBD_CLT;
 		scanf_sysfs(tmp, "mpath_policy", "%s (%2s: %*d)",
@@ -348,7 +353,7 @@ static int ibnbd_sysfs_read_clt(struct ibnbd_sess_dev **sds,
 		if (!s->path_cnt)
 			continue;
 
-		s->paths = calloc(s->path_cnt, sizeof(*paths));
+		s->paths = calloc(s->path_cnt + 1, sizeof(*paths));
 		if (!s->paths)
 			return -ENOMEM;
 
@@ -398,6 +403,8 @@ static int ibnbd_sysfs_read_clt(struct ibnbd_sess_dev **sds,
 			s->inflights += p->inflights;
 			s->reconnects += p->reconnects;
 		}
+
+		s->paths[cpath] = NULL;
 
 		closedir(pdir);
 	}
