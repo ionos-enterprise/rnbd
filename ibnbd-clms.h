@@ -500,6 +500,7 @@ static struct table_column *all_clms_paths[] = {
 
 static struct table_column *all_clms_paths_clt[] = {
 	&clm_ibnbd_path_sessname,
+	&clm_ibnbd_path_pathname,
 	&clm_ibnbd_path_src_addr,
 	&clm_ibnbd_path_dst_addr,
 	&clm_ibnbd_path_hca_name,
@@ -515,6 +516,7 @@ static struct table_column *all_clms_paths_clt[] = {
 
 static struct table_column *all_clms_paths_srv[] = {
 	&clm_ibnbd_path_sessname,
+	&clm_ibnbd_path_pathname,
 	&clm_ibnbd_path_src_addr,
 	&clm_ibnbd_path_dst_addr,
 	&clm_ibnbd_path_hca_name,
