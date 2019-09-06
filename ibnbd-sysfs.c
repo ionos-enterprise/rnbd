@@ -232,8 +232,7 @@ static struct ibnbd_dev *find_or_add_dev(const char *syspath,
 	devs[i + 1] = NULL;
 
 	strcpy(devs[i]->devname, devname);
-	snprintf(devs[i]->devpath, sizeof(devs[i]->devpath),
-		 "/dev/%s", devname);
+	sprintf(devs[i]->devpath, "/dev/%s", devname);
 	scanf_sysfs(rpath, "stat", "%d %*d %*d %*d %d", &devs[i]->rx_sect,
 		    &devs[i]->tx_sect);
 
@@ -292,9 +291,9 @@ static struct ibnbd_sess *find_or_add_sess(const char *sessname,
 	int i;
 
 	if (side == IBNBD_CLT)
-		snprintf(tmp, sizeof(tmp), "%s/%s", PATH_SESS_CLT, sessname);
+		sprintf(tmp, PATH_SESS_CLT "%s", sessname);
 	else
-		snprintf(tmp, sizeof(tmp), "%s/%s", PATH_SESS_SRV, sessname);
+		sprintf(tmp, PATH_SESS_SRV "%s", sessname);
 
 	for (i = 0; sess[i]; i++)
 		if (!strcmp(sessname, sess[i]->sessname))
@@ -374,10 +373,10 @@ static struct ibnbd_sess_dev *add_sess_dev(const char *devname,
 	int i;
 
 	if (side == IBNBD_CLT)
-		snprintf(tmp, sizeof(tmp), PATH_SDS_CLT "%s/ibnbd/", devname);
+		sprintf(tmp, PATH_SDS_CLT "%s/ibnbd/", devname);
 	else
-		snprintf(tmp, sizeof(tmp), PATH_SDS_SRV "%s/sessions/%s",
-			 devname, s->sessname);
+		sprintf(tmp, PATH_SDS_SRV "%s/sessions/%s", devname,
+			s->sessname);
 
 	for (i = 0; sds[i]; i++);
 
@@ -420,7 +419,7 @@ static int ibnbd_sysfs_read_clt(struct ibnbd_sess_dev **sds,
 		if (dent->d_name[0] == '.')
 			continue;
 
-		sprintf(tmp, "%s%s", PATH_SDS_CLT, dent->d_name);
+		sprintf(tmp, PATH_SDS_CLT "%s", dent->d_name);
 		scanf_sysfs(tmp, "/ibnbd/session", "%s", sessname);
 
 		s = find_or_add_sess(sessname, sess, paths, IBNBD_CLT);
@@ -461,14 +460,13 @@ static int ibnbd_sysfs_read_srv(struct ibnbd_sess_dev **sds,
 		if (dent->d_name[0] == '.')
 			continue;
 
-		sprintf(tmp, "%s%s/block_dev",
-			PATH_SDS_SRV, dent->d_name);
+		sprintf(tmp, PATH_SDS_SRV "%s/block_dev", dent->d_name);
 
 		d = find_or_add_dev(tmp, devs, IBNBD_SRV);
 		if (!d)
 			return -ENOMEM;
 
-		sprintf(tmp, "%s%s/sessions/", PATH_SDS_SRV, dent->d_name);
+		sprintf(tmp, PATH_SDS_SRV "%s/sessions/", dent->d_name);
 		sdir = opendir(tmp);
 		if (!sdir)
 			return 0;
