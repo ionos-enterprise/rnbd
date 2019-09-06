@@ -208,7 +208,8 @@ int ibnbd_sysfs_alloc_all(struct ibnbd_sess_dev ***sds_clt,
 }
 
 static struct ibnbd_dev *find_or_add_dev(const char *syspath,
-					 struct ibnbd_dev **devs)
+					 struct ibnbd_dev **devs,
+					 enum ibnbd_side side)
 {
 	char *devname, *r, tmp[PATH_MAX], rpath[PATH_MAX];
 	int i;
@@ -235,9 +236,14 @@ static struct ibnbd_dev *find_or_add_dev(const char *syspath,
 		 "/dev/%s", devname);
 	scanf_sysfs(rpath, "stat", "%d %*d %*d %*d %d", &devs[i]->rx_sect,
 		    &devs[i]->tx_sect);
-	strcat(rpath, "/ibnbd/");
-	scanf_sysfs(rpath, "io_mode", "%s", devs[i]->io_mode);
-	scanf_sysfs(rpath, "state", "%s", devs[i]->state);
+
+	if (side == IBNBD_CLT) {
+		strcat(rpath, "/ibnbd/");
+		scanf_sysfs(rpath, "io_mode", "%s", devs[i]->io_mode);
+		scanf_sysfs(rpath, "state", "%s", devs[i]->state);
+	} else {
+		scanf_sysfs(dirname(tmp), "io_mode", "%s", devs[i]->io_mode);
+	}
 
 	return devs[i];
 }
@@ -273,8 +279,7 @@ static struct ibnbd_path *add_path(const char *sdir,
 	return p;
 }
 
-static struct ibnbd_sess *find_or_add_sess(const char *syspath,
-					   const char *sessname,
+static struct ibnbd_sess *find_or_add_sess(const char *sessname,
 					   struct ibnbd_sess **sess,
 					   struct ibnbd_path **paths,
 					   enum ibnbd_side side)
@@ -286,7 +291,10 @@ static struct ibnbd_sess *find_or_add_sess(const char *syspath,
 	DIR *pdir;
 	int i;
 
-	snprintf(tmp, sizeof(tmp), "%s/%s", syspath, sessname);
+	if (side == IBNBD_CLT)
+		snprintf(tmp, sizeof(tmp), "%s/%s", PATH_SESS_CLT, sessname);
+	else
+		snprintf(tmp, sizeof(tmp), "%s/%s", PATH_SESS_SRV, sessname);
 
 	for (i = 0; sess[i]; i++)
 		if (!strcmp(sessname, sess[i]->sessname))
@@ -356,7 +364,7 @@ out:
 	return NULL;
 }
 
-static struct ibnbd_sess_dev *add_sess_dev(const char *syspath,
+static struct ibnbd_sess_dev *add_sess_dev(const char *devname,
 					   struct ibnbd_sess_dev **sds,
 					   struct ibnbd_sess *s,
 					   struct ibnbd_dev *d,
@@ -365,13 +373,11 @@ static struct ibnbd_sess_dev *add_sess_dev(const char *syspath,
 	char a[64], tmp[PATH_MAX];
 	int i;
 
-	if (side == IBNBD_CLT) {
-		strcpy(tmp, syspath);
-		strcat(tmp, "/ibnbd/");
-	} else {
-		snprintf(tmp, sizeof(tmp), "%s/sessions/%s", syspath,
-			 s->sessname);
-	}
+	if (side == IBNBD_CLT)
+		snprintf(tmp, sizeof(tmp), PATH_SDS_CLT "%s/ibnbd/", devname);
+	else
+		snprintf(tmp, sizeof(tmp), PATH_SDS_SRV "%s/sessions/%s",
+			 devname, s->sessname);
 
 	for (i = 0; sds[i]; i++);
 
@@ -417,18 +423,17 @@ static int ibnbd_sysfs_read_clt(struct ibnbd_sess_dev **sds,
 		sprintf(tmp, "%s%s", PATH_SDS_CLT, dent->d_name);
 		scanf_sysfs(tmp, "/ibnbd/session", "%s", sessname);
 
-		s = find_or_add_sess(PATH_SDS_CLT, sessname, sess, paths, IBNBD_CLT);
+		s = find_or_add_sess(sessname, sess, paths, IBNBD_CLT);
 		if (!s)
 			return -ENOMEM;
 
-		d = find_or_add_dev(tmp, devs);
+		d = find_or_add_dev(tmp, devs, IBNBD_CLT);
 		if (!d)
 			return -ENOMEM;
 
-		sd = add_sess_dev(tmp, sds, s, d, IBNBD_CLT);
+		sd = add_sess_dev(dent->d_name, sds, s, d, IBNBD_CLT);
 		if (!sd)
 			return -ENOMEM;
-
 	}
 
 	closedir(ddir);
@@ -441,6 +446,48 @@ static int ibnbd_sysfs_read_srv(struct ibnbd_sess_dev **sds,
 				struct ibnbd_path **paths,
 				struct ibnbd_dev **devs)
 {
+	char tmp[PATH_MAX];
+	struct dirent *dent, *sent;
+	struct ibnbd_sess_dev *sd;
+	struct ibnbd_sess *s;
+	struct ibnbd_dev *d;
+	DIR *ddir, *sdir;
+
+	ddir = opendir(PATH_SDS_SRV);
+	if (!ddir)
+		return 0;
+
+	for (dent = readdir(ddir); dent; dent = readdir(ddir)) {
+		if (dent->d_name[0] == '.')
+			continue;
+
+		sprintf(tmp, "%s%s/block_dev",
+			PATH_SDS_SRV, dent->d_name);
+
+		d = find_or_add_dev(tmp, devs, IBNBD_SRV);
+		if (!d)
+			return -ENOMEM;
+
+		sprintf(tmp, "%s%s/sessions/", PATH_SDS_SRV, dent->d_name);
+		sdir = opendir(tmp);
+		if (!sdir)
+			return 0;
+		for (sent = readdir(sdir); sent; sent = readdir(sdir)) {
+			if (sent->d_name[0] == '.')
+				continue;
+			s = find_or_add_sess(sent->d_name, sess, paths,
+					     IBNBD_SRV);
+			if (!s)
+				return -ENOMEM;
+
+			sd = add_sess_dev(dent->d_name, sds, s, d, IBNBD_SRV);
+			if (!sd)
+				return -ENOMEM;
+		}
+	}
+
+	closedir(ddir);
+
 	return 0;
 }
 
