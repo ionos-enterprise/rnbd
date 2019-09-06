@@ -15,7 +15,7 @@
 struct stat st;
 struct ibnbd_dev *devs[4096]; /* FIXME: this has to be a list */
 
-int printf_sysfs(char *dir, char *entry, const char *format, ...)
+int printf_sysfs(const char *dir, const char *entry, const char *format, ...)
 {
 	char path[PATH_MAX];
 	va_list args;
@@ -37,7 +37,7 @@ int printf_sysfs(char *dir, char *entry, const char *format, ...)
 	return ret;
 }
 
-int scanf_sysfs(char *dir, char *entry, const char *format, ...)
+int scanf_sysfs(const char *dir, const char *entry, const char *format, ...)
 {
 	char path[PATH_MAX];
 	va_list args;
@@ -207,13 +207,14 @@ int ibnbd_sysfs_alloc_all(struct ibnbd_sess_dev ***sds_clt,
 	return ret;
 }
 
-struct ibnbd_dev *find_or_add_dev(char *syspath,
-			          struct ibnbd_dev **devs)
+static struct ibnbd_dev *find_or_add_dev(const char *syspath,
+					 struct ibnbd_dev **devs)
 {
-	char *devname, *r, rpath[PATH_MAX];
+	char *devname, *r, tmp[PATH_MAX], rpath[PATH_MAX];
 	int i;
 
-	r = realpath(syspath, rpath);
+	strcpy(tmp, syspath);
+	r = realpath(tmp, rpath);
 	if (!r)
 		return NULL;
 
@@ -241,50 +242,154 @@ struct ibnbd_dev *find_or_add_dev(char *syspath,
 	return devs[i];
 }
 
-struct ibnbd_sess *find_or_add_sess(char *syspath,
-				    struct ibnbd_sess **sess)
+static struct ibnbd_path *add_path(const char *sdir,
+				   const char *pname,
+				   struct ibnbd_path **paths)
 {
-	char *sessname;
+	struct ibnbd_path *p;
+	char ppath[PATH_MAX];
 	int i;
 
-	sessname = basename(syspath);
+	strcpy(ppath, sdir);
+	strcat(ppath, pname);
+
+	for (i = 0; paths[i]; i++);
+
+	p = calloc(1, sizeof(**paths));
+	if (!p)
+		return NULL;
+	paths[i] = p;
+
+	strcpy(p->pathname, pname);
+	scanf_sysfs(ppath, "src_addr", "%s", p->src_addr);
+	scanf_sysfs(ppath, "dst_addr", "%s", p->dst_addr);
+	scanf_sysfs(ppath, "hca_name", "%s", p->hca_name);
+	scanf_sysfs(ppath, "hca_port", "%d", &p->hca_port);
+	scanf_sysfs(ppath, "state", "%s", p->state);
+
+	scanf_sysfs(ppath, "/stats/rdma", "%*d %d %*d %d %d %d",
+		    &p->rx_bytes, &p->tx_bytes, &p->inflights, &p->reconnects);
+
+	return p;
+}
+
+static struct ibnbd_sess *find_or_add_sess(const char *syspath,
+					   const char *sessname,
+					   struct ibnbd_sess **sess,
+					   struct ibnbd_path **paths,
+					   enum ibnbd_side side)
+{
+	struct ibnbd_sess *s;
+	struct ibnbd_path *p;
+	struct dirent *pent;
+	char tmp[PATH_MAX];
+	DIR *pdir;
+	int i;
+
+	snprintf(tmp, sizeof(tmp), "%s/%s", syspath, sessname);
 
 	for (i = 0; sess[i]; i++)
 		if (!strcmp(sessname, sess[i]->sessname))
 			return sess[i];
 
-	sess[i] = calloc(1, sizeof(**sess));
-	if (!sess[i])
+	s = calloc(1, sizeof(**sess));
+	if (!s)
 		return NULL;
 
-	strcpy(sess[i]->sessname, sessname);
+	sess[i] = s;
 
-	return sess[i];
-}
+	strcpy(s->sessname, sessname);
+	s->side = side;
+	scanf_sysfs(tmp, "mpath_policy", "%s (%2s: %*d)", s->mp, s->mp_short);
 
-struct ibnbd_path *add_path(const char *syspath,
-			    struct ibnbd_path **paths)
-{
-	int i;
+	strcat(tmp, "/paths/");
+	s->path_cnt = dir_cnt(tmp);
+	if (!s->path_cnt)
+		return s;
 
-	for (i = 0; paths[i]; i++);
-
-	paths[i] = calloc(1, sizeof(**paths));
-	if (!paths[i])
+	s->paths = calloc(s->path_cnt + 1, sizeof(*paths));
+	if (!s->paths) {
+		free(s);
 		return NULL;
+	}
 
-	return paths[i];
+	pdir = opendir(tmp);
+	if (!pdir)
+		goto out;
+
+	for (pent = readdir(pdir), i = 0; pent && i < s->path_cnt;
+	     pent = readdir(pdir), i++) {
+		if (pent->d_name[0] == '.') {
+			i--;
+			continue;
+		}
+
+		p = add_path(tmp, pent->d_name, paths);
+		if (!p)
+			goto out;
+
+		s->paths[i] = p;
+		p->sess = s;
+		if (!strcmp(p->state, "connected")) {
+			strcat(s->path_uu, "U");
+			s->act_path_cnt++;
+		} else {
+			strcat(s->path_uu, "_");
+		}
+
+		s->rx_bytes += p->rx_bytes;
+		s->tx_bytes += p->tx_bytes;
+		s->inflights += p->inflights;
+		s->reconnects += p->reconnects;
+	}
+
+	s->paths[i] = NULL;
+	closedir(pdir);
+	return s;
+
+out:
+	for (i = 0; s->paths[i]; i++)
+		free(s->paths[i]);
+
+	free(s->paths);
+	free(s);
+	return NULL;
 }
 
-struct ibnbd_sess_dev *add_sess_dev(struct ibnbd_sess_dev **sds)
+static struct ibnbd_sess_dev *add_sess_dev(const char *syspath,
+					   struct ibnbd_sess_dev **sds,
+					   struct ibnbd_sess *s,
+					   struct ibnbd_dev *d,
+					   enum ibnbd_side side)
 {
+	char a[64], tmp[PATH_MAX];
 	int i;
+
+	if (side == IBNBD_CLT) {
+		strcpy(tmp, syspath);
+		strcat(tmp, "/ibnbd/");
+	} else {
+		snprintf(tmp, sizeof(tmp), "%s/sessions/%s", syspath,
+			 s->sessname);
+	}
 
 	for (i = 0; sds[i]; i++);
 
 	sds[i] = calloc(1, sizeof(**sds));
 	if (!sds[i])
 		return NULL;
+
+	scanf_sysfs(tmp, "mapping_path", "%s", sds[i]->mapping_path);
+	scanf_sysfs(tmp, "access_mode", "%s", a);
+	if (!strcmp(a, "ro"))
+		sds[i]->access_mode = IBNBD_RO;
+	else if (!strcmp(a, "rw"))
+		sds[i]->access_mode = IBNBD_RW;
+	else
+		sds[i]->access_mode = IBNBD_MIGRATION;
+
+	sds[i]->sess = s;
+	sds[i]->dev = d;
 
 	return sds[i];
 }
@@ -294,14 +399,12 @@ static int ibnbd_sysfs_read_clt(struct ibnbd_sess_dev **sds,
 				struct ibnbd_path **paths,
 				struct ibnbd_dev **devs)
 {
-	char tmp[PATH_MAX], ppath[PATH_MAX], sessname[NAME_MAX], a[128];
-	struct dirent *dent, *pent;
+	char tmp[PATH_MAX], sessname[NAME_MAX];
+	struct dirent *dent;
 	struct ibnbd_sess_dev *sd;
 	struct ibnbd_sess *s;
-	struct ibnbd_path *p;
 	struct ibnbd_dev *d;
-	DIR *ddir, *pdir;
-	int cpath;
+	DIR *ddir;
 
 	ddir = opendir(PATH_SDS_CLT);
 	if (!ddir)
@@ -311,102 +414,21 @@ static int ibnbd_sysfs_read_clt(struct ibnbd_sess_dev **sds,
 		if (dent->d_name[0] == '.')
 			continue;
 
-		/* read dev */
-		sprintf(tmp, PATH_SDS_CLT "%s", dent->d_name);
+		sprintf(tmp, "%s%s", PATH_SDS_CLT, dent->d_name);
+		scanf_sysfs(tmp, "/ibnbd/session", "%s", sessname);
+
+		s = find_or_add_sess(PATH_SDS_CLT, sessname, sess, paths, IBNBD_CLT);
+		if (!s)
+			return -ENOMEM;
+
 		d = find_or_add_dev(tmp, devs);
 		if (!d)
 			return -ENOMEM;
 
-		/* read sess_dev */
-		strcat(tmp, "/ibnbd/");
-		sd = add_sess_dev(sds);
+		sd = add_sess_dev(tmp, sds, s, d, IBNBD_CLT);
 		if (!sd)
 			return -ENOMEM;
-		sd->dev = d;
-		scanf_sysfs(tmp, "mapping_path", "%s", sd->mapping_path);
-		scanf_sysfs(tmp, "access_mode", "%s", a);
-		if (!strcmp(a, "ro"))
-			sd->access_mode = IBNBD_RO;
-		else if (!strcmp(a, "rw"))
-			sd->access_mode = IBNBD_RW;
-		else
-			sd->access_mode = IBNBD_MIGRATION;
 
-		scanf_sysfs(tmp, "session", "%s", sessname);
-
-		/* read session */
-		sprintf(tmp, PATH_SESS_CLT "%s", sessname);
-		s = find_or_add_sess(tmp, sess);
-		if (!s)
-			return -ENOMEM;
-		sd->sess = s;
-
-		if (s->mp[0] != 0)
-			continue;
-
-		s->side = IBNBD_CLT;
-		scanf_sysfs(tmp, "mpath_policy", "%s (%2s: %*d)",
-			    s->mp, s->mp_short);
-
-		strcat(tmp, "/paths/");
-		s->path_cnt = dir_cnt(tmp);
-		if (!s->path_cnt)
-			continue;
-
-		s->paths = calloc(s->path_cnt + 1, sizeof(*paths));
-		if (!s->paths)
-			return -ENOMEM;
-
-		pdir = opendir(tmp);
-		if (!pdir)
-			return -ENOENT;
-
-		for (pent = readdir(pdir), cpath = 0;
-		     pent && cpath < s->path_cnt;
-		     pent = readdir(pdir), cpath++) {
-			if (pent->d_name[0] == '.') {
-				cpath--;
-				continue;
-			}
-
-			/* read path */
-			strcpy(ppath, tmp);
-			strcat(ppath, pent->d_name);
-			p = add_path(ppath, paths);
-			if (!p)
-				return -ENOMEM;
-
-			s->paths[cpath] = p;
-			p->sess = s;
-			strcpy(p->pathname, pent->d_name);
-			scanf_sysfs(ppath, "src_addr", "%s", p->src_addr);
-			scanf_sysfs(ppath, "dst_addr", "%s", p->dst_addr);
-			scanf_sysfs(ppath, "hca_name", "%s", p->hca_name);
-			scanf_sysfs(ppath, "hca_port", "%d", &p->hca_port);
-			scanf_sysfs(ppath, "state", "%s", p->state);
-
-			strcat(ppath, "/stats/");
-			scanf_sysfs(ppath, "state", "%s", p->state);
-			scanf_sysfs(ppath, "rdma", "%*d %d %*d %d %d %d",
-				    &p->rx_bytes, &p->tx_bytes, &p->inflights,
-				    &p->reconnects);
-
-			if (!strcmp(p->state, "connected")) {
-				strcat(s->path_uu, "U");
-				s->act_path_cnt++;
-			} else {
-				strcat(s->path_uu, "_");
-			}
-
-			s->rx_bytes += p->rx_bytes;
-			s->tx_bytes += p->tx_bytes;
-			s->inflights += p->inflights;
-			s->reconnects += p->reconnects;
-		}
-
-		s->paths[cpath] = NULL;
-
-		closedir(pdir);
 	}
 
 	closedir(ddir);
@@ -414,14 +436,12 @@ static int ibnbd_sysfs_read_clt(struct ibnbd_sess_dev **sds,
 	return 0;
 }
 
-static int ibnbd_sysfs_read_srv(struct ibnbd_sess_dev **sds_srv,
-				struct ibnbd_sess **sess_srv,
-				struct ibnbd_path **paths_srv,
+static int ibnbd_sysfs_read_srv(struct ibnbd_sess_dev **sds,
+				struct ibnbd_sess **sess,
+				struct ibnbd_path **paths,
 				struct ibnbd_dev **devs)
 {
-	int ret = 0;
-
-	return ret;
+	return 0;
 }
 
 /*
