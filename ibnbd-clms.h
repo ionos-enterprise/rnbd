@@ -382,11 +382,10 @@ static struct table_column *def_clms_sessions_clt[] = {
 
 static struct table_column *def_clms_sessions_srv[] = {
 	&clm_ibnbd_sess_sessname,
-	&clm_ibnbd_sess_path_uu,
+	&clm_ibnbd_sess_path_cnt,
 	&clm_ibnbd_sess_tx_bytes,
 	&clm_ibnbd_sess_rx_bytes,
 	&clm_ibnbd_sess_inflights,
-	&clm_ibnbd_sess_reconnects,
 	NULL
 };
 
