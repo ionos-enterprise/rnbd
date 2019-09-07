@@ -1480,8 +1480,10 @@ static int show_session(char *sessname)
 		table_row_stringify(ss[0], flds, cs, 1, 0);
 		table_entry_print_term("", flds, cs,
 				       table_get_max_h_width(cs), trm);
-		printf("%s%s%s %s(%s)%s\n", CLR(trm, CBLD, ss[0]->sessname),
-		       CLR(trm, CBLD, ss[0]->mp_short));
+		printf("%s%s%s", CLR(trm, CBLD, ss[0]->sessname));
+		if (ss[0]->side == IBNBD_CLT)
+			printf(" %s(%s)%s", CLR(trm, CBLD, ss[0]->mp_short));
+		printf("\n");
 		list_paths_term(ss[0]->paths, ss[0]->path_cnt, ps, 1);
 
 		break;
