@@ -120,24 +120,6 @@ static struct table_column clm_ibnbd_dev_rx_sect =
 	_CLM_SD("rx_sect", sess, "RX", FLD_NUM, sd_rx_to_str, 'l', CNRM, CNRM,
 	"Amount of data read from the device");
 
-static int sd_to_shortdesc(char *str, size_t len, enum color *clr,
-			   void *v, int humanize)
-{
-	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
-						 sess);
-	if (!sd->dev)
-		return 0;
-
-	*clr = CNRM;
-
-	return snprintf(str, len, "%s (%s)", sd->mapping_path,
-			sd->dev->devname);
-}
-
-static struct table_column clm_ibnbd_dev_shortdesc =
-	_CLM_SD("shortdesc", sess, "Short", FLD_STR,
-	       sd_to_shortdesc, 'l', CNRM, CNRM, "Short description");
-
 static int sd_tx_to_str(char *str, size_t len, enum color *clr, void *v,
 		       int humanize)
 {
@@ -257,11 +239,6 @@ static struct table_column *def_clms_devices_srv[] = {
 	&clm_ibnbd_dev_devname,
 	&clm_ibnbd_sess_dev_access_mode,
 	&clm_ibnbd_dev_io_mode,
-	NULL
-};
-
-static struct table_column *clms_devices_shortdesc[] = {
-	&clm_ibnbd_dev_shortdesc,
 	NULL
 };
 
@@ -386,11 +363,6 @@ static struct table_column *def_clms_sessions_srv[] = {
 	&clm_ibnbd_sess_tx_bytes,
 	&clm_ibnbd_sess_rx_bytes,
 	&clm_ibnbd_sess_inflights,
-	NULL
-};
-
-static struct table_column *clms_sessions_shortdesc[] = {
-	&clm_ibnbd_sess_sessname,
 	NULL
 };
 
