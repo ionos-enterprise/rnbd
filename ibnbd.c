@@ -1588,7 +1588,7 @@ static void help_map(struct cmd *cmd)
 	printf("\nArguments:\n");
 	print_opt("<device>", "Path to the device to be mapped on server side");
 	print_opt("from <server>",
-		  "Address, name or session name of the server");
+		  "Address, hostname or session name of the server");
 
 	printf("\nOptions:\n");
 	print_opt("<path>", "Path to establish: [src_addr,]dst_addr");
