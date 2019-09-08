@@ -1,3 +1,9 @@
+ibnbd-tool (0.0.2) jessie stretch buster; urgency=medium
+
+  * Read stuff from sysfs
+
+ -- Danil Kipnis <danil.kipnid@cloud.ionos.com>  Sun, 08 Sep 2019 08:01:36 +0200
+
 ibnbd-tool (0.0.1) jessie stretch buster; urgency=medium
 
   * Initial release
