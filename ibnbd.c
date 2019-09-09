@@ -1775,8 +1775,9 @@ static struct cmd cmds[] = {
 		"Umap a given imported device",
 		cmd_unmap, parse_name, help_unmap},
 	{"remap",
-		"Remap an imported device",
-		"Remove the imported device and map it again",
+		"Remap a device or all devices on a session",
+		"Unmap and map again an imported device or do this "
+		"for all devices of a given session",
 		 cmd_remap, parse_name, help_remap},
 	{"disconnect",
 		"Disconnect a path or a session",
