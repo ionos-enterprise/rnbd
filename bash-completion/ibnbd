@@ -1,0 +1,149 @@
+# bash completion for ibnbd
+
+_dev_names()
+{
+	local CMD='ibnbd list devs noheaders nototals devname'
+	local RCMD=''
+	if (( $EUID != 0 )); then
+		if sudo -n true 2>/dev/null; then
+			RCMD="$(sudo $CMD)"
+		fi
+	else
+		RCMD="$($CMD)"
+	fi
+	COMPREPLY=( $( compgen -W "help $RCMD" -- "$1" ) )
+	return 0
+}
+
+_sess_names()
+{
+	local CMD='ibnbd list sess noheaders nototals sessname'
+	local RCMD=''
+	if (( $EUID != 0 )); then
+		if sudo -n true 2>/dev/null; then
+			RCMD="$(sudo $CMD)"
+		fi
+	else
+		RCMD="$($CMD)"
+	fi
+	COMPREPLY=( $( compgen -W "help $RCMD" -- "$1" ) )
+	return 0
+}
+
+_path_names()
+{
+	local CMD='ibnbd list paths noheaders nototals pathname'
+	local RCMD=''
+	if (( $EUID != 0 )); then
+		if sudo -n true 2>/dev/null; then
+			RCMD="$(sudo $CMD)"
+		fi
+	else
+		RCMD="$($CMD)"
+	fi
+	COMPREPLY=( $( compgen -W "help $RCMD" -- "$1" ) )
+	return 0
+}
+
+_dev_sess_names()
+{
+	_dev_names $1
+	local TMP=$COMPREPLY
+	_sess_names $1
+	COMPREPLY="$TMP $COMPREPLY"
+	return 0
+}
+
+_dev_sess_path_names()
+{
+	_dev_sess_names $1
+	local TMP=$COMPREPLY
+	_path_names $1
+	COMPREPLY="$TMP $COMPREPLY"
+	return 0
+}
+
+_sess_path_names()
+{
+	_sess_names $1
+	local TMP=$COMPREPLY
+	_path_names $1
+	COMPREPLY="$TMP $COMPREPLY"
+	return 0
+}
+
+_ibnbd()
+{
+	local cur prev opts
+
+	cur="${COMP_WORDS[COMP_CWORD]}"
+	prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+	COMPREPLY=()
+
+	if ((COMP_CWORD == 1)); then
+		opts="list show map unmap remap disconnect reconnect addpath \
+		      delpath resize help"
+		COMPREPLY=( $( compgen -W "${opts}" -- "${cur}" ) )
+		return 0
+	fi
+	if [[ "${prev}" == "${COMP_WORDS[1]}" ]]; then
+		case ${prev} in
+		unmap)
+			_dev_names $cur
+			return 0
+			;;
+		remap)
+			_dev_sess_names $cur
+			return 0
+			;;
+		show)
+			_dev_sess_path_names $cur
+			return 0
+			;;
+		disconnect|reconnect)
+			_sess_path_names $cur
+			return 0
+			;;
+		addpath)
+			_sess_names $cur
+			return 0
+			;;
+		delpath)
+			_path_names $cur
+			return 0
+			;;
+		esac
+	fi
+	case ${COMP_WORDS[1]} in
+	map)
+		if [[ "${prev}" == "from" ]]; then
+			_sess_names $cur
+			return 0
+		fi
+
+		opts="from fileio blockio ro rw migration verbose help"
+		;;
+	list)
+		opts="dev devs devices sess sessions path paths csv xml \
+		      json B K M G T P E noheaders \
+		      nototals help all tree"
+		;;
+	show)
+		opts="csv xml json B K M G T P E help all"
+		;;
+	resize)
+		opts="verbose help"
+		;;
+	esac
+
+	if [[ "${prev}" == "help" ]]; then
+		opts=""
+	fi
+
+	COMPREPLY=( $( compgen -W "${opts}" -- "${cur}" ) )
+	return 0
+}
+
+complete -F _ibnbd ibnbd
+complete -F _ibnbd rnbd
