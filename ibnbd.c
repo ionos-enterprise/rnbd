@@ -1608,6 +1608,25 @@ static int cmd_map(void)
 	return 0;
 }
 
+static int cmd_resize(void)
+{
+	printf("TODO\n");
+	return 0;
+}
+
+static void help_resize(struct cmd *cmd)
+{
+	cmd_print_usage(cmd, "<device name or path or mapping path> ");
+
+	printf("\nArguments:\n");
+	print_opt("<device>", "Name of the device to be unmapped");
+	print_opt("<size_sect>", "New size of the device in sectors");
+
+	printf("\nOptions:\n");
+	print_sarg_descr("verbose");
+	print_sarg_descr("help");
+}
+
 static void help_unmap(struct cmd *cmd)
 {
 	cmd_print_usage(cmd, "<device name or path or mapping path> ");
@@ -1745,6 +1764,10 @@ static struct cmd cmds[] = {
 		"Map a device from a given server",
 		"Map a device from a given server",
 		 cmd_map, parse_name, help_map},
+	{"resize",
+		"Resize a mapped device",
+		"Change size of a mapped device",
+		 cmd_resize, parse_name, help_resize},
 	{"unmap",
 		"Unmap an imported device",
 		"Umap a given imported device",
