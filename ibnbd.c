@@ -1572,7 +1572,6 @@ static void help_show(struct cmd *cmd)
 
 	printf("\n%sProvide 'all' to print all available fields\n", HPRE);
 
-	print_opt("{mode}", "Information to print: device|session|path");
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
 	print_opt("{mode}", "Information to print: device|session|path."
