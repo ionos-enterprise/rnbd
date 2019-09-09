@@ -1729,6 +1729,8 @@ static int cmd_addpath(void)
 	return 0;
 }
 
+static void help_help(struct cmd *cmd);
+
 static void help_delpath(struct cmd *cmd)
 {
 	cmd_print_usage(cmd, "<path> ");
@@ -1795,9 +1797,14 @@ static struct cmd cmds[] = {
 	{"help",
 		"Display help",
 		"Display help message and exit.",
-		cmd_help, NULL, NULL},
+		cmd_help, NULL, help_help},
 	{ 0 }
 };
+
+static void help_help(struct cmd *cmd)
+{
+	print_help(args.pname, cmds);
+}
 
 static int cmd_help(void)
 {
@@ -2008,6 +2015,8 @@ int main(int argc, char **argv)
 		ret = -EINVAL;
 		goto out;
 	}
+	if (cmd == find_cmd("help", cmds))
+		args.help_set = true;
 
 	if (i + 1 < argc && cmd->help &&
 	    (!strcmp(argv[i + 1], "help") ||
@@ -2079,6 +2088,7 @@ int main(int argc, char **argv)
 	default_args();
 
 	ret = 0;
+
 	if (args.help_set && cmd->help)
 		cmd->help(cmd);
 	else if (cmd->func) {
