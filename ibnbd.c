@@ -149,7 +149,7 @@ static int parse_fmt(int argc, char **argv, int i, const struct sarg *sarg)
 	else
 		return i;
 
-	args.fmt_set = 1;
+	args.fmt_set = true;
 
 	return i + 1;
 }
@@ -162,7 +162,7 @@ static int parse_iomode(int argc, char **argv, int i, const struct sarg *sarg)
 
 	strcpy(args.iomode, argv[i]);
 
-	args.iomode_set = 1;
+	args.iomode_set = true;
 
 	return i + 1;
 }
@@ -199,8 +199,8 @@ static int parse_lst(int argc, char **argv, int i, const struct sarg *sarg)
 	} else
 		return i;
 
-	args.lstmode_set = 1;
-	args.showmode_set = 1;
+	args.lstmode_set = true;
+	args.showmode_set = true;
 
 	return i + 1;
 }
@@ -223,7 +223,7 @@ static int parse_mode(int argc, char **argv, int i, const struct sarg *sarg)
 	else
 		return i;
 
-	args.ibnbdmode_set = 1;
+	args.ibnbdmode_set = true;
 
 	return i + 1;
 }
@@ -239,7 +239,7 @@ static int parse_rw(int argc, char **argv, int i, const struct sarg *sarg)
 	else
 		return i;
 
-	args.ro_set = 1;
+	args.ro_set = true;
 
 	return i + 1;
 }
@@ -271,7 +271,7 @@ static int parse_unit(int argc, char **argv, int i, const struct sarg *sarg)
 	clm_set_hdr_unit(&clm_ibnbd_path_rx_bytes, sarg->descr);
 	clm_set_hdr_unit(&clm_ibnbd_path_tx_bytes, sarg->descr);
 
-	args.unit_set = 1;
+	args.unit_set = true;
 	return i + 1;
 }
 
@@ -532,7 +532,7 @@ static int list_devices_term(struct ibnbd_sess_dev **sds,
 		;
 
 	if (!has_num(cs))
-		args.nototals_set = 1;
+		args.nototals_set = true;
 
 	flds = calloc((dev_num + 1) * cs_cnt, sizeof(*flds));
 	if (!flds) {
@@ -1507,7 +1507,7 @@ static int cmd_show(void)
 			    args.name);
 			return -ENOENT;
 		}
-		args.showmode_set = 1;
+		args.showmode_set = true;
 	}
 
 	switch (args.showmode) {
@@ -1895,7 +1895,7 @@ static int parse_precision(char *str)
 		return -EINVAL;
 
 	args.prec = prec;
-	args.prec_set = 1;
+	args.prec_set = true;
 
 	return 0;
 }
