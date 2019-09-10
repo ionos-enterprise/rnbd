@@ -1690,18 +1690,18 @@ static int parse_path(const char *arg)
 static int cmd_map(void)
 {
 	struct ibnbd_sess *sess;
-	int i;
-
-	printf(">>>>> map %s from %s\n", args.name, args.from);
+	char cmd[4096], sessname[NAME_MAX];
+	int i, cnt = 0;
 
 	if (!parse_path(args.from)) {
 		/* user provided only paths to establish
 		 * -> generate sessname
 		 */
-		args.from = "clt@srv"; /* TODO */
-	}
+		strcpy(sessname, "clt@srv"); /* TODO */
+	} else
+		strcpy(sessname, args.from);
 
-	sess = find_session(args.from, sess_clt);
+	sess = find_session(sessname, sess_clt);
 
 	if (!sess && !args.path_cnt) {
 		ERR("Client session '%s' not found. Please provide"
@@ -1713,13 +1713,23 @@ static int cmd_map(void)
 		    " by the driver. Please use addpath to add a path to"
 		    " an existsing sesion.\n", args.from);
 	}
-	printf(">>>> map %s on %s, %d paths:\n", args.name, args.from,
-	       args.path_cnt);
-	for (i = 0; i < args.path_cnt; i++)
-		printf(">>>>>> %d: %s@%s\n", i, args.paths[i].src,
-		       args.paths[i].dst);
 
-	/* TODO: write string into sysfs */
+	cnt = snprintf(cmd, sizeof(cmd), "sessname=%s ", sessname);
+	cnt += snprintf(cmd, sizeof(cmd) - cnt, "device_path=%s ", args.name);
+
+	for (i = 0; i < args.path_cnt; i++)
+		cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, "path=%s@%s ",
+				args.paths[i].src, args.paths[i].dst);
+
+	if (args.io_mode_set)
+		cnt += snprintf(cmd, sizeof(cmd) - cnt, "io_mode=%s ",
+				args.io_mode);
+
+	if (args.io_mode_set)
+		cnt += snprintf(cmd, sizeof(cmd) - cnt, "io_mode=%s ",
+				args.io_mode);
+
+	printf(">>>>> write %s\n", cmd);
 
 	return 0;
 }
