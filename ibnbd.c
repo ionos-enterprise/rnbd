@@ -48,8 +48,8 @@ struct path {
 };
 
 struct args {
-	char pname[65];
-	char name[NAME_MAX];
+	const char *pname;
+	const char *name;
 
 	uint64_t size_sect;
 	short size_set;
@@ -99,6 +99,9 @@ struct args {
 
 	struct path paths[32]; /* lazy */
 	int path_cnt;
+
+	const char *from;
+	short from_set;
 };
 
 static struct args args;
@@ -220,6 +223,21 @@ enum ibnbdmode {
 	IBNBD_BOTH = IBNBD_CLIENT | IBNBD_SERVER,
 };
 
+static int parse_from(int argc, char **argv, int i, const struct sarg *sarg)
+{
+	int j = i + 1;
+
+	if (j >= argc) {
+		ERR("Please specify the destionation to map from\n");
+		return i;
+	}
+
+	args.from = argv[j];
+	args.from_set = 1;
+
+	return j + 1;
+}
+
 static int parse_mode(int argc, char **argv, int i, const struct sarg *sarg)
 {
 	if (!strcasecmp(argv[i], "client") || !strcasecmp(argv[i], "clt"))
@@ -310,6 +328,7 @@ static int parse_flag(int argc, char **argv, int i, const struct sarg *sarg)
 }
 
 static struct sarg sargs[] = {
+	{"from", "Destination to map a device from", parse_from, NULL},
 	{"client", "Information for client", parse_mode, NULL},
 	{"clt", "Information for client", parse_mode, NULL},
 	{"server", "Information for server", parse_mode, NULL},
@@ -1089,7 +1108,7 @@ static int cmd_list(void)
 	return rc;
 }
 
-static bool match_device(struct ibnbd_sess_dev *d, char *name)
+static bool match_device(struct ibnbd_sess_dev *d, const char *name)
 {
 	if (!strcmp(d->mapping_path, name) ||
 	    !strcmp(d->dev->devname, name) ||
@@ -1102,7 +1121,7 @@ static bool match_device(struct ibnbd_sess_dev *d, char *name)
 /*
  * Find first ibnbd device by device name, path or mapping path
  */
-static bool device_exists(char *name)
+static bool device_exists(const char *name)
 {
 	int i;
 
@@ -1116,7 +1135,7 @@ static bool device_exists(char *name)
 	return false;
 }
 
-static int find_devices(char *name, struct ibnbd_sess_dev **devs,
+static int find_devices(const char *name, struct ibnbd_sess_dev **devs,
 			struct ibnbd_sess_dev **res)
 {
 	int i, cnt = 0;
@@ -1133,7 +1152,7 @@ static int find_devices(char *name, struct ibnbd_sess_dev **devs,
 /*
  * Find all ibnbd devices by device name, path or mapping path
  */
-static int find_devices_all(char *name, struct ibnbd_sess_dev **ds_imp,
+static int find_devices_all(const char *name, struct ibnbd_sess_dev **ds_imp,
 			    struct ibnbd_sess_dev **ds_exp)
 {
 	int cnt = 0;
@@ -1146,7 +1165,7 @@ static int find_devices_all(char *name, struct ibnbd_sess_dev **ds_imp,
 	return cnt;
 }
 
-static int show_device(char *devname)
+static int show_device(const char *devname)
 {
 	struct ibnbd_sess_dev **ds_imp, **ds_exp, **ds;
 	struct table_fld flds[CLM_MAX_CNT];
@@ -1213,7 +1232,7 @@ free_imp:
 	return ret;
 }
 
-static bool match_sess(struct ibnbd_sess *s, char *name)
+static bool match_sess(struct ibnbd_sess *s, const char *name)
 {
 	char *at;
 
@@ -1227,7 +1246,7 @@ static bool match_sess(struct ibnbd_sess *s, char *name)
 	return false;
 }
 
-static bool session_exists(char *name)
+static bool session_exists(const char *name)
 {
 	int i;
 
@@ -1241,7 +1260,7 @@ static bool session_exists(char *name)
 	return false;
 }
 
-static int find_sessions(char *name, struct ibnbd_sess **ss,
+static int find_sessions(const char *name, struct ibnbd_sess **ss,
 			 struct ibnbd_sess **res)
 {
 	int i, cnt = 0;
@@ -1255,7 +1274,7 @@ static int find_sessions(char *name, struct ibnbd_sess **ss,
 	return cnt;
 }
 
-static int find_sessions_all(char *name, struct ibnbd_sess **ss_clt,
+static int find_sessions_all(const char *name, struct ibnbd_sess **ss_clt,
 			     struct ibnbd_sess **ss_srv)
 {
 	int cnt = 0;
@@ -1269,7 +1288,7 @@ static int find_sessions_all(char *name, struct ibnbd_sess **ss_clt,
 	return cnt;
 }
 
-static bool match_path(struct ibnbd_path *p, char *name)
+static bool match_path(struct ibnbd_path *p, const char *name)
 {
 	int port;
 	char *at;
@@ -1307,7 +1326,7 @@ static bool match_path(struct ibnbd_path *p, char *name)
 	return false;
 }
 
-static bool path_exists(char *name)
+static bool path_exists(const char *name)
 {
 	int i;
 
@@ -1321,7 +1340,7 @@ static bool path_exists(char *name)
 	return false;
 }
 
-static int find_paths(char *name, struct ibnbd_path **pp,
+static int find_paths(const char *name, struct ibnbd_path **pp,
 		      struct ibnbd_path **res)
 {
 	int i, cnt = 0;
@@ -1335,7 +1354,7 @@ static int find_paths(char *name, struct ibnbd_path **pp,
 	return cnt;
 }
 
-static int find_paths_all(char *name, struct ibnbd_path **pp_clt,
+static int find_paths_all(const char *name, struct ibnbd_path **pp_clt,
 			  struct ibnbd_path **pp_srv)
 {
 	int cnt = 0;
@@ -1349,7 +1368,7 @@ static int find_paths_all(char *name, struct ibnbd_path **pp_clt,
 }
 
 
-static int get_showmode(char *name, enum showmode *mode)
+static int get_showmode(const char *name, enum showmode *mode)
 {
 	if (device_exists(name))
 		*mode = SHOW_DEVICE;
@@ -1363,7 +1382,7 @@ static int get_showmode(char *name, enum showmode *mode)
 	return 0;
 }
 
-static int show_path(char *pathname)
+static int show_path(const char *pathname)
 {
 	struct ibnbd_path **pp_clt, **pp_srv, **pp;
 	struct table_fld flds[CLM_MAX_CNT];
@@ -1429,7 +1448,7 @@ free_clt:
 	return res;
 }
 
-static int show_session(char *sessname)
+static int show_session(const char *sessname)
 {
 	struct ibnbd_sess **ss_clt, **ss_srv, **ss;
 	struct table_fld flds[CLM_MAX_CNT];
@@ -1541,11 +1560,12 @@ static int parse_name(int argc, char **argv, int i)
 	int j = i + 1;
 
 	if (j >= argc) {
-		ERR("please specify device or session to display\n");
+		ERR("Please specify the <name> argument\n");
 		return i;
 	}
 
-	snprintf(args.name, sizeof(args.name), "%s", argv[j]);
+	args.name = argv[j];
+
 	return j + 1;
 }
 
@@ -2038,7 +2058,7 @@ int main(int argc, char **argv)
 
 	init_args();
 
-	snprintf(args.pname, sizeof(args.pname), "%s", argv[0]);
+	args.pname = argv[0];
 
 	if (argc < 2) {
 		ERR("no command specified\n");
