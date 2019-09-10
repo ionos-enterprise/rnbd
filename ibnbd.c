@@ -1997,10 +1997,10 @@ static int parse_path(const char *arg)
 		dst = arg;
 	}
 
-	if (src && !is_ip4(src) && !is_ip6(src) && is_gid(src))
+	if (src && !is_ip4(src) && !is_ip6(src) && !is_gid(src))
 		return -EINVAL;
 
-	if (!is_ip4(dst) && !is_ip6(dst) && is_gid(dst))
+	if (!is_ip4(dst) && !is_ip6(dst) && !is_gid(dst))
 		return -EINVAL;
 
 	args.paths[args.path_cnt].src = src;
