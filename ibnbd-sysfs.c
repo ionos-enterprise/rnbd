@@ -369,7 +369,7 @@ static struct ibnbd_sess_dev *add_sess_dev(const char *devname,
 					   struct ibnbd_dev *d,
 					   enum ibnbd_side side)
 {
-	char a[64], tmp[PATH_MAX];
+	char tmp[PATH_MAX];
 	int i;
 
 	if (side == IBNBD_CLT)
@@ -385,13 +385,7 @@ static struct ibnbd_sess_dev *add_sess_dev(const char *devname,
 		return NULL;
 
 	scanf_sysfs(tmp, "mapping_path", "%s", sds[i]->mapping_path);
-	scanf_sysfs(tmp, "access_mode", "%s", a);
-	if (!strcmp(a, "ro"))
-		sds[i]->access_mode = IBNBD_RO;
-	else if (!strcmp(a, "rw"))
-		sds[i]->access_mode = IBNBD_RW;
-	else
-		sds[i]->access_mode = IBNBD_MIGRATION;
+	scanf_sysfs(tmp, "access_mode", "%s", sds[i]->access_mode);
 
 	sds[i]->sess = s;
 	sds[i]->dev = d;

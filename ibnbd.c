@@ -70,8 +70,8 @@ struct args {
 	unsigned int ibnbdmode;
 	short ibnbdmode_set;
 
-	short ro;
-	short ro_set;
+	const char *access_mode;
+	short access_mode_set;
 
 	struct table_column *clms_devices_clt[CLM_MAX_CNT];
 	struct table_column *clms_devices_srv[CLM_MAX_CNT];
@@ -256,16 +256,13 @@ static int parse_mode(int argc, char **argv, int i, const struct sarg *sarg)
 
 static int parse_rw(int argc, char **argv, int i, const struct sarg *sarg)
 {
-	if (!strcasecmp(argv[i], "ro"))
-		args.ro = IBNBD_RO;
-	else if (!strcasecmp(argv[i], "rw"))
-		args.ro = IBNBD_RW;
-	else if (!strcasecmp(argv[i], "migration"))
-		args.ro = IBNBD_MIGRATION;
-	else
+	if (strcasecmp(argv[i], "ro") &&
+	    strcasecmp(argv[i], "rw") &&
+	    strcasecmp(argv[i], "migration"))
 		return i;
 
-	args.ro_set = true;
+	args.access_mode = argv[i];
+	args.access_mode_set = true;
 
 	return i + 1;
 }
@@ -1725,9 +1722,9 @@ static int cmd_map(void)
 		cnt += snprintf(cmd, sizeof(cmd) - cnt, "io_mode=%s ",
 				args.io_mode);
 
-	if (args.io_mode_set)
-		cnt += snprintf(cmd, sizeof(cmd) - cnt, "io_mode=%s ",
-				args.io_mode);
+	if (args.access_mode_set)
+		cnt += snprintf(cmd, sizeof(cmd) - cnt, "access_mode=%s ",
+				args.access_mode);
 
 	printf(">>>>> write %s\n", cmd);
 

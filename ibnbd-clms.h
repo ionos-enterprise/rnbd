@@ -36,27 +36,6 @@ static int sd_state_to_str(char *str, size_t len, enum color *clr, void *v,
 CLM_SD(mapping_path, "Mapping Path", FLD_STR, NULL, 'l', CNRM, CBLD,
 	"Mapping name of the remote device");
 
-static int sd_access_mode_to_str(char *str, size_t len, enum color *clr,
-				  void *v, int humanize)
-{
-	enum ibnbd_access_mode mode = *(enum ibnbd_access_mode *)v;
-
-	switch (mode) {
-	case IBNBD_RO:
-		*clr = CGRN;
-		return snprintf(str, len, "ro");
-	case IBNBD_RW:
-		*clr = CNRM;
-		return snprintf(str, len, "rw");
-	case IBNBD_MIGRATION:
-		*clr = CBLU;
-		return snprintf(str, len, "migration");
-	default:
-		*clr = CUND;
-		return snprintf(str, len, "%d", mode);
-	}
-}
-
 static int sdd_io_mode_to_str(char *str, size_t len, enum color *clr, void *v,
 			     int humanize)
 {
@@ -67,7 +46,7 @@ static int sdd_io_mode_to_str(char *str, size_t len, enum color *clr, void *v,
 	return snprintf(str, len, "%s", sd->dev->io_mode);
 }
 
-CLM_SD(access_mode, "Access Mode", FLD_STR, sd_access_mode_to_str, 'l', CNRM,
+CLM_SD(access_mode, "Access Mode", FLD_STR, NULL, 'l', CNRM,
 	CNRM, "RW mode of the device: ro, rw or migration");
 
 static int sd_devname_to_str(char *str, size_t len, enum color *clr,

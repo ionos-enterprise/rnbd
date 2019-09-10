@@ -1,11 +1,5 @@
 #include <limits.h>
 
-enum ibnbd_access_mode {
-	IBNBD_RO,
-	IBNBD_RW,
-	IBNBD_MIGRATION
-};
-
 enum ibnbd_side {
 	IBNBD_CLT,
 	IBNBD_SRV
@@ -60,7 +54,7 @@ struct ibnbd_sess {
 struct ibnbd_sess_dev {
 	struct ibnbd_sess	*sess;			/* session */
 	char			mapping_path[NAME_MAX]; /* name for mapping */
-	enum ibnbd_access_mode	access_mode; 		/* ro/rw/migration */
+	char			access_mode[64]; 	/* ro/rw/migration */
 	struct ibnbd_dev	*dev;			/* ibnbd block device */
 };
 
