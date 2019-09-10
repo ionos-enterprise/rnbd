@@ -1246,7 +1246,19 @@ static bool match_sess(struct ibnbd_sess *s, const char *name)
 	return false;
 }
 
-static bool session_exists(const char *name)
+static struct ibnbd_sess *find_session(const char *name,
+				       struct ibnbd_sess **ss)
+{
+	int i;
+
+	for (i = 0; ss[i]; i++)
+		if (!strcmp(name, ss[i]->sessname))
+			return ss[i];
+
+	return NULL;
+}
+
+static bool session_match_exists(const char *name)
 {
 	int i;
 
@@ -1260,8 +1272,8 @@ static bool session_exists(const char *name)
 	return false;
 }
 
-static int find_sessions(const char *name, struct ibnbd_sess **ss,
-			 struct ibnbd_sess **res)
+static int find_sessions_match(const char *name, struct ibnbd_sess **ss,
+			       struct ibnbd_sess **res)
 {
 	int i, cnt = 0;
 
@@ -1280,9 +1292,9 @@ static int find_sessions_all(const char *name, struct ibnbd_sess **ss_clt,
 	int cnt = 0;
 
 	if (args.ibnbdmode & IBNBD_CLIENT)
-		cnt += find_sessions(name, sess_clt, ss_clt);
+		cnt += find_sessions_match(name, sess_clt, ss_clt);
 	if (args.ibnbdmode & IBNBD_SERVER)
-		cnt += find_sessions(name, sess_srv, ss_srv);
+		cnt += find_sessions_match(name, sess_srv, ss_srv);
 
 
 	return cnt;
@@ -1372,7 +1384,7 @@ static int get_showmode(const char *name, enum showmode *mode)
 {
 	if (device_exists(name))
 		*mode = SHOW_DEVICE;
-	else if (session_exists(name))
+	else if (session_match_exists(name))
 		*mode = SHOW_SESSION;
 	else if (path_exists(name))
 		*mode = SHOW_PATH;
@@ -1629,9 +1641,86 @@ static void help_map(struct cmd *cmd)
 	print_sarg_descr("help");
 }
 
+static bool is_ip4(const char *arg)
+{
+	/* TODO */
+	return false;
+}
+
+static bool is_ip6(const char *arg)
+{
+	/* TODO */
+	return false;
+}
+
+static bool is_gid(const char *arg)
+{
+	/* TODO */
+	return is_ip6(arg);
+}
+
+static int parse_path(const char *arg)
+{
+	const char *src, *dst;
+	char *d;
+
+	d = strchr(arg, '@');
+	if (d) {
+		src = arg;
+		dst = d + 1;
+	} else {
+		src = NULL;
+		dst = arg;
+	}
+
+	if (src && !is_ip4(src) && !is_ip6(src) && !is_gid(src))
+		return -EINVAL;
+
+	if (!is_ip4(dst) && !is_ip6(dst) && !is_gid(dst))
+		return -EINVAL;
+
+	args.paths[args.path_cnt].src = src;
+	args.paths[args.path_cnt].dst = dst;
+
+	args.path_cnt++;
+
+	return 0;
+}
+
 static int cmd_map(void)
 {
-	printf("TODO\n");
+	struct ibnbd_sess *sess;
+	int i;
+
+	printf(">>>>> map %s from %s\n", args.name, args.from);
+
+	if (!parse_path(args.from)) {
+		/* user provided only paths to establish
+		 * -> generate sessname
+		 */
+		args.from = "clt@srv"; /* TODO */
+	}
+
+	sess = find_session(args.from, sess_clt);
+
+	if (!sess && !args.path_cnt) {
+		ERR("Client session '%s' not found. Please provide"
+		    " at least one path to establish a new one.\n",
+		    args.from);
+		return -EINVAL;
+	} else if (sess && args.path_cnt) {
+		INF("Session '%s' exists. Provided paths will be ignored"
+		    " by the driver. Please use addpath to add a path to"
+		    " an existsing sesion.\n", args.from);
+	}
+	printf(">>>> map %s on %s, %d paths:\n", args.name, args.from,
+	       args.path_cnt);
+	for (i = 0; i < args.path_cnt; i++)
+		printf(">>>>>> %d: %s@%s\n", i, args.paths[i].src,
+		       args.paths[i].dst);
+
+	/* TODO: write string into sysfs */
+
 	return 0;
 }
 
@@ -1963,52 +2052,6 @@ static int parse_paths_clms(const char *arg)
 	rc_srv = table_extend_columns(arg, ",", all_clms_paths_srv,
 				      args.clms_paths_srv, CLM_MAX_CNT);
 	return rc_clt && rc_srv;
-}
-
-static bool is_ip4(const char *arg)
-{
-	/* TODO */
-	return false;
-}
-
-static bool is_ip6(const char *arg)
-{
-	/* TODO */
-	return false;
-}
-
-static bool is_gid(const char *arg)
-{
-	/* TODO */
-	return is_ip6(arg);
-}
-
-static int parse_path(const char *arg)
-{
-	const char *src, *dst;
-	char *d;
-
-	d = strchr(arg, '@');
-	if (d) {
-		src = arg;
-		dst = d + 1;
-	} else {
-		src = NULL;
-		dst = arg;
-	}
-
-	if (src && !is_ip4(src) && !is_ip6(src) && !is_gid(src))
-		return -EINVAL;
-
-	if (!is_ip4(dst) && !is_ip6(dst) && !is_gid(dst))
-		return -EINVAL;
-
-	args.paths[args.path_cnt].src = src;
-	args.paths[args.path_cnt].dst = dst;
-
-	args.path_cnt++;
-
-	return 0;
 }
 
 static void init_args(void)
