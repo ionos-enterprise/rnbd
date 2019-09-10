@@ -2167,11 +2167,11 @@ int main(int argc, char **argv)
 	if (args.help_set && cmd->help)
 		cmd->help(cmd);
 	else if (cmd->func) {
-		if (args.ibnbdmode == IBNBD_NONE) {
+		/*if (args.ibnbdmode == IBNBD_NONE) {
 			ERR("ibnbd modules not loaded\n");
 			ret = -ENOENT;
 			goto free;
-		}
+		}*/
 		ret = cmd->func();
 	}
 free:
