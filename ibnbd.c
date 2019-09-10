@@ -42,6 +42,11 @@ static struct ibnbd_path **paths_srv;
  */
 static int trm;
 
+struct path {
+	const char *src;
+	const char *dst;
+};
+
 struct args {
 	char pname[65];
 	char name[NAME_MAX];
@@ -91,6 +96,9 @@ struct args {
 	short noheaders_set;
 	short nototals_set;
 	short force_set;
+
+	struct path paths[32]; /* lazy */
+	int path_cnt;
 };
 
 static struct args args;
@@ -1590,8 +1598,8 @@ static void help_map(struct cmd *cmd)
 		  "Address, hostname or session name of the server");
 
 	printf("\nOptions:\n");
-	print_opt("<path>", "Path to establish: [src_addr,]dst_addr");
-	print_opt("", "Address is ip:<ipv4>, ip:<ipv6> or gid:<gid>");
+	print_opt("<path>", "Path(s) to establish: [src_addr@]dst_addr");
+	print_opt("", "Address is [ip:]<ipv4>, [ip:]<ipv6> or gid:<gid>");
 
 	print_opt("{iomode}", "IO Mode to use on server side: fileio|blockio."
 		  " Default: blockio");
@@ -1937,6 +1945,52 @@ static int parse_paths_clms(const char *arg)
 	return rc_clt && rc_srv;
 }
 
+static bool is_ip4(const char *arg)
+{
+	/* TODO */
+	return false;
+}
+
+static bool is_ip6(const char *arg)
+{
+	/* TODO */
+	return false;
+}
+
+static bool is_gid(const char *arg)
+{
+	/* TODO */
+	return is_ip6(arg);
+}
+
+static int parse_path(const char *arg)
+{
+	const char *src, *dst;
+	char *d;
+
+	d = strchr(arg, '@');
+	if (d) {
+		src = arg;
+		dst = d + 1;
+	} else {
+		src = NULL;
+		dst = arg;
+	}
+
+	if (src && !is_ip4(src) && !is_ip6(src) && is_gid(src))
+		return -EINVAL;
+
+	if (!is_ip4(dst) && !is_ip6(dst) && is_gid(dst))
+		return -EINVAL;
+
+	args.paths[args.path_cnt].src = src;
+	args.paths[args.path_cnt].dst = dst;
+
+	args.path_cnt++;
+
+	return 0;
+}
+
 static void init_args(void)
 {
 	memcpy(&args.clms_devices_clt, &def_clms_devices_clt,
@@ -2046,7 +2100,8 @@ int main(int argc, char **argv)
 			rcs = parse_sessions_clms(argv[i]);
 			rcp = parse_paths_clms(argv[i]);
 			if (!parse_precision(argv[i]) ||
-			    !(rcd && rcs && rcp)) {
+			    !(rcd && rcs && rcp) ||
+			    !parse_path(argv[i])) {
 				i++;
 				continue;
 			}
