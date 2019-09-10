@@ -52,26 +52,26 @@ struct args {
 	const char *name;
 
 	uint64_t size_sect;
-	short size_set;
+	bool size_set;
 	short sign;
 
 	enum fmt_type fmt;
-	short fmt_set;
+	bool fmt_set;
 
 	char io_mode[64];
-	short io_mode_set;
+	bool io_mode_set;
 
 	unsigned int lstmode;
-	short lstmode_set;
+	bool lstmode_set;
 
 	unsigned int showmode;
-	short showmode_set;
+	bool showmode_set;
 
 	unsigned int ibnbdmode;
-	short ibnbdmode_set;
+	bool ibnbdmode_set;
 
 	const char *access_mode;
-	short access_mode_set;
+	bool access_mode_set;
 
 	struct table_column *clms_devices_clt[CLM_MAX_CNT];
 	struct table_column *clms_devices_srv[CLM_MAX_CNT];
@@ -82,26 +82,27 @@ struct args {
 	struct table_column *clms_paths_clt[CLM_MAX_CNT];
 	struct table_column *clms_paths_srv[CLM_MAX_CNT];
 
-	short tree_set;
-	short noterm_set;
-	short help_set;
-	short verbose_set;
+	bool tree_set;
+	bool noterm_set;
+	bool help_set;
+	bool verbose_set;
 
 	int unit_id;
-	short unit_set;
+	bool unit_set;
 	char unit[5];
-	int prec;
-	short prec_set;
 
-	short noheaders_set;
-	short nototals_set;
-	short force_set;
+	int prec;
+	bool prec_set;
+
+	bool noheaders_set;
+	bool nototals_set;
+	bool force_set;
 
 	struct path paths[32]; /* lazy */
 	int path_cnt;
 
 	const char *from;
-	short from_set;
+	bool from_set;
 };
 
 static struct args args;
