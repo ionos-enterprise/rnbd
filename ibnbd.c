@@ -58,8 +58,8 @@ struct args {
 	enum fmt_type fmt;
 	short fmt_set;
 
-	char iomode[64];
-	short iomode_set;
+	char io_mode[64];
+	short io_mode_set;
 
 	unsigned int lstmode;
 	short lstmode_set;
@@ -165,15 +165,15 @@ static int parse_fmt(int argc, char **argv, int i, const struct sarg *sarg)
 	return i + 1;
 }
 
-static int parse_iomode(int argc, char **argv, int i, const struct sarg *sarg)
+static int parse_io_mode(int argc, char **argv, int i, const struct sarg *sarg)
 {
 	if (strcasecmp(argv[i], "blockio") &&
 	    strcasecmp(argv[i], "fileio"))
 		return i;
 
-	strcpy(args.iomode, argv[i]);
+	strcpy(args.io_mode, argv[i]);
 
-	args.iomode_set = true;
+	args.io_mode_set = true;
 
 	return i + 1;
 }
@@ -351,8 +351,8 @@ static struct sarg sargs[] = {
 	{"ro", "Readonly", parse_rw, NULL},
 	{"rw", "Writable", parse_rw, NULL},
 	{"migration", "Writable (migration)", parse_rw, NULL},
-	{"blockio", "Block IO mode", parse_iomode, NULL},
-	{"fileio", "File IO mode", parse_iomode, NULL},
+	{"blockio", "Block IO mode", parse_io_mode, NULL},
+	{"fileio", "File IO mode", parse_io_mode, NULL},
 	{"help", "Display help and exit", parse_flag, &args.help_set},
 	{"verbose", "Verbose output", parse_flag, &args.verbose_set},
 	{"-v", "Verbose output", parse_flag, &args.verbose_set},
@@ -1633,7 +1633,7 @@ static void help_map(struct cmd *cmd)
 	print_opt("<path>", "Path(s) to establish: [src_addr@]dst_addr");
 	print_opt("", "Address is [ip:]<ipv4>, [ip:]<ipv6> or gid:<gid>");
 
-	print_opt("{iomode}", "IO Mode to use on server side: fileio|blockio."
+	print_opt("{io_mode}", "IO Mode to use on server side: fileio|blockio."
 		  " Default: blockio");
 	print_opt("{rw}", "Access permission on server side: ro|rw|migration."
 		  " Default: rw");
