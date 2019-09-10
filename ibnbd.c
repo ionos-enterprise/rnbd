@@ -1687,9 +1687,9 @@ static int parse_path(const char *arg)
 
 static int cmd_map(void)
 {
-	struct ibnbd_sess *sess;
 	char cmd[4096], sessname[NAME_MAX];
-	int i, cnt = 0;
+	struct ibnbd_sess *sess;
+	int i, cnt = 0, ret;
 
 	if (!parse_path(args.from)) {
 		/* user provided only paths to establish
@@ -1706,31 +1706,42 @@ static int cmd_map(void)
 		    " at least one path to establish a new one.\n",
 		    args.from);
 		return -EINVAL;
-	} else if (sess && args.path_cnt) {
+	}
+
+	if (sess && args.path_cnt)
 		INF("Session '%s' exists. Provided paths will be ignored"
 		    " by the driver. Please use addpath to add a path to"
 		    " an existsing sesion.\n", args.from);
-	}
 
-	cnt = snprintf(cmd, sizeof(cmd), "sessname=%s ", sessname);
-	cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, "device_path=%s ",
+	cnt = snprintf(cmd, sizeof(cmd), "sessname=%s", sessname);
+	cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, " device_path=%s",
 			args.name);
 
 	for (i = 0; i < args.path_cnt; i++)
-		cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, "path=%s@%s ",
+		cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, " path=%s@%s",
 				args.paths[i].src, args.paths[i].dst);
 
+	if (sess)
+		for (i = 0; i < sess->path_cnt; i++)
+			cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt,
+					" path=%s@%s", sess->paths[i]->src_addr,
+					sess->paths[i]->dst_addr);
+
 	if (args.io_mode_set)
-		cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, "io_mode=%s ",
+		cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, " io_mode=%s",
 				args.io_mode);
 
 	if (args.access_mode_set)
-		cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, "access_mode=%s ",
+		cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, " access_mode=%s",
 				args.access_mode);
 
-	printf(">>>>> write %s\n", cmd);
+	errno = 0;
+	ret = printf_sysfs(PATH_IBNBD_CLT, "map_device", "%s", cmd);
+	ret = (ret < 0 ? ret : errno);
+	if (ret)
+		ERR("Failed to map device: %m (%d)\n", ret);
 
-	return 0;
+	return ret;
 }
 
 static int cmd_resize(void)

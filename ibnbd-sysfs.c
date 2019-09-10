@@ -178,11 +178,6 @@ static int ibnbd_sysfs_alloc(struct ibnbd_sess_dev ***sds,
 	return 0;
 }
 
-#define PATH_SDS_CLT "/sys/class/ibnbd-client/ctl/devices/"
-#define PATH_SESS_CLT "/sys/class/ibtrs-client/"
-#define PATH_SDS_SRV "/sys/class/ibnbd-server/ctl/devices/"
-#define PATH_SESS_SRV "/sys/class/ibtrs-server/"
-
 int ibnbd_sysfs_alloc_all(struct ibnbd_sess_dev ***sds_clt,
 			  struct ibnbd_sess_dev ***sds_srv,
 			  struct ibnbd_sess ***sess_clt,

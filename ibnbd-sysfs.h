@@ -1,5 +1,11 @@
 #include <limits.h>
 
+#define PATH_IBNBD_CLT "/sys/class/ibnbd-client/ctl/"
+#define PATH_SDS_CLT PATH_IBNBD_CLT "devices/"
+#define PATH_SESS_CLT "/sys/class/ibtrs-client/"
+#define PATH_SDS_SRV "/sys/class/ibnbd-server/ctl/devices/"
+#define PATH_SESS_SRV "/sys/class/ibtrs-server/"
+
 enum ibnbd_side {
 	IBNBD_CLT,
 	IBNBD_SRV
@@ -81,3 +87,6 @@ int ibnbd_sysfs_read_all(struct ibnbd_sess_dev **sds_clt,
 			 struct ibnbd_sess **sess_srv,
 			 struct ibnbd_path **paths_clt,
 			 struct ibnbd_path **paths_srv);
+
+int printf_sysfs(const char *dir, const char *entry, const char *format, ...);
+int scanf_sysfs(const char *dir, const char *entry, const char *format, ...);
