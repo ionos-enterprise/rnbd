@@ -82,7 +82,7 @@ struct args {
 	struct table_column *clms_paths_clt[CLM_MAX_CNT];
 	struct table_column *clms_paths_srv[CLM_MAX_CNT];
 
-	bool tree_set;
+	bool notree_set;
 	bool noterm_set;
 	bool help_set;
 	bool verbose_set;
@@ -341,7 +341,8 @@ static struct sarg sargs[] = {
 	{"sess", "", parse_lst, NULL},
 	{"paths", "List paths", parse_lst, NULL},
 	{"path", "", parse_lst, NULL},
-	{"tree", "Display paths for each sessions", parse_flag, &args.tree_set},
+	{"notree", "Don't display paths for each sessions", parse_flag,
+		&args.notree_set},
 	{"xml", "Print in XML format", parse_fmt, NULL},
 	{"csv", "Print in CSV format", parse_fmt, NULL},
 	{"json", "Print in JSON format", parse_fmt, NULL},
@@ -510,7 +511,7 @@ static void help_list(struct cmd *cmd)
 
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
-	print_sarg_descr("tree");
+	print_sarg_descr("notree");
 	print_sarg_descr("noheaders");
 	print_sarg_descr("nototals");
 	print_sarg_descr("help");
@@ -825,7 +826,7 @@ static int list_sessions_term(struct ibnbd_sess **sessions,
 	for (i = 0; sessions[i]; i++) {
 		table_flds_print_term("", flds + i * cs_cnt,
 				      cs, trm, 0);
-		if (args.tree_set)
+		if (!args.notree_set)
 			list_paths_term(sessions[i]->paths,
 					sessions[i]->path_cnt,
 					clms_paths_shortdesc, 1);
@@ -1072,14 +1073,14 @@ static int list_paths(struct ibnbd_path **p_clt, struct ibnbd_path **p_srv)
 
 		if (clt_p_num)
 			list_paths_term(p_clt, clt_p_num,
-					args.clms_paths_clt, args.tree_set);
+					args.clms_paths_clt, 0);
 
 		if (clt_p_num && srv_p_num)
 			printf("%s%s%s\n", CLR(trm, CDIM, "Incoming paths"));
 
 		if (srv_p_num)
 			list_paths_term(p_srv, srv_p_num,
-					args.clms_paths_srv, args.tree_set);
+					args.clms_paths_srv, 0);
 		break;
 	}
 
@@ -1875,7 +1876,8 @@ static void help_addpath(struct cmd *cmd)
 		  "Name of the session to add the new path to");
 	print_opt("<path>",
 		  "Path to be added: [src_addr,]dst_addr");
-	print_opt("", "Address is of the form ip:<ipv4>, ip:<ipv6> or gid:<gid>");
+	print_opt("", "Address is of the form ip:<ipv4>, ip:<ipv6> or"
+		      " gid:<gid>");
 
 	printf("\nOptions:\n");
 	print_sarg_descr("verbose");
