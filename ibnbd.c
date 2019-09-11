@@ -1746,7 +1746,7 @@ static int cmd_map(void)
 
 static int cmd_resize(void)
 {
-	printf("TODO\n");
+	printf(">>>>>> resize %s to %lu\n", args.name, args.size_sect);
 	return 0;
 }
 
@@ -1756,7 +1756,7 @@ static void help_resize(struct cmd *cmd)
 
 	printf("\nArguments:\n");
 	print_opt("<device>", "Name of the device to be unmapped");
-	print_opt("<size_sect>", "New size of the device in sectors");
+	print_opt("<size>", "New size of the device");
 
 	printf("\nOptions:\n");
 	print_sarg_descr("verbose");
@@ -2074,6 +2074,34 @@ static int parse_paths_clms(const char *arg)
 	return rc_clt && rc_srv;
 }
 
+static int parse_sign(char s)
+{
+	if (s == '+')
+		args.sign = 1;
+	else if (s == '-')
+		args.sign = -1;
+	else
+		args.sign = 0;
+
+	return args.sign;
+}
+
+static int parse_size(char *str)
+{
+	uint64_t size;
+
+	if (parse_sign(*str))
+		str++;
+
+	if (str_to_size(str, &size))
+		return -EINVAL;
+
+	args.size_sect = size >> 9;
+	args.size_set = 1;
+
+	return 0;
+}
+
 static void init_args(void)
 {
 	memcpy(&args.clms_devices_clt, &def_clms_devices_clt,
@@ -2184,7 +2212,8 @@ int main(int argc, char **argv)
 			rcp = parse_paths_clms(argv[i]);
 			if (!parse_precision(argv[i]) ||
 			    !(rcd && rcs && rcp) ||
-			    !parse_path(argv[i])) {
+			    !parse_path(argv[i]) ||
+			    !parse_size(argv[i])) {
 				i++;
 				continue;
 			}
