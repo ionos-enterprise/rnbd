@@ -1746,6 +1746,29 @@ static int cmd_map(void)
 
 static int cmd_resize(void)
 {
+	struct ibnbd_sess_dev **ds, *bla[1];
+	int cnt;
+
+	for (cnt = 0; sds_clt[cnt]; cnt++);
+	ds = calloc(cnt + 1, sizeof(*ds));
+	if (cnt && !ds) {
+		ERR("Failed to alloc memory\n");
+		return -ENOMEM;
+	}
+
+	bla[0] = NULL;
+	cnt = find_devices(args.name, ds, bla);
+	if (!cnt) {
+		ERR("Device %s not found\n", args.name);
+		return -ENOENT;
+	}
+	if (cnt > 1) {
+		ERR("Please specify an exact path. There are multiple devices"
+		    " matching %s:\n", args.name);
+		list_devices(ds, bla);
+		return -EINVAL;
+	}
+
 	printf(">>>>>> resize %s to %lu\n", args.name, args.size_sect);
 	return 0;
 }
