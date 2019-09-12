@@ -1832,8 +1832,25 @@ static void help_unmap(struct cmd *cmd)
 
 static int cmd_unmap(void)
 {
-	printf("TODO\n");
-	return 0;
+	struct ibnbd_sess_dev *ds;
+	char tmp[PATH_MAX];
+	int ret;
+
+	ds = find_single_device(args.name, sds_clt);
+	if (!ds)
+		return -EINVAL;
+
+	sprintf(tmp, "/sys/block/%s/ibnbd/", ds->dev->devname);
+	errno = 0;
+	ret = printf_sysfs(tmp, "unmap_device", "%s",
+			   args.force_set ? "force" : "normal");
+	ret = (ret < 0 ? ret : errno);
+	if (ret)
+		ERR("Failed to %sunmap '%s': %m (%d)\n",
+		    args.force_set ? "force-" : "",
+		    ds->dev->devname, ret);
+
+	return ret;
 }
 
 static void help_remap(struct cmd *cmd)
