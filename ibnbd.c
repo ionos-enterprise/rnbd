@@ -1172,14 +1172,14 @@ static int show_device(const char *devname)
 	int cnt, ret = 0;
 
 	for (cnt = 0; sds_clt[cnt]; cnt++);
-	ds_imp = calloc(cnt + 1, sizeof(*ds_imp));
+	ds_imp = calloc(cnt, sizeof(*ds_imp));
 	if (cnt && !ds_imp) {
 		ERR("Failed to alloc memory\n");
 		return -ENOMEM;
 	}
 
 	for (cnt = 0; sds_srv[cnt]; cnt++);
-	ds_exp = calloc(cnt + 1, sizeof(*ds_exp));
+	ds_exp = calloc(cnt, sizeof(*ds_exp));
 	if (cnt && !ds_exp) {
 		ERR("Failed to alloc memory\n");
 		ret = -ENOMEM;
@@ -1401,14 +1401,14 @@ static int show_path(const char *pathname)
 	int cnt, res = 0;
 
 	for (cnt = 0; paths_clt[cnt]; cnt++);
-	pp_clt = calloc(cnt + 1, sizeof(*pp_clt));
+	pp_clt = calloc(cnt, sizeof(*pp_clt));
 	if (cnt && !pp_clt) {
 		ERR("Failed to alloc memory\n");
 		return -ENOMEM;
 	}
 
 	for (cnt = 0; paths_srv[cnt]; cnt++);
-	pp_srv = calloc(cnt + 1, sizeof(*pp_srv));
+	pp_srv = calloc(cnt, sizeof(*pp_srv));
 	if (cnt && !pp_srv) {
 		ERR("Failed to alloc memory\n");
 		res = -ENOMEM;
@@ -1467,14 +1467,14 @@ static int show_session(const char *sessname)
 	int cnt, res = 0;
 
 	for (cnt = 0; sess_clt[cnt]; cnt++);
-	ss_clt = calloc(cnt + 1, sizeof(*ss_clt));
+	ss_clt = calloc(cnt, sizeof(*ss_clt));
 	if (!ss_clt) {
 		ERR("Failed to alloc memory\n");
 		return -ENOMEM;
 	}
 
 	for (cnt = 0; sess_srv[cnt]; cnt++);
-	ss_srv = calloc(cnt + 1, sizeof(*ss_srv));
+	ss_srv = calloc(cnt, sizeof(*ss_srv));
 	if (!ss_srv) {
 		ERR("Failed to alloc memory\n");
 		res = -ENOMEM;
@@ -1751,7 +1751,7 @@ static int cmd_resize(void)
 	int cnt;
 
 	for (cnt = 0; sds_clt[cnt]; cnt++);
-	ds = calloc(cnt + 1, sizeof(*ds));
+	ds = calloc(cnt, sizeof(*ds));
 	if (cnt && !ds) {
 		ERR("Failed to alloc memory\n");
 		return -ENOMEM;
@@ -1770,7 +1770,7 @@ static int cmd_resize(void)
 		return -EINVAL;
 	}
 
-	printf(">>>>>> resize %s to %lu\n", args.name, args.size_sect);
+	printf(">>>>>> resize %s to %lu\n", ds[0]->dev->devname, args.size_sect);
 	return 0;
 }
 
