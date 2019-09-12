@@ -314,7 +314,6 @@ static int parse_all(int argc, char **argv, int i, const struct sarg *sarg)
 	memcpy(&args.clms_paths_srv, &all_clms_paths_srv,
 	       ARRSIZE(all_clms_paths_srv) * sizeof(all_clms_paths[0]));
 
-
 	return i + 1;
 }
 
