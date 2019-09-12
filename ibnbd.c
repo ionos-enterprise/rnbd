@@ -1304,35 +1304,29 @@ static bool match_path(struct ibnbd_path *p, const char *name)
 	int port;
 	char *at;
 
-	if (!strcmp(p->pathname, name))
-		return true;
-	if (!strcmp(name, p->sess->sessname))
-		return true;
-	if (!strcmp(name, p->src_addr))
-		return true;
-	if (!strcmp(name, p->dst_addr))
-		return true;
-	if (sscanf(name, "%d\n", &port) == 1 &&
-	    p->hca_port == port)
-		return true;
-	if (!strcmp(name, p->hca_name))
+	if (!strcmp(p->pathname, name) ||
+	    !strcmp(name, p->sess->sessname) ||
+	    !strcmp(name, p->src_addr) ||
+	    !strcmp(name, p->dst_addr) ||
+	    (sscanf(name, "%d\n", &port) == 1 &&
+	     p->hca_port == port) ||
+	    !strcmp(name, p->hca_name))
 		return true;
 
 	at = strrchr(name, ':');
-	if (at) {
-		if (strncmp(p->sess->sessname, name,
-			    strlen(p->sess->sessname)))
-			return false;
+	if (!at)
+		return false;
 
-		if (sscanf(at + 1, "%d\n", &port) == 1 && p->hca_port == port)
-			return true;
-		if (!strcmp(at + 1, p->dst_addr))
-			return true;
-		if (!strcmp(at + 1, p->src_addr))
-			return true;
-		if (!strcmp(at + 1, p->hca_name))
-			return true;
-	}
+	if (strncmp(p->sess->sessname, name,
+		    strlen(p->sess->sessname)))
+		return false;
+
+	if ((sscanf(at + 1, "%d\n", &port) == 1 &&
+	     p->hca_port == port) ||
+	    !strcmp(at + 1, p->dst_addr) ||
+	    !strcmp(at + 1, p->src_addr) ||
+	    !strcmp(at + 1, p->hca_name))
+		return true;
 
 	return false;
 }
