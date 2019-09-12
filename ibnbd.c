@@ -1754,13 +1754,13 @@ static struct ibnbd_sess_dev *find_single_device(const char *name,
 	for (cnt = 0; devs[cnt]; cnt++);
 	if (!cnt) {
 		ERR("Device '%s' not found: no devices mapped\n", name);
-		return ds;
+		return NULL;
 	}
 
 	res = calloc(cnt, sizeof(*res));
 	if (cnt && !res) {
-		ERR("Failed to alloc memory\n");
-		return ds;
+		ERR("Failed to allocate memory\n");
+		return NULL;
 	}
 
 	cnt = find_devices(name, devs, res);
