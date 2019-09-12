@@ -1745,33 +1745,63 @@ static int cmd_map(void)
 	return ret;
 }
 
-static int cmd_resize(void)
+static struct ibnbd_sess_dev *find_single_device(const char *name,
+						 struct ibnbd_sess_dev **devs)
 {
-	struct ibnbd_sess_dev **ds, *bla[1];
+	struct ibnbd_sess_dev *ds = NULL, **res;
 	int cnt;
 
-	for (cnt = 0; sds_clt[cnt]; cnt++);
-	ds = calloc(cnt, sizeof(*ds));
-	if (cnt && !ds) {
-		ERR("Failed to alloc memory\n");
-		return -ENOMEM;
-	}
-
-	bla[0] = NULL;
-	cnt = find_devices(args.name, ds, bla);
+	for (cnt = 0; devs[cnt]; cnt++);
 	if (!cnt) {
-		ERR("Device %s not found\n", args.name);
-		return -ENOENT;
-	}
-	if (cnt > 1) {
-		ERR("Please specify an exact path. There are multiple devices"
-		    " matching %s:\n", args.name);
-		list_devices(ds, bla);
-		return -EINVAL;
+		ERR("Device '%s' not found: no devices mapped\n", name);
+		return ds;
 	}
 
-	printf(">>>>>> resize %s to %lu\n", ds[0]->dev->devname, args.size_sect);
-	return 0;
+	res = calloc(cnt, sizeof(*res));
+	if (cnt && !res) {
+		ERR("Failed to alloc memory\n");
+		return ds;
+	}
+
+	cnt = find_devices(name, devs, res);
+	if (!cnt) {
+		ERR("Device '%s' not found\n", name);
+		goto free;
+	}
+
+	if (cnt > 1) {
+		ERR("Please specify an exact path. There are"
+		    " multiple devices matching '%s':\n", name);
+		list_devices(devs, &ds);
+		goto free;
+	}
+
+	ds = res[0];
+
+free:
+	free(res);
+	return ds;
+}
+
+static int cmd_resize(void)
+{
+	struct ibnbd_sess_dev *ds;
+	char tmp[PATH_MAX];
+	int ret;
+
+	ds = find_single_device(args.name, sds_clt);
+	if (!ds)
+		return -EINVAL;
+
+	sprintf(tmp, "/sys/block/%s/ibnbd/", ds->dev->devname);
+	errno = 0;
+	ret = printf_sysfs(tmp, "resize", "%s", args.size_sect);
+	ret = (ret < 0 ? ret : errno);
+	if (ret)
+		ERR("Failed to resize %s: %m (%d)\n",
+		    ds->dev->devname, ret);
+
+	return ret;
 }
 
 static void help_resize(struct cmd *cmd)
@@ -1780,7 +1810,7 @@ static void help_resize(struct cmd *cmd)
 
 	printf("\nArguments:\n");
 	print_opt("<device>", "Name of the device to be unmapped");
-	print_opt("<size>", "New size of the device");
+	print_opt("<size>", "New size of the device in bytes");
 
 	printf("\nOptions:\n");
 	print_sarg_descr("verbose");
