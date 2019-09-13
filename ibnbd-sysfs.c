@@ -267,7 +267,7 @@ static struct ibnbd_path *add_path(const char *sdir,
 	scanf_sysfs(ppath, "hca_port", "%d", &p->hca_port);
 	scanf_sysfs(ppath, "state", "%s", p->state);
 
-	scanf_sysfs(ppath, "/stats/rdma", "%*llu %llu %*llu %llu %llu %llu",
+	scanf_sysfs(ppath, "/stats/rdma", "%*llu %llu %*llu %llu %d %d",
 		    &p->rx_bytes, &p->tx_bytes, &p->inflights, &p->reconnects);
 
 	return p;
