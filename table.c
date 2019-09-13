@@ -22,6 +22,13 @@ int clr_print(enum color trm, enum color clr, const char *format, ...)
 	return ret;
 }
 
+static const char *fld_fmt_str[] = {
+	[FLD_STR] = "%s",
+	[FLD_VAL] = "%d",
+	[FLD_INT] = "%d",
+	[FLD_LLU] = "%" PRIu64,
+};
+
 int table_row_stringify(void *s, struct table_fld *flds,
 			       struct table_column **cs, int humanize,
 			       int pre_len)
@@ -38,12 +45,19 @@ int table_row_stringify(void *s, struct table_fld *flds,
 			len = c->m_tostr(flds[clm].str, CLM_MAX_WIDTH,
 					 &flds[clm].clr, v, humanize);
 		} else {
-			if (c->m_type == FLD_NUM || c->m_type == FLD_VAL)
+			if (c->m_type == FLD_INT || c->m_type == FLD_VAL)
 				len = snprintf(flds[clm].str, CLM_MAX_WIDTH,
-					       "%d", *(int *)v);
+					       fld_fmt_str[c->m_type],
+					       *(int *)v);
+			else if (c->m_type == FLD_LLU)
+				len = snprintf(flds[clm].str, CLM_MAX_WIDTH,
+					       fld_fmt_str[c->m_type],
+					       *(uint64_t *)v);
 			else
 				len = snprintf(flds[clm].str, CLM_MAX_WIDTH,
-					       "%s", (char *)v);
+					       fld_fmt_str[c->m_type],
+					       (char *)v);
+
 			flds[clm].clr = c->clm_color;
 		}
 
@@ -228,7 +242,7 @@ int table_row_print_line(const char *pre, struct table_column **clms,
 
 	for (c = *cs, clm = 0; c; c = *++cs, clm++) {
 		flds[clm].clr = CNRM;
-		if (c->m_type == FLD_NUM)
+		if (c->m_type == FLD_INT || c->m_type == FLD_LLU)
 			print_line(flds[clm].str, CLM_MAX_WIDTH, c->m_width);
 		else
 			flds[clm].str[0] = '\0';
@@ -246,7 +260,7 @@ void table_flds_del_not_num(struct table_fld *flds,
 	int clm;
 
 	for (c = *cs, clm = 0; c; c = *++cs, clm++)
-		if (c->m_type != FLD_NUM) {
+		if (c->m_type != FLD_INT && c->m_type != FLD_LLU) {
 			flds[clm].str[0] = '\0';
 			flds[clm].clr = CNRM;
 		}

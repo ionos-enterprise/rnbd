@@ -95,7 +95,7 @@ static int sd_rx_to_str(char *str, size_t len, enum color *clr, void *v,
 }
 
 static struct table_column clm_ibnbd_dev_rx_sect =
-	_CLM_SD("rx_sect", sess, "RX", FLD_NUM, sd_rx_to_str, 'l', CNRM, CNRM,
+	_CLM_SD("rx_sect", sess, "RX", FLD_LLU, sd_rx_to_str, 'l', CNRM, CNRM,
 	"Amount of data read from the device");
 
 static int sd_tx_to_str(char *str, size_t len, enum color *clr, void *v,
@@ -110,7 +110,7 @@ static int sd_tx_to_str(char *str, size_t len, enum color *clr, void *v,
 }
 
 static struct table_column clm_ibnbd_dev_tx_sect =
-	_CLM_SD("tx_sect", sess, "TX", FLD_NUM, sd_tx_to_str, 'l', CNRM, CNRM,
+	_CLM_SD("tx_sect", sess, "TX", FLD_LLU, sd_tx_to_str, 'l', CNRM, CNRM,
 	"Amount of data written to the device");
 
 
@@ -235,15 +235,15 @@ CLM_S(mp_short, "MP", FLD_STR, NULL, 'l', CNRM, CNRM,
 	"Multipath policy (short)");
 CLM_S(mp, "MP Policy", FLD_STR, NULL, 'l', CNRM, CNRM,
 	"Multipath policy");
-CLM_S(path_cnt, "Path cnt", FLD_NUM, NULL, 'r', CNRM, CNRM,
+CLM_S(path_cnt, "Path cnt", FLD_INT, NULL, 'r', CNRM, CNRM,
 	"Number of paths");
-CLM_S(act_path_cnt, "Act path cnt", FLD_NUM, NULL, 'r', CNRM, CNRM,
+CLM_S(act_path_cnt, "Act path cnt", FLD_INT, NULL, 'r', CNRM, CNRM,
 	"Number of active paths");
-CLM_S(rx_bytes, "RX", FLD_NUM, byte_to_str, 'r', CNRM, CNRM,
+CLM_S(rx_bytes, "RX", FLD_LLU, byte_to_str, 'r', CNRM, CNRM,
 	"Bytes received");
-CLM_S(tx_bytes, "TX", FLD_NUM, byte_to_str, 'r', CNRM, CNRM, "Bytes send");
-CLM_S(inflights, "Inflights", FLD_NUM, NULL, 'r', CNRM, CNRM, "Inflights");
-CLM_S(reconnects, "Reconnects", FLD_NUM, NULL, 'r', CNRM, CNRM, "Reconnects");
+CLM_S(tx_bytes, "TX", FLD_LLU, byte_to_str, 'r', CNRM, CNRM, "Bytes send");
+CLM_S(inflights, "Inflights", FLD_INT, NULL, 'r', CNRM, CNRM, "Inflights");
+CLM_S(reconnects, "Reconnects", FLD_INT, NULL, 'r', CNRM, CNRM, "Reconnects");
 CLM_S(path_uu, "PS", FLD_STR, NULL, 'l', CNRM, CNRM,
 	"Up (U) or down (_) state of every path");
 
@@ -371,10 +371,10 @@ CLM_P(dst_addr, "Server Addr", FLD_STR, NULL, 'l', CNRM, CNRM,
 	"Server address of the path");
 CLM_P(hca_name, "HCA", FLD_STR, NULL, 'l', CNRM, CNRM, "HCA name");
 CLM_P(hca_port, "Port", FLD_VAL, NULL, 'r', CNRM, CNRM, "HCA port");
-CLM_P(rx_bytes, "RX", FLD_NUM, byte_to_str, 'r', CNRM, CNRM, "Bytes received");
-CLM_P(tx_bytes, "TX", FLD_NUM, byte_to_str, 'r', CNRM, CNRM, "Bytes send");
-CLM_P(inflights, "Inflights", FLD_NUM, NULL, 'r', CNRM, CNRM, "Inflights");
-CLM_P(reconnects, "Reconnects", FLD_NUM, NULL, 'r', CNRM, CNRM, "Reconnects");
+CLM_P(rx_bytes, "RX", FLD_LLU, byte_to_str, 'r', CNRM, CNRM, "Bytes received");
+CLM_P(tx_bytes, "TX", FLD_LLU, byte_to_str, 'r', CNRM, CNRM, "Bytes send");
+CLM_P(inflights, "Inflights", FLD_INT, NULL, 'r', CNRM, CNRM, "Inflights");
+CLM_P(reconnects, "Reconnects", FLD_INT, NULL, 'r', CNRM, CNRM, "Reconnects");
 
 static int path_to_sessname(char *str, size_t len, enum color *clr,
 			    void *v, int humanize)

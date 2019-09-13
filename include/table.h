@@ -2,11 +2,13 @@
 #define __H_TABLE
 
 #include <stdlib.h>
+#include <inttypes.h>
 
 enum fld_type {
 	FLD_STR,
 	FLD_VAL,
-	FLD_NUM
+	FLD_INT,
+	FLD_LLU
 };
 
 enum fmt_type {

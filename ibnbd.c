@@ -531,7 +531,7 @@ static int has_num(struct table_column **cs)
 	int i;
 
 	for (i = 0; cs[i]; i++)
-		if (cs[i]->m_type == FLD_NUM)
+		if (cs[i]->m_type != FLD_STR && cs[i]->m_type != FLD_VAL)
 			return 1;
 
 	return 0;
