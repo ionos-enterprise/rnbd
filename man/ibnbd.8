@@ -35,57 +35,57 @@ Options:
     {mode}          Information to print: devices|sessions|paths.
                     Default: devices.
     {fields}        Comma separated list of fields to be printed. The list can be
-                    prefixed with '+' or '-' to add or remove fields from the 
+                    prefixed with '+' or '-' to add or remove fields from the
                     default selection.
 
                     Device Fields
-                    Field           Header         Description                                         
-                    sessname        Session        Name of the IBTRS session of the device             
-                    mapping_path    Mapping Path   Mapping name of the remote device                   
-                    devname         Device         Device name under /dev/. I.e. ibnbd0                
-                    devpath         Device path    Device path under /dev/. I.e. /dev/ibnbd0           
-                    state           State          State of the IBNBD device. (client only)            
-                    access_mode     Access Mode    RW mode of the device: ro, rw or migration          
-                    io_mode         IO mode        IO submission mode of the target device: file/block  
-                    rx_sect         RX             Amount of data read from the device                  
-                    tx_sect         TX             Amount of data written to the device                 
-                    direction       Direction      Direction of data transfer: imported or exported     
+                    Field           Header         Description
+                    sessname        Session        Name of the IBTRS session of the device
+                    mapping_path    Mapping Path   Mapping name of the remote device
+                    devname         Device         Device name under /dev/. I.e. ibnbd0
+                    devpath         Device path    Device path under /dev/. I.e. /dev/ibnbd0
+                    state           State          State of the IBNBD device. (client only)
+                    access_mode     Access Mode    RW mode of the device: ro, rw or migration
+                    io_mode         IO mode        IO submission mode of the target device: file/block
+                    rx_sect         RX             Amount of data read from the device
+                    tx_sect         TX             Amount of data written to the device
+                    direction       Direction      Direction of data transfer: imported or exported
 
                     Default client: sessname,mapping_path,devname,state,access_mode,io_mode
                     Default server: sessname,mapping_path,devname,access_mode,io_mode
 
                     Session Fields
-                    Field           Header         Description                                          
-                    sessname        Session name   Name of the session                                  
-                    path_cnt        Path cnt       Number of paths                                      
-                    act_path_cnt    Act path cnt   Number of active paths                               
-                    state           State          State of the session.                                
-                    path_uu         PS             Up (U) or down (_) state of every path               
-                    mp              MP Policy      Multipath policy                                     
-                    mp_short        MP             Multipath policy (short)                             
-                    rx_bytes        RX             Bytes received                                       
-                    tx_bytes        TX             Bytes send                                           
-                    inflights       Inflights      Inflights                                            
-                    reconnects      Reconnects     Reconnects                                           
-                    side            Direction      Direction of the session: incoming or outgoing       
+                    Field           Header         Description
+                    sessname        Session name   Name of the session
+                    path_cnt        Path cnt       Number of paths
+                    act_path_cnt    Act path cnt   Number of active paths
+                    state           State          State of the session.
+                    path_uu         PS             Up (U) or down (_) state of every path
+                    mp              MP Policy      Multipath policy
+                    mp_short        MP             Multipath policy (short)
+                    rx_bytes        RX             Bytes received
+                    tx_bytes        TX             Bytes send
+                    inflights       Inflights      Inflights
+                    reconnects      Reconnects     Reconnects
+                    side            Direction      Direction of the session: incoming or outgoing
 
                     Default client: sessname,state,path_uu,mp_short,tx_bytes,rx_bytes,inflights,reconnects
                     Default server: sessname,path_cnt,tx_bytes,rx_bytes,inflights
 
                     Path Fields
-                    Field           Header         Description                                          
-                    sessname        Sessname       Name of the session.                                 
-                    pathname        Path name      Path name                                            
-                    src_addr        Client Addr    Client address of the path                           
-                    dst_addr        Server Addr    Server address of the path                           
-                    hca_name        HCA            HCA name                                             
-                    hca_port        Port           HCA port                                             
-                    state           State          Name of the path                                     
-                    rx_bytes        RX             Bytes received                                       
-                    tx_bytes        TX             Bytes send                                           
-                    inflights       Inflights      Inflights                                            
-                    reconnects      Reconnects     Reconnects                                           
-                    direction       Direction      Direction of the path: incoming or outgoing          
+                    Field           Header         Description
+                    sessname        Sessname       Name of the session.
+                    pathname        Path name      Path name
+                    src_addr        Client Addr    Client address of the path
+                    dst_addr        Server Addr    Server address of the path
+                    hca_name        HCA            HCA name
+                    hca_port        Port           HCA port
+                    state           State          Name of the path
+                    rx_bytes        RX             Bytes received
+                    tx_bytes        TX             Bytes send
+                    inflights       Inflights      Inflights
+                    reconnects      Reconnects     Reconnects
+                    direction       Direction      Direction of the path: incoming or outgoing
 
                     Default client: sessname,hca_name,hca_port,dst_addr,state,tx_bytes,rx_bytes,inflights,reconnects
                     Default server: sessname,hca_name,hca_port,src_addr,tx_bytes,rx_bytes,inflights
@@ -114,57 +114,57 @@ Arguments:
 
 Options:
     {fields}        Comma separated list of fields to be printed. The list can be
-                    prefixed with '+' or '-' to add or remove fields from the 
+                    prefixed with '+' or '-' to add or remove fields from the
                     default selection.
 
                     Device Fields
-                    Field           Header         Description                                         
-                    sessname        Session        Name of the IBTRS session of the device             
-                    mapping_path    Mapping Path   Mapping name of the remote device                   
-                    devname         Device         Device name under /dev/. I.e. ibnbd0                
-                    devpath         Device path    Device path under /dev/. I.e. /dev/ibnbd0           
-                    state           State          State of the IBNBD device. (client only)            
-                    access_mode     Access Mode    RW mode of the device: ro, rw or migration          
-                    io_mode         IO mode        IO submission mode of the target device: file/block  
-                    rx_sect         RX             Amount of data read from the device                  
-                    tx_sect         TX             Amount of data written to the device                 
-                    direction       Direction      Direction of data transfer: imported or exported     
+                    Field           Header         Description
+                    sessname        Session        Name of the IBTRS session of the device
+                    mapping_path    Mapping Path   Mapping name of the remote device
+                    devname         Device         Device name under /dev/. I.e. ibnbd0
+                    devpath         Device path    Device path under /dev/. I.e. /dev/ibnbd0
+                    state           State          State of the IBNBD device. (client only)
+                    access_mode     Access Mode    RW mode of the device: ro, rw or migration
+                    io_mode         IO mode        IO submission mode of the target device: file/block
+                    rx_sect         RX             Amount of data read from the device
+                    tx_sect         TX             Amount of data written to the device
+                    direction       Direction      Direction of data transfer: imported or exported
 
                     Default client: sessname,mapping_path,devname,state,access_mode,io_mode
                     Default server: sessname,mapping_path,devname,access_mode,io_mode
 
                     Sessions Fields
-                    Field           Header         Description                                          
-                    sessname        Session name   Name of the session                                  
-                    path_cnt        Path cnt       Number of paths                                      
-                    act_path_cnt    Act path cnt   Number of active paths                               
-                    state           State          State of the session.                                
-                    path_uu         PS             Up (U) or down (_) state of every path               
-                    mp              MP Policy      Multipath policy                                     
-                    mp_short        MP             Multipath policy (short)                             
-                    rx_bytes        RX             Bytes received                                       
-                    tx_bytes        TX             Bytes send                                           
-                    inflights       Inflights      Inflights                                            
-                    reconnects      Reconnects     Reconnects                                           
-                    side            Direction      Direction of the session: incoming or outgoing       
+                    Field           Header         Description
+                    sessname        Session name   Name of the session
+                    path_cnt        Path cnt       Number of paths
+                    act_path_cnt    Act path cnt   Number of active paths
+                    state           State          State of the session.
+                    path_uu         PS             Up (U) or down (_) state of every path
+                    mp              MP Policy      Multipath policy
+                    mp_short        MP             Multipath policy (short)
+                    rx_bytes        RX             Bytes received
+                    tx_bytes        TX             Bytes send
+                    inflights       Inflights      Inflights
+                    reconnects      Reconnects     Reconnects
+                    side            Direction      Direction of the session: incoming or outgoing
 
                     Default client: sessname,state,path_uu,mp_short,tx_bytes,rx_bytes,inflights,reconnects
                     Default server: sessname,path_cnt,tx_bytes,rx_bytes,inflights
 
                     Paths Fields
-                    Field           Header         Description                                          
-                    sessname        Sessname       Name of the session.                                 
-                    pathname        Path name      Path name                                            
-                    src_addr        Client Addr    Client address of the path                           
-                    dst_addr        Server Addr    Server address of the path                           
-                    hca_name        HCA            HCA name                                             
-                    hca_port        Port           HCA port                                             
-                    state           State          Name of the path                                     
-                    rx_bytes        RX             Bytes received                                       
-                    tx_bytes        TX             Bytes send                                           
-                    inflights       Inflights      Inflights                                            
-                    reconnects      Reconnects     Reconnects                                           
-                    direction       Direction      Direction of the path: incoming or outgoing          
+                    Field           Header         Description
+                    sessname        Sessname       Name of the session.
+                    pathname        Path name      Path name
+                    src_addr        Client Addr    Client address of the path
+                    dst_addr        Server Addr    Server address of the path
+                    hca_name        HCA            HCA name
+                    hca_port        Port           HCA port
+                    state           State          Name of the path
+                    rx_bytes        RX             Bytes received
+                    tx_bytes        TX             Bytes send
+                    inflights       Inflights      Inflights
+                    reconnects      Reconnects     Reconnects
+                    direction       Direction      Direction of the path: incoming or outgoing
 
                     Default client: sessname,hca_name,hca_port,dst_addr,state,tx_bytes,rx_bytes,inflights,reconnects
                     Default server: sessname,hca_name,hca_port,src_addr,tx_bytes,rx_bytes,inflights
