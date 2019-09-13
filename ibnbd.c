@@ -1162,16 +1162,14 @@ static int show_device(const char *devname)
 	struct table_column **cs;
 	int cnt, ret = 0;
 
-	for (cnt = 0; sds_clt[cnt]; cnt++);
-	ds_imp = calloc(cnt, sizeof(*ds_imp));
-	if (cnt && !ds_imp) {
+	ds_imp = calloc(sds_clt_cnt, sizeof(*ds_imp));
+	if (sds_clt_cnt && !ds_imp) {
 		ERR("Failed to alloc memory\n");
 		return -ENOMEM;
 	}
 
-	for (cnt = 0; sds_srv[cnt]; cnt++);
-	ds_exp = calloc(cnt, sizeof(*ds_exp));
-	if (cnt && !ds_exp) {
+	ds_exp = calloc(sds_srv_cnt, sizeof(*ds_exp));
+	if (sds_srv_cnt && !ds_exp) {
 		ERR("Failed to alloc memory\n");
 		ret = -ENOMEM;
 		goto free_imp;
@@ -1385,16 +1383,14 @@ static int show_path(const char *pathname)
 	struct table_column **cs;
 	int cnt, res = 0;
 
-	for (cnt = 0; paths_clt[cnt]; cnt++);
-	pp_clt = calloc(cnt, sizeof(*pp_clt));
-	if (cnt && !pp_clt) {
+	pp_clt = calloc(paths_clt_cnt, sizeof(*pp_clt));
+	if (paths_clt_cnt && !pp_clt) {
 		ERR("Failed to alloc memory\n");
 		return -ENOMEM;
 	}
 
-	for (cnt = 0; paths_srv[cnt]; cnt++);
-	pp_srv = calloc(cnt, sizeof(*pp_srv));
-	if (cnt && !pp_srv) {
+	pp_srv = calloc(paths_srv_cnt, sizeof(*pp_srv));
+	if (paths_srv_cnt && !pp_srv) {
 		ERR("Failed to alloc memory\n");
 		res = -ENOMEM;
 		goto free_clt;
@@ -1451,16 +1447,14 @@ static int show_session(const char *sessname)
 	struct table_column **cs, **ps;
 	int cnt, res = 0;
 
-	for (cnt = 0; sess_clt[cnt]; cnt++);
-	ss_clt = calloc(cnt, sizeof(*ss_clt));
-	if (!ss_clt) {
+	ss_clt = calloc(sess_clt_cnt, sizeof(*ss_clt));
+	if (sess_clt_cnt && !ss_clt) {
 		ERR("Failed to alloc memory\n");
 		return -ENOMEM;
 	}
 
-	for (cnt = 0; sess_srv[cnt]; cnt++);
-	ss_srv = calloc(cnt, sizeof(*ss_srv));
-	if (!ss_srv) {
+	ss_srv = calloc(sess_srv_cnt, sizeof(*ss_srv));
+	if (sess_srv_cnt && !ss_srv) {
 		ERR("Failed to alloc memory\n");
 		res = -ENOMEM;
 		goto free_clt;
@@ -1736,14 +1730,13 @@ static struct ibnbd_sess_dev *find_single_device(const char *name,
 	struct ibnbd_sess_dev *ds = NULL, **res;
 	int cnt;
 
-	for (cnt = 0; devs[cnt]; cnt++);
-	if (!cnt) {
+	if (!sds_clt_cnt) {
 		ERR("Device '%s' not found: no devices mapped\n", name);
 		return NULL;
 	}
 
-	res = calloc(cnt, sizeof(*res));
-	if (cnt && !res) {
+	res = calloc(sds_clt_cnt, sizeof(*res));
+	if (!res) {
 		ERR("Failed to allocate memory\n");
 		return NULL;
 	}
