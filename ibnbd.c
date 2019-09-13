@@ -1786,6 +1786,11 @@ static int cmd_resize(void)
 	if (!ds)
 		return -EINVAL;
 
+	if (!args.size_set) {
+		ERR("Please provide the size of the device to configure\n");
+		return -EINVAL;
+	}
+
 	sprintf(tmp, "/sys/block/%s/ibnbd/", ds->dev->devname);
 	errno = 0;
 	ret = printf_sysfs(tmp, "resize", "%s", args.size_sect);
