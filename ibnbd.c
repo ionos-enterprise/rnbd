@@ -526,17 +526,6 @@ static int clm_cnt(struct table_column **cs)
 	return i;
 }
 
-static int has_num(struct table_column **cs)
-{
-	int i;
-
-	for (i = 0; cs[i]; i++)
-		if (cs[i]->m_type != FLD_STR && cs[i]->m_type != FLD_VAL)
-			return 1;
-
-	return 0;
-}
-
 static int list_devices_term(struct ibnbd_sess_dev **sds,
 			     struct table_column **cs)
 {
@@ -556,7 +545,7 @@ static int list_devices_term(struct ibnbd_sess_dev **sds,
 	for (dev_num = 0; sds[dev_num]; dev_num++)
 		;
 
-	if (!has_num(cs))
+	if (!table_has_num(cs))
 		args.nototals_set = true;
 
 	flds = calloc((dev_num + 1) * cs_cnt, sizeof(*flds));
@@ -768,7 +757,7 @@ static int list_paths_term(struct ibnbd_path **paths, int path_cnt,
 		fld_cnt += cs_cnt;
 	}
 
-	if (!args.nototals_set && has_num(cs) && !tree) {
+	if (!args.nototals_set && table_has_num(cs) && !tree) {
 		table_row_print_line("", cs, trm, 1, 0);
 		table_flds_del_not_num(flds + fld_cnt, cs);
 		table_flds_print_term("", flds + fld_cnt, cs, trm, 0);
@@ -831,7 +820,7 @@ static int list_sessions_term(struct ibnbd_sess **sessions,
 					clms_paths_shortdesc, 1);
 	}
 
-	if (!args.nototals_set && has_num(cs)) {
+	if (!args.nototals_set && table_has_num(cs)) {
 		table_row_print_line("", cs, trm, 1, 0);
 		table_flds_del_not_num(flds + sess_num * cs_cnt, cs);
 		table_flds_print_term("", flds + sess_num * cs_cnt,

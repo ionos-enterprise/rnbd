@@ -253,6 +253,17 @@ int table_row_print_line(const char *pre, struct table_column **clms,
 	return 0;
 }
 
+bool table_has_num(struct table_column **cs)
+{
+	int i;
+
+	for (i = 0; cs[i]; i++)
+		if (cs[i]->m_type != FLD_STR && cs[i]->m_type != FLD_VAL)
+			return true;
+
+	return false;
+}
+
 void table_flds_del_not_num(struct table_fld *flds,
 				   struct table_column **cs)
 {
