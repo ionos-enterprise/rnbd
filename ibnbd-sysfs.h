@@ -18,8 +18,8 @@ struct ibnbd_dev {
 	char 		  devname[NAME_MAX]; /* file under /dev/ */
 	char 		  devpath[PATH_MAX]; /* /dev/ibnbd<x>, /dev/ram<x> */
 	char		  io_mode[NAME_MAX]; /* access file/block */
-	int		  rx_sect;	     /* from /sys/block/../stats */
-	int		  tx_sect;	     /* from /sys/block/../stats */
+	unsigned long	  rx_sect;	     /* from /sys/block/../stats */
+	unsigned long	  tx_sect;	     /* from /sys/block/../stats */
 	char		  state[NAME_MAX];   /* ../ibnbd/state sysfs entry */
 };
 
