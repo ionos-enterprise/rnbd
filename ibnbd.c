@@ -519,16 +519,6 @@ static void help_list(struct cmd *cmd)
 	print_sarg_descr("help");
 }
 
-static int clm_cnt(struct table_column **cs)
-{
-	int i;
-
-	for (i = 0; cs[i]; i++)
-		;
-
-	return i;
-}
-
 static int list_devices_term(struct ibnbd_sess_dev **sds,
 			     struct table_column **cs)
 {
@@ -543,7 +533,7 @@ static int list_devices_term(struct ibnbd_sess_dev **sds,
 	struct table_fld *flds;
 	int i, cs_cnt, dev_num;
 
-	cs_cnt = clm_cnt(cs);
+	cs_cnt = table_clm_cnt(cs);
 
 	for (dev_num = 0; sds[dev_num]; dev_num++)
 		;
@@ -727,7 +717,7 @@ static int list_paths_term(struct ibnbd_path **paths, int path_cnt,
 	int i, cs_cnt, fld_cnt = 0;
 	struct table_fld *flds;
 
-	cs_cnt = clm_cnt(cs);
+	cs_cnt = table_clm_cnt(cs);
 
 	flds = calloc((path_cnt + 1) * cs_cnt, sizeof(*flds));
 	if (!flds) {
@@ -785,7 +775,7 @@ static int list_sessions_term(struct ibnbd_sess **sessions,
 	int i, cs_cnt, sess_num;
 	struct table_fld *flds;
 
-	cs_cnt = clm_cnt(cs);
+	cs_cnt = table_clm_cnt(cs);
 	for (sess_num = 0; sessions[sess_num]; sess_num++)
 		;
 
