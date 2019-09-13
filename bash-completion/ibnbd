@@ -2,21 +2,21 @@
 
 _dev_names()
 {
-	local CMD='ibnbd list devs noheaders nototals devname'
+	local CMD='ibnbd list devs noheaders nototals devname notree'
 	COMPREPLY=( $( compgen -W "$($CMD)" -- "$1" ) )
 	return 0
 }
 
 _sess_names()
 {
-	local CMD='ibnbd list sess noheaders nototals sessname'
+	local CMD='ibnbd list sess noheaders nototals sessname notree'
 	COMPREPLY=( $( compgen -W "$($CMD)" -- "$1" ) )
 	return 0
 }
 
 _path_names()
 {
-	local CMD='ibnbd list paths noheaders nototals pathname'
+	local CMD='ibnbd list paths noheaders nototals pathname notree'
 	COMPREPLY=( $( compgen -W "$($CMD)" -- "$1" ) )
 	return 0
 }
@@ -103,7 +103,7 @@ _ibnbd()
 	list)
 		opts="dev devs devices sess sessions path paths csv xml \
 		      json B K M G T P E noheaders \
-		      nototals help all tree"
+		      nototals help all notree"
 		;;
 	show)
 		opts="csv xml json B K M G T P E help all"
