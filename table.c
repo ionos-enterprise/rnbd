@@ -30,8 +30,8 @@ static const char *fld_fmt_str[] = {
 };
 
 int table_row_stringify(void *s, struct table_fld *flds,
-			       struct table_column **cs, int humanize,
-			       int pre_len)
+			struct table_column **cs, int humanize,
+			int pre_len)
 {
 	int clm;
 	size_t len;
@@ -87,8 +87,8 @@ int table_get_max_h_width(struct table_column **cs)
 }
 
 void table_entry_print_term(const char *prefix, struct table_fld *flds,
-				   struct table_column **cs, int hdr_width,
-				   int trm)
+			    struct table_column **cs, int hdr_width,
+			    int trm)
 {
 	int clm;
 	struct table_column *c;
@@ -100,8 +100,7 @@ void table_entry_print_term(const char *prefix, struct table_fld *flds,
 }
 
 int table_fld_print_as_str(struct table_fld *fld,
-				   struct table_column *cs,
-				   int trm)
+			   struct table_column *cs, int trm)
 {
 	if (cs->m_type == FLD_STR)
 		return clr_print(trm, fld->clr, "\"%s\"", fld->str);
@@ -110,7 +109,7 @@ int table_fld_print_as_str(struct table_fld *fld,
 }
 
 int table_flds_print_term(const char *pre, struct table_fld *flds,
-				 struct table_column **cs, int trm, int pwidth)
+			  struct table_column **cs, int trm, int pwidth)
 {
 	int clm = 0;
 	struct table_column *c = *cs;
@@ -133,7 +132,7 @@ int table_flds_print_term(const char *pre, struct table_fld *flds,
 
 /* FIXME: escape ',' in strings */
 int table_flds_print_csv(struct table_fld *flds,
-				struct table_column **cs, int trm)
+			 struct table_column **cs, int trm)
 {
 	int clm;
 	struct table_column *c = *cs;
@@ -153,7 +152,7 @@ int table_flds_print_csv(struct table_fld *flds,
 
 /*FIXME: escape '"' in strings */
 int table_flds_print_json(const char *prefix, struct table_fld *flds,
-				 struct table_column **cs, int trm)
+			  struct table_column **cs, int trm)
 {
 	int clm;
 	struct table_column *c = *cs;
@@ -178,7 +177,7 @@ int table_flds_print_json(const char *prefix, struct table_fld *flds,
 }
 
 int table_flds_print_xml(const char *prefix, struct table_fld *flds,
-				struct table_column **cs, int trm)
+			 struct table_column **cs, int trm)
 {
 	int clm;
 	struct table_column *c = *cs;
@@ -193,8 +192,8 @@ int table_flds_print_xml(const char *prefix, struct table_fld *flds,
 }
 
 int table_flds_print(enum fmt_type fmt, const char *prefix,
-			    struct table_fld *flds, struct table_column **cs,
-			    int trm, int pwidth)
+		     struct table_fld *flds, struct table_column **cs,
+		     int trm, int pwidth)
 {
 	switch (fmt) {
 	case FMT_TERM:
@@ -211,8 +210,8 @@ int table_flds_print(enum fmt_type fmt, const char *prefix,
 }
 
 int table_row_print(void *v, enum fmt_type fmt, const char *pre,
-			   struct table_column **cs, int trm, int humanize,
-			   size_t pre_len)
+		    struct table_column **cs, int trm, int humanize,
+		    size_t pre_len)
 {
 	struct table_fld flds[CLM_MAX_CNT];
 
@@ -233,7 +232,7 @@ size_t print_line(char *str, size_t len, int width)
 }
 
 int table_row_print_line(const char *pre, struct table_column **clms,
-				int trm, int humanize, size_t pre_len)
+			 int trm, int humanize, size_t pre_len)
 {
 	struct table_fld flds[CLM_MAX_CNT];
 	struct table_column *c;
@@ -265,7 +264,7 @@ bool table_has_num(struct table_column **cs)
 }
 
 void table_flds_del_not_num(struct table_fld *flds,
-				   struct table_column **cs)
+			    struct table_column **cs)
 {
 	struct table_column *c;
 	int clm;
@@ -278,7 +277,7 @@ void table_flds_del_not_num(struct table_fld *flds,
 }
 
 int table_header_print_term(const char *prefix, struct table_column **cs,
-				   int trm, char align)
+			    int trm, char align)
 {
 	struct table_column *c;
 	char al = align;
@@ -322,7 +321,7 @@ void table_header_print_csv(struct table_column **cs)
  * of columns @clms
  */
 struct table_column *table_find_column(const char *name,
-					      struct table_column **clms)
+				       struct table_column **clms)
 {
 	while (*clms) {
 		if (!strcmp((*clms)->m_name, name))
@@ -458,7 +457,7 @@ int table_extend_columns(const char *arg, const char *delim,
 	    align, h_clr, c_clr, m_descr, m_width, 0)
 
 static int pstr_to_str(char *str, size_t len, enum color *clr, void *v,
-		int humanize)
+		       int humanize)
 {
 	*clr = 0;
 	return snprintf(str, len, "%s", *(char **)v);
