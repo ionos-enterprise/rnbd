@@ -6,8 +6,7 @@ static int byte_to_str(char *str, size_t len, enum color *clr, void *v,
 		       int humanize)
 {
 	*clr = CNRM;
-
-	return i_to_byte_unit(str, len, *(int *)v, humanize);
+	return i_to_byte_unit(str, len, *(uint64_t *)v, humanize);
 }
 
 #define CLM_SD(m_name, m_header, m_type, tostr, align, h_clr, c_clr, m_descr) \
