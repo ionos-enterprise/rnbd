@@ -4,6 +4,7 @@
 # Run that and redirect to man/ibnbd.8 #
 ########################################
 
+PATH=$PATH:./
 VER=$(egrep -oe "[0-9,.]+" -m 1 debian/changelog)
 DATE=$(date +"%B %Y")
 
