@@ -22,7 +22,7 @@ cmds="list show map resize unmap remap disconnect reconnect addpath delpath"
 echo ".SH SUBCOMMANDS"
 for i in $cmds; do
 	echo -e ".B $i\n"
-	ibnbd $i help
+	ibnbd $i help | sed 's/[[:space:]]*$//'
 	echo -e "\n"
 done
 
