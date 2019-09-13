@@ -76,7 +76,10 @@ int ibnbd_sysfs_alloc_all(struct ibnbd_sess_dev ***sds_clt,
 			  struct ibnbd_sess ***sess_clt,
 			  struct ibnbd_sess ***sess_srv,
 			  struct ibnbd_path ***paths_clt,
-			  struct ibnbd_path ***paths_srv);
+			  struct ibnbd_path ***paths_srv,
+			  int *sds_clt_cnt, int *sds_srv_cnt,
+			  int *sess_clt_cnt, int *sess_srv_cnt,
+			  int *paths_clt_cnt, int *paths_srv_cnt);
 /*
  * Read all the stuff from sysfs.
  * Use ibnbd_sysfs_alloc_all() before and ibnbd_sysfs_free_all() after.

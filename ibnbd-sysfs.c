@@ -141,34 +141,37 @@ static int ibnbd_sysfs_path_cnt(const char *sdir)
 static int ibnbd_sysfs_alloc(struct ibnbd_sess_dev ***sds,
 			     struct ibnbd_sess ***sess,
 			     struct ibnbd_path ***paths,
+			     int *sds_cnt, int *sess_cnt, int *path_cnt,
 			     const char *sds_path,
 			     const char *sess_path)
 {
-	int sds_cnt, sess_cnt, path_cnt;
+	*sds_cnt = dir_cnt(sds_path);
+	if (*sds_cnt < 0)
+		return *sds_cnt;
 
-	sds_cnt = dir_cnt(sds_path);
-	if (sds_cnt < 0)
-		return sds_cnt;
+	*sess_cnt = dir_cnt(sess_path);
+	if (*sess_cnt < 0)
+		return *sess_cnt;
 
-	sess_cnt = dir_cnt(sess_path);
-	if (sess_cnt < 0)
-		return sess_cnt;
+	*path_cnt = ibnbd_sysfs_path_cnt(sess_path);
+	if (*path_cnt < 0)
+		return *path_cnt;
 
-	path_cnt = ibnbd_sysfs_path_cnt(sess_path);
-	if (path_cnt < 0)
-		return path_cnt;
+	*sds_cnt += 1;
+	*sess_cnt += 1;
+	*path_cnt += 1;
 
-	*sds = calloc(sds_cnt + 1, sizeof(*sds));
+	*sds = calloc(*sds_cnt, sizeof(*sds));
 	if (!*sds)
 		return -ENOMEM;
 
-	*sess = calloc(sess_cnt + 1, sizeof(*sess));
+	*sess = calloc(*sess_cnt, sizeof(*sess));
 	if (!*sess) {
 		free(*sds);
 		return -ENOMEM;
 	}
 
-	*paths = calloc(path_cnt + 1, sizeof(*paths));
+	*paths = calloc(*path_cnt, sizeof(*paths));
 	if (!*paths) {
 		free(*sds);
 		free(*sess);
@@ -183,18 +186,23 @@ int ibnbd_sysfs_alloc_all(struct ibnbd_sess_dev ***sds_clt,
 			  struct ibnbd_sess ***sess_clt,
 			  struct ibnbd_sess ***sess_srv,
 			  struct ibnbd_path ***paths_clt,
-			  struct ibnbd_path ***paths_srv)
+			  struct ibnbd_path ***paths_srv,
+			  int *sds_clt_cnt, int *sds_srv_cnt,
+			  int *sess_clt_cnt, int *sess_srv_cnt,
+			  int *paths_clt_cnt, int *paths_srv_cnt)
 {
 	int ret = 0;
 
 	devs[0] = NULL;
 
 	ret = ibnbd_sysfs_alloc(sds_clt, sess_clt, paths_clt,
+				sds_clt_cnt, sess_clt_cnt, paths_clt_cnt,
 				PATH_SDS_CLT, PATH_SESS_CLT);
 	if (ret)
 		return ret;
 
 	ret = ibnbd_sysfs_alloc(sds_srv, sess_srv, paths_srv,
+				sds_srv_cnt, sess_srv_cnt, paths_srv_cnt,
 				PATH_SDS_SRV, PATH_SESS_SRV);
 	if (ret)
 		ibnbd_sysfs_free(*sds_clt, *sess_clt, *paths_clt);

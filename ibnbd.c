@@ -36,6 +36,9 @@ static struct ibnbd_sess **sess_clt;
 static struct ibnbd_sess **sess_srv;
 static struct ibnbd_path **paths_clt;
 static struct ibnbd_path **paths_srv;
+static int sds_clt_cnt, sds_srv_cnt,
+	   sess_clt_cnt, sess_srv_cnt,
+	   paths_clt_cnt, paths_srv_cnt;
 
 /*
  * True if STDOUT is a terminal
@@ -2297,8 +2300,12 @@ int main(int argc, char **argv)
 		i = ret;
 	}
 
-	ret = ibnbd_sysfs_alloc_all(&sds_clt, &sds_srv, &sess_clt, &sess_srv,
-				    &paths_clt, &paths_srv);
+	ret = ibnbd_sysfs_alloc_all(&sds_clt, &sds_srv,
+				    &sess_clt, &sess_srv,
+				    &paths_clt, &paths_srv,
+				    &sds_clt_cnt, &sds_srv_cnt,
+				    &sess_clt_cnt, &sess_srv_cnt,
+				    &paths_clt_cnt, &paths_srv_cnt);
 	if (ret) {
 		ERR("Failed to alloc memory for sysfs entries: %d\n", ret);
 		goto out;
