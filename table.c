@@ -394,7 +394,7 @@ int table_select_columns(const char *names, const char *delim,
 	return 0;
 }
 
-static int clm_cnt(struct table_column **cs)
+int table_clm_cnt(struct table_column **cs)
 {
 	int i = 0;
 
@@ -442,7 +442,7 @@ int table_extend_columns(const char *arg, const char *delim,
 		cs[k] = NULL;
 	} else {
 		if (*arg == '+')
-			cs = &cs[clm_cnt(cs)];
+			cs = &cs[table_clm_cnt(cs)];
 
 		for (i = 0; sub[i]; i++)
 			cs[i] = sub[i];

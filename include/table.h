@@ -186,6 +186,9 @@ int table_extend_columns(const char *names, const char *delim,
 
 int table_tbl_print_term(const char *prefix, struct table_column **clm,
 			 int clr);
+
+int table_clm_cnt(struct table_column **cs);
+
 /*
  * Returns true if at least one of the columns is a number (int, uint64_t, but
  * not a FLD_VAL or FLD_STR). Can be used to check whether totals are to showed
