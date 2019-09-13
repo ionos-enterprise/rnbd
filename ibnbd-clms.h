@@ -95,7 +95,7 @@ static int sd_rx_to_str(char *str, size_t len, enum color *clr, void *v,
 }
 
 static struct table_column clm_ibnbd_dev_rx_sect =
-	_CLM_SD("rx_sect", sess, "RX", FLD_LLU, sd_rx_to_str, 'l', CNRM, CNRM,
+	_CLM_SD("rx_sect", sess, "RX", FLD_LLU, sd_rx_to_str, 'r', CNRM, CNRM,
 	"Amount of data read from the device");
 
 static int sd_tx_to_str(char *str, size_t len, enum color *clr, void *v,
@@ -110,7 +110,7 @@ static int sd_tx_to_str(char *str, size_t len, enum color *clr, void *v,
 }
 
 static struct table_column clm_ibnbd_dev_tx_sect =
-	_CLM_SD("tx_sect", sess, "TX", FLD_LLU, sd_tx_to_str, 'l', CNRM, CNRM,
+	_CLM_SD("tx_sect", sess, "TX", FLD_LLU, sd_tx_to_str, 'r', CNRM, CNRM,
 	"Amount of data written to the device");
 
 
