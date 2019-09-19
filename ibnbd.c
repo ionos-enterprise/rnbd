@@ -623,17 +623,17 @@ static void list_devices_xml(struct ibnbd_sess_dev **sds,
 	}
 }
 
-static int list_devices(struct ibnbd_sess_dev **s_clt,
-			struct ibnbd_sess_dev **s_srv)
+static int list_devices(struct ibnbd_sess_dev **d_clt,
+			struct ibnbd_sess_dev **d_srv)
 {
 	int clt_s_num = 0, srv_s_num = 0;
 
 	if (args.ibnbdmode & IBNBD_CLIENT)
-		for (clt_s_num = 0; s_clt[clt_s_num]; clt_s_num++)
+		for (clt_s_num = 0; d_clt[clt_s_num]; clt_s_num++)
 			;
 
 	if (args.ibnbdmode & IBNBD_SERVER)
-		for (srv_s_num = 0; s_srv[srv_s_num]; srv_s_num++)
+		for (srv_s_num = 0; d_srv[srv_s_num]; srv_s_num++)
 			;
 
 	switch (args.fmt) {
@@ -642,13 +642,13 @@ static int list_devices(struct ibnbd_sess_dev **s_clt,
 			printf("Imports:\n");
 
 		if (clt_s_num)
-			list_devices_csv(s_clt, args.clms_devices_clt);
+			list_devices_csv(d_clt, args.clms_devices_clt);
 
 		if (clt_s_num && srv_s_num)
 			printf("Exports:\n");
 
 		if (srv_s_num)
-			list_devices_csv(s_srv, args.clms_devices_srv);
+			list_devices_csv(d_srv, args.clms_devices_srv);
 
 		break;
 	case FMT_JSON:
@@ -656,7 +656,7 @@ static int list_devices(struct ibnbd_sess_dev **s_clt,
 
 		if (clt_s_num) {
 			printf("\t\"imports\": ");
-			list_devices_json(s_clt, args.clms_devices_clt);
+			list_devices_json(d_clt, args.clms_devices_clt);
 		}
 
 		if (clt_s_num && srv_s_num)
@@ -666,7 +666,7 @@ static int list_devices(struct ibnbd_sess_dev **s_clt,
 
 		if (srv_s_num) {
 			printf("\t\"exports\": ");
-			list_devices_json(s_srv, args.clms_devices_srv);
+			list_devices_json(d_srv, args.clms_devices_srv);
 		}
 
 		printf("\n}\n");
@@ -675,12 +675,12 @@ static int list_devices(struct ibnbd_sess_dev **s_clt,
 	case FMT_XML:
 		if (clt_s_num) {
 			printf("<imports>\n");
-			list_devices_xml(s_clt, args.clms_devices_clt);
+			list_devices_xml(d_clt, args.clms_devices_clt);
 			printf("</imports>\n");
 		}
 		if (srv_s_num) {
 			printf("<exports>\n");
-			list_devices_xml(s_srv, args.clms_devices_srv);
+			list_devices_xml(d_srv, args.clms_devices_srv);
 			printf("</exports>\n");
 		}
 
@@ -691,13 +691,13 @@ static int list_devices(struct ibnbd_sess_dev **s_clt,
 			printf("%s%s%s\n", CLR(trm, CDIM, "Imported devices"));
 
 		if (clt_s_num)
-			list_devices_term(s_clt, args.clms_devices_clt);
+			list_devices_term(d_clt, args.clms_devices_clt);
 
 		if (clt_s_num && srv_s_num)
 			printf("%s%s%s\n", CLR(trm, CDIM, "Exported devices"));
 
 		if (srv_s_num)
-			list_devices_term(s_srv, args.clms_devices_srv);
+			list_devices_term(d_srv, args.clms_devices_srv);
 
 		break;
 	}
