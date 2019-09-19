@@ -968,18 +968,9 @@ static void list_paths_xml(struct ibnbd_path **paths,
 }
 
 
-static int list_paths(struct ibnbd_path **p_clt, struct ibnbd_path **p_srv)
+static int list_paths(struct ibnbd_path **p_clt, int clt_p_num,
+		      struct ibnbd_path **p_srv, int srv_p_num)
 {
-	int clt_p_num = 0, srv_p_num = 0;
-
-	if (args.ibnbdmode & IBNBD_CLIENT)
-		for (clt_p_num = 0; p_clt[clt_p_num]; clt_p_num++)
-			;
-
-	if (args.ibnbdmode & IBNBD_SERVER)
-		for (srv_p_num = 0; p_srv[srv_p_num]; srv_p_num++)
-			;
-
 	switch (args.fmt) {
 	case FMT_CSV:
 		if (clt_p_num && srv_p_num)
@@ -1059,10 +1050,12 @@ static int cmd_list(void)
 		rc = list_devices(sds_clt, sds_clt_cnt, sds_srv, sds_srv_cnt);
 		break;
 	case LST_SESSIONS:
-		rc = list_sessions(sess_clt, sess_clt_cnt, sess_srv, sess_srv_cnt);
+		rc = list_sessions(sess_clt, sess_clt_cnt, sess_srv,
+				   sess_srv_cnt);
 		break;
 	case LST_PATHS:
-		rc = list_paths(paths_clt, paths_srv);
+		rc = list_paths(paths_clt, paths_clt_cnt, paths_srv,
+				paths_srv_cnt);
 		break;
 	}
 
@@ -1327,18 +1320,21 @@ static int find_paths(const char *name, struct ibnbd_path **pp,
 }
 
 static int find_paths_all(const char *name, struct ibnbd_path **pp_clt,
-			  struct ibnbd_path **pp_srv)
+			  int *pp_clt_cnt, struct ibnbd_path **pp_srv,
+			  int *pp_srv_cnt)
 {
-	int cnt = 0;
+	int cnt_clt = 0, cnt_srv = 0;
 
 	if (args.ibnbdmode & IBNBD_CLIENT)
-		cnt += find_paths(name, paths_clt, pp_clt);
+		cnt_clt = find_paths(name, paths_clt, pp_clt);
 	if (args.ibnbdmode & IBNBD_SERVER)
-		cnt += find_paths(name, paths_srv, pp_srv);
+		cnt_srv = find_paths(name, paths_srv, pp_srv);
 
-	return cnt;
+	*pp_clt_cnt = cnt_clt;
+	*pp_srv_cnt = cnt_srv;
+
+	return cnt_clt + cnt_srv;
 }
-
 
 static int get_showmode(const char *name, enum showmode *mode)
 {
@@ -1359,7 +1355,7 @@ static int show_path(const char *pathname)
 	struct ibnbd_path **pp_clt, **pp_srv, **pp;
 	struct table_fld flds[CLM_MAX_CNT];
 	struct table_column **cs;
-	int cnt, res = 0;
+	int cnt, res = 0, cnt_clt, cnt_srv;
 
 	pp_clt = calloc(paths_clt_cnt, sizeof(*pp_clt));
 	if (paths_clt_cnt && !pp_clt) {
@@ -1374,7 +1370,7 @@ static int show_path(const char *pathname)
 		goto free_clt;
 	}
 
-	cnt = find_paths_all(pathname, pp_clt, pp_srv);
+	cnt = find_paths_all(pathname, pp_clt, &cnt_clt, pp_srv, &cnt_srv);
 	if (!cnt) {
 		ERR("Found no paths matching '%s'\n", pathname);
 		res = -ENOENT;
@@ -1382,7 +1378,7 @@ static int show_path(const char *pathname)
 	}
 	if (cnt > 1) {
 		INF("There are multiple paths matching '%s':\n", pathname);
-		res = list_paths(pp_clt, pp_srv);
+		res = list_paths(pp_clt, cnt_clt, pp_srv, cnt_srv);
 		goto free_srv;
 	}
 	if (pp_clt[0]) {
