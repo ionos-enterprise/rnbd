@@ -855,18 +855,9 @@ static void list_sessions_xml(struct ibnbd_sess **sessions,
 	}
 }
 
-static int list_sessions(struct ibnbd_sess **s_clt, struct ibnbd_sess **s_srv)
+static int list_sessions(struct ibnbd_sess **s_clt, int clt_s_num,
+			 struct ibnbd_sess **s_srv, int srv_s_num)
 {
-	int clt_s_num = 0, srv_s_num = 0;
-
-	if (args.ibnbdmode & IBNBD_CLIENT)
-		for (clt_s_num = 0; s_clt[clt_s_num]; clt_s_num++)
-			;
-
-	if (args.ibnbdmode & IBNBD_SERVER)
-		for (srv_s_num = 0; s_srv[srv_s_num]; srv_s_num++)
-			;
-
 	switch (args.fmt) {
 	case FMT_CSV:
 		if (clt_s_num && srv_s_num)
@@ -1068,7 +1059,7 @@ static int cmd_list(void)
 		rc = list_devices(sds_clt, sds_clt_cnt, sds_srv, sds_srv_cnt);
 		break;
 	case LST_SESSIONS:
-		rc = list_sessions(sess_clt, sess_srv);
+		rc = list_sessions(sess_clt, sess_clt_cnt, sess_srv, sess_srv_cnt);
 		break;
 	case LST_PATHS:
 		rc = list_paths(paths_clt, paths_srv);
@@ -1259,17 +1250,20 @@ static int find_sessions_match(const char *name, struct ibnbd_sess **ss,
 }
 
 static int find_sessions_all(const char *name, struct ibnbd_sess **ss_clt,
-			     struct ibnbd_sess **ss_srv)
+			     int *ss_clt_cnt, struct ibnbd_sess **ss_srv,
+			     int *ss_srv_cnt)
 {
-	int cnt = 0;
+	int cnt_srv = 0, cnt_clt = 0;
 
 	if (args.ibnbdmode & IBNBD_CLIENT)
-		cnt += find_sessions_match(name, sess_clt, ss_clt);
+		cnt_clt = find_sessions_match(name, sess_clt, ss_clt);
 	if (args.ibnbdmode & IBNBD_SERVER)
-		cnt += find_sessions_match(name, sess_srv, ss_srv);
+		cnt_srv = find_sessions_match(name, sess_srv, ss_srv);
 
+	*ss_clt_cnt = cnt_clt;
+	*ss_srv_cnt = cnt_srv;
 
-	return cnt;
+	return cnt_clt + cnt_srv;
 }
 
 static bool match_path(struct ibnbd_path *p, const char *name)
@@ -1429,7 +1423,7 @@ static int show_session(const char *sessname)
 	struct ibnbd_sess **ss_clt, **ss_srv, **ss;
 	struct table_fld flds[CLM_MAX_CNT];
 	struct table_column **cs, **ps;
-	int cnt, res = 0;
+	int cnt, res = 0, cnt_clt, cnt_srv;
 
 	ss_clt = calloc(sess_clt_cnt, sizeof(*ss_clt));
 	if (sess_clt_cnt && !ss_clt) {
@@ -1444,7 +1438,7 @@ static int show_session(const char *sessname)
 		goto free_clt;
 	}
 
-	cnt = find_sessions_all(sessname, ss_clt, ss_srv);
+	cnt = find_sessions_all(sessname, ss_clt, &cnt_clt, ss_srv, &cnt_srv);
 	if (!cnt) {
 		ERR("Found no sessions matching '%s'\n", sessname);
 		res = -ENOENT;
@@ -1452,7 +1446,7 @@ static int show_session(const char *sessname)
 	}
 	if (cnt > 1) {
 		INF("There are multiple sessions matching '%s':\n", sessname);
-		res = list_sessions(ss_clt, ss_srv);
+		res = list_sessions(ss_clt, cnt_clt, ss_srv, cnt_srv);
 		goto free_srv;
 	}
 	if (ss_clt[0]) {
