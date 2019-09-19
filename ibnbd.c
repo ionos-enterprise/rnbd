@@ -623,48 +623,38 @@ static void list_devices_xml(struct ibnbd_sess_dev **sds,
 	}
 }
 
-static int list_devices(struct ibnbd_sess_dev **d_clt,
-			struct ibnbd_sess_dev **d_srv)
+static int list_devices(struct ibnbd_sess_dev **d_clt, int d_clt_cnt,
+			struct ibnbd_sess_dev **d_srv, int d_srv_cnt)
 {
-	int clt_s_num = 0, srv_s_num = 0;
-
-	if (args.ibnbdmode & IBNBD_CLIENT)
-		for (clt_s_num = 0; d_clt[clt_s_num]; clt_s_num++)
-			;
-
-	if (args.ibnbdmode & IBNBD_SERVER)
-		for (srv_s_num = 0; d_srv[srv_s_num]; srv_s_num++)
-			;
-
 	switch (args.fmt) {
 	case FMT_CSV:
-		if (clt_s_num && srv_s_num)
+		if (d_clt_cnt && d_srv_cnt)
 			printf("Imports:\n");
 
-		if (clt_s_num)
+		if (d_clt_cnt)
 			list_devices_csv(d_clt, args.clms_devices_clt);
 
-		if (clt_s_num && srv_s_num)
+		if (d_clt_cnt && d_srv_cnt)
 			printf("Exports:\n");
 
-		if (srv_s_num)
+		if (d_srv_cnt)
 			list_devices_csv(d_srv, args.clms_devices_srv);
 
 		break;
 	case FMT_JSON:
 		printf("{\n");
 
-		if (clt_s_num) {
+		if (d_clt_cnt) {
 			printf("\t\"imports\": ");
 			list_devices_json(d_clt, args.clms_devices_clt);
 		}
 
-		if (clt_s_num && srv_s_num)
+		if (d_clt_cnt && d_srv_cnt)
 			printf(",");
 
 		printf("\n");
 
-		if (srv_s_num) {
+		if (d_srv_cnt) {
 			printf("\t\"exports\": ");
 			list_devices_json(d_srv, args.clms_devices_srv);
 		}
@@ -673,12 +663,12 @@ static int list_devices(struct ibnbd_sess_dev **d_clt,
 
 		break;
 	case FMT_XML:
-		if (clt_s_num) {
+		if (d_clt_cnt) {
 			printf("<imports>\n");
 			list_devices_xml(d_clt, args.clms_devices_clt);
 			printf("</imports>\n");
 		}
-		if (srv_s_num) {
+		if (d_srv_cnt) {
 			printf("<exports>\n");
 			list_devices_xml(d_srv, args.clms_devices_srv);
 			printf("</exports>\n");
@@ -687,16 +677,16 @@ static int list_devices(struct ibnbd_sess_dev **d_clt,
 		break;
 	case FMT_TERM:
 	default:
-		if (clt_s_num && srv_s_num)
+		if (d_clt_cnt && d_srv_cnt)
 			printf("%s%s%s\n", CLR(trm, CDIM, "Imported devices"));
 
-		if (clt_s_num)
+		if (d_clt_cnt)
 			list_devices_term(d_clt, args.clms_devices_clt);
 
-		if (clt_s_num && srv_s_num)
+		if (d_clt_cnt && d_srv_cnt)
 			printf("%s%s%s\n", CLR(trm, CDIM, "Exported devices"));
 
-		if (srv_s_num)
+		if (d_srv_cnt)
 			list_devices_term(d_srv, args.clms_devices_srv);
 
 		break;
@@ -1075,7 +1065,7 @@ static int cmd_list(void)
 	switch (args.lstmode) {
 	case LST_DEVICES:
 	default:
-		rc = list_devices(sds_clt, sds_srv);
+		rc = list_devices(sds_clt, sds_clt_cnt, sds_srv, sds_srv_cnt);
 		break;
 	case LST_SESSIONS:
 		rc = list_sessions(sess_clt, sess_srv);
@@ -1133,16 +1123,20 @@ static int find_devices(const char *name, struct ibnbd_sess_dev **devs,
  * Find all ibnbd devices by device name, path or mapping path
  */
 static int find_devices_all(const char *name, struct ibnbd_sess_dev **ds_imp,
-			    struct ibnbd_sess_dev **ds_exp)
+			    int *ds_imp_cnt, struct ibnbd_sess_dev **ds_exp,
+			    int *ds_exp_cnt)
 {
-	int cnt = 0;
+	int cnt_imp = 0, cnt_exp = 0;
 
 	if (args.ibnbdmode & IBNBD_CLIENT)
-		cnt += find_devices(name, sds_clt, ds_imp);
+		cnt_imp = find_devices(name, sds_clt, ds_imp);
 	if (args.ibnbdmode & IBNBD_SERVER)
-		cnt += find_devices(name, sds_srv, ds_exp);
+		cnt_exp = find_devices(name, sds_srv, ds_exp);
 
-	return cnt;
+	*ds_imp_cnt = cnt_imp;
+	*ds_exp_cnt = cnt_exp;
+
+	return cnt_imp + cnt_exp;
 }
 
 static int show_device(const char *devname)
@@ -1150,7 +1144,7 @@ static int show_device(const char *devname)
 	struct ibnbd_sess_dev **ds_imp, **ds_exp, **ds;
 	struct table_fld flds[CLM_MAX_CNT];
 	struct table_column **cs;
-	int cnt, ret = 0;
+	int cnt, ret = 0, ds_imp_cnt, ds_exp_cnt;
 
 	ds_imp = calloc(sds_clt_cnt, sizeof(*ds_imp));
 	if (sds_clt_cnt && !ds_imp) {
@@ -1165,7 +1159,7 @@ static int show_device(const char *devname)
 		goto free_imp;
 	}
 
-	cnt = find_devices_all(devname, ds_imp, ds_exp);
+	cnt = find_devices_all(devname, ds_imp, &ds_imp_cnt, ds_exp, &ds_exp_cnt);
 	if (!cnt) {
 		ERR("Found no devices matching '%s'\n", devname);
 		ret = -ENOENT;
@@ -1173,7 +1167,7 @@ static int show_device(const char *devname)
 	}
 	if (cnt > 1) {
 		INF("There are multiple devices matching '%s':\n", devname);
-		ret = list_devices(ds_imp, ds_exp);
+		ret = list_devices(ds_imp, ds_imp_cnt, ds_exp, ds_exp_cnt);
 		goto free_exp;
 	}
 	if (ds_imp[0]) {
@@ -1740,7 +1734,7 @@ static struct ibnbd_sess_dev *find_single_device(const char *name,
 	if (cnt > 1) {
 		ERR("Please specify an exact path. There are"
 		    " multiple devices matching '%s':\n", name);
-		list_devices(devs, &ds);
+		list_devices(devs, cnt, &ds, 0);
 		goto free;
 	}
 
