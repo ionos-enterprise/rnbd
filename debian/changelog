@@ -1,3 +1,13 @@
+ibnbd-tool (0.1.0) jessie stretch buster; urgency=medium
+
+  * Read path finished
+  * Write path includins basic mapping unmapping
+  * bash-completion
+  * man page
+  * Missing features: map-by-host, addpath, delpapth, etc.
+
+ -- Danil Kipnis <danil.kipnis@cloud.ionos.com>  Mon, 23 Sep 2019 17:09:41 +0200
+
 ibnbd-tool (0.0.2) jessie stretch buster; urgency=medium
 
   * Read stuff from sysfs
