@@ -33,10 +33,10 @@ int table_row_stringify(void *s, struct table_fld *flds,
 			struct table_column **cs, int humanize,
 			int pre_len)
 {
-	int clm;
-	size_t len;
-	void *v;
 	struct table_column *c;
+	size_t len;
+	int clm;
+	void *v;
 
 	for (c = *cs, clm = 0; c; c = *++cs, clm++) {
 		v = (void *)s + c->s_off + c->m_offset;
@@ -73,9 +73,9 @@ int table_row_stringify(void *s, struct table_fld *flds,
 
 int table_get_max_h_width(struct table_column **cs)
 {
-	int hdr_len;
-	int max_hdr_len = 0;
 	struct table_column *c;
+	int max_hdr_len = 0;
+	int hdr_len;
 
 	for (c = *cs; c; c = *++cs) {
 		hdr_len = strlen(c->m_header);
@@ -90,8 +90,8 @@ void table_entry_print_term(const char *prefix, struct table_fld *flds,
 			    struct table_column **cs, int hdr_width,
 			    int trm)
 {
-	int clm;
 	struct table_column *c;
+	int clm;
 
 	for (c = *cs, clm = 0; c; c = *++cs, clm++) {
 		printf("%s%-*s" CLM_DLM, prefix, hdr_width, c->m_header);
@@ -111,8 +111,8 @@ int table_fld_print_as_str(struct table_fld *fld,
 int table_flds_print_term(const char *pre, struct table_fld *flds,
 			  struct table_column **cs, int trm, int pwidth)
 {
-	int clm = 0;
 	struct table_column *c = *cs;
+	int clm = 0;
 
 	if (!c)
 		return 0;
@@ -134,8 +134,8 @@ int table_flds_print_term(const char *pre, struct table_fld *flds,
 int table_flds_print_csv(struct table_fld *flds,
 			 struct table_column **cs, int trm)
 {
-	int clm;
 	struct table_column *c = *cs;
+	int clm;
 
 	if (c)
 		table_fld_print_as_str(&flds[0], c, trm);
@@ -154,8 +154,8 @@ int table_flds_print_csv(struct table_fld *flds,
 int table_flds_print_json(const char *prefix, struct table_fld *flds,
 			  struct table_column **cs, int trm)
 {
-	int clm;
 	struct table_column *c = *cs;
+	int clm;
 
 	printf("%s{", prefix);
 
@@ -179,8 +179,8 @@ int table_flds_print_json(const char *prefix, struct table_fld *flds,
 int table_flds_print_xml(const char *prefix, struct table_fld *flds,
 			 struct table_column **cs, int trm)
 {
-	int clm;
 	struct table_column *c = *cs;
+	int clm;
 
 	for (c = *cs, clm = 0; c; c = *++cs, clm++) {
 		printf("%s<%s>", prefix, c->m_name);
@@ -234,9 +234,8 @@ size_t print_line(char *str, size_t len, int width)
 int table_row_print_line(const char *pre, struct table_column **clms,
 			 int trm, int humanize, size_t pre_len)
 {
+	struct table_column **cs = clms, *c;
 	struct table_fld flds[CLM_MAX_CNT];
-	struct table_column *c;
-	struct table_column **cs = clms;
 	int clm;
 
 	for (c = *cs, clm = 0; c; c = *++cs, clm++) {
@@ -362,8 +361,8 @@ int table_select_columns(const char *names, const char *delim,
 			 struct table_column **sub,
 			 int sub_len)
 {
-	char *name, *str;
 	struct table_column *clm;
+	char *name, *str;
 	int i = 0;
 
 	str = strdup(names);
