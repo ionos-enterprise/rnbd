@@ -22,7 +22,7 @@ int clr_print(enum color trm, enum color clr, const char *format, ...)
 	return ret;
 }
 
-static const char *fld_fmt_str[] = {
+static const char * const fld_fmt_str[] = {
 	[FLD_STR] = "%s",
 	[FLD_VAL] = "%d",
 	[FLD_INT] = "%d",
