@@ -153,7 +153,7 @@ static int ibnbd_sysfs_sds_srv_cnt(void)
 		if (sd->d_name[0] == '.')
 			continue;
 
-		sprintf(sdir, "%s/%s/sessions/", PATH_SDS_SRV, sd->d_name);
+		sprintf(sdir, PATH_SDS_SRV "%s/sessions/", sd->d_name);
 		cnt += dir_cnt(sdir);
 	}
 	closedir(d);
@@ -510,6 +510,7 @@ static int ibnbd_sysfs_read_srv(struct ibnbd_sess_dev **sds,
 			if (!sd)
 				return -ENOMEM;
 		}
+		closedir(sdir);
 	}
 
 	closedir(ddir);
