@@ -9,7 +9,6 @@
 #include "levenshtein.h"
 #include "table.h"
 #include "misc.h"
-#include "list.h"
 
 #include "ibnbd-sysfs.h"
 #include "ibnbd-clms.h"
