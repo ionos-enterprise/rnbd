@@ -8,7 +8,7 @@ PATH=$PATH:./
 VER=$(egrep -oe "[0-9,.]+" -m 1 debian/changelog)
 DATE=$(date +"%B %Y")
 
-echo ".TH AM \"8\" \"$DATE\" \"ibnbd $VER\" \"System Administration Utilities\""
+echo ".TH IBNBD \"8\" \"$DATE\" \"ibnbd $VER\" \"System Administration Utilities\""
 echo ".SH NAME"
 echo "ibnbd - Configuration tool for IBNBD driver and IBTRS library."
 echo ".SH SYNOPSIS"
