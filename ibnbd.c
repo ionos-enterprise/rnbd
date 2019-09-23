@@ -1138,7 +1138,7 @@ static bool match_sess(struct ibnbd_sess *s, const char *name)
 
 	at = strchr(s->sessname, '@');
 	if (at && (!strcmp(name, at + 1) ||
-		   !strncmp(name, s->sessname, strlen(name))))
+		   !strncmp(name, s->sessname, at - s->sessname)))
 			return true;
 	return false;
 }
