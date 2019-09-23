@@ -1034,15 +1034,15 @@ static int cmd_list(void)
 	switch (args.lstmode) {
 	case LST_DEVICES:
 	default:
-		rc = list_devices(sds_clt, sds_clt_cnt, sds_srv, sds_srv_cnt);
+		rc = list_devices(sds_clt, sds_clt_cnt - 1, sds_srv, sds_srv_cnt - 1);
 		break;
 	case LST_SESSIONS:
-		rc = list_sessions(sess_clt, sess_clt_cnt, sess_srv,
-				   sess_srv_cnt);
+		rc = list_sessions(sess_clt, sess_clt_cnt - 1, sess_srv,
+				   sess_srv_cnt - 1);
 		break;
 	case LST_PATHS:
-		rc = list_paths(paths_clt, paths_clt_cnt, paths_srv,
-				paths_srv_cnt);
+		rc = list_paths(paths_clt, paths_clt_cnt - 1, paths_srv,
+				paths_srv_cnt - 1);
 		break;
 	}
 
