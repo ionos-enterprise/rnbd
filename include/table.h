@@ -53,13 +53,14 @@ struct table_column {
 
 #ifndef offsetof
 #ifdef __compiler_offsetof
-#define offsetof(TYPE,MEMBER) __compiler_offsetof(TYPE,MEMBER)
+#define offsetof(TYPE, MEMBER) __compiler_offsetof(TYPE, MEMBER)
 #else
 #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 #endif
 #endif
 
-#define _CLM(str, s_name, name, header, type, tostr, align, h_clr, c_clr, descr, width, off) \
+#define _CLM(str, s_name, name, header, type, tostr, align, h_clr, c_clr,\
+	     descr, width, off) \
 	{ \
 		.m_name		= s_name, \
 		.m_header	= header, \
@@ -75,9 +76,11 @@ struct table_column {
 		.s_off		= off \
 	}
 
-#define CLM(str, name, header, type, tostr, align, h_clr, c_clr, descr, width, off) \
+#define CLM(str, name, header, type, tostr, align, h_clr, c_clr,\
+	    descr, width, off) \
 struct table_column clm_ ## str ## _ ## name = \
-	_CLM(str, #name, name, header, type, tostr, align, h_clr, c_clr, descr, width, off)
+	_CLM(str, #name, name, header, type, tostr, align, h_clr, c_clr,\
+	     descr, width, off)
 
 #define CLM_MAX_WIDTH 128
 #define CLM_MAX_CNT 50
