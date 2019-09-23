@@ -668,13 +668,13 @@ static int list_devices(struct ibnbd_sess_dev **d_clt, int d_clt_cnt,
 		break;
 	case FMT_TERM:
 	default:
-		if (d_clt_cnt && d_srv_cnt)
+		if (d_clt_cnt && d_srv_cnt && !args.noheaders_set)
 			printf("%s%s%s\n", CLR(trm, CDIM, "Imported devices"));
 
 		if (d_clt_cnt)
 			list_devices_term(d_clt, args.clms_devices_clt);
 
-		if (d_clt_cnt && d_srv_cnt)
+		if (d_clt_cnt && d_srv_cnt && !args.noheaders_set)
 			printf("%s%s%s\n", CLR(trm, CDIM, "Exported devices"));
 
 		if (d_srv_cnt)
@@ -906,13 +906,13 @@ static int list_sessions(struct ibnbd_sess **s_clt, int clt_s_num,
 		break;
 	case FMT_TERM:
 	default:
-		if (clt_s_num && srv_s_num)
+		if (clt_s_num && srv_s_num && !args.noheaders_set)
 			printf("%s%s%s\n", CLR(trm, CDIM, "Outgoing sessions"));
 
 		if (clt_s_num)
 			list_sessions_term(s_clt, args.clms_sessions_clt);
 
-		if (clt_s_num && srv_s_num)
+		if (clt_s_num && srv_s_num && !args.noheaders_set)
 			printf("%s%s%s\n", CLR(trm, CDIM, "Incoming sessions"));
 
 		if (srv_s_num)
@@ -1022,14 +1022,14 @@ static int list_paths(struct ibnbd_path **p_clt, int clt_p_num,
 		break;
 	case FMT_TERM:
 	default:
-		if (clt_p_num && srv_p_num)
+		if (clt_p_num && srv_p_num && !args.noheaders_set)
 			printf("%s%s%s\n", CLR(trm, CDIM, "Outgoing paths"));
 
 		if (clt_p_num)
 			list_paths_term(p_clt, clt_p_num,
 					args.clms_paths_clt, 0);
 
-		if (clt_p_num && srv_p_num)
+		if (clt_p_num && srv_p_num && !args.noheaders_set)
 			printf("%s%s%s\n", CLR(trm, CDIM, "Incoming paths"));
 
 		if (srv_p_num)
