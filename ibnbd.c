@@ -1206,7 +1206,6 @@ static bool match_path(struct ibnbd_path *p, const char *name)
 	char *at;
 
 	if (!strcmp(p->pathname, name) ||
-	    !strcmp(name, p->sess->sessname) ||
 	    !strcmp(name, p->src_addr) ||
 	    !strcmp(name, p->dst_addr) ||
 	    (sscanf(name, "%d\n", &port) == 1 &&
