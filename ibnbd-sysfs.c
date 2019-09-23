@@ -138,17 +138,35 @@ static int ibnbd_sysfs_path_cnt(const char *sdir)
 	return cnt;
 }
 
+static int ibnbd_sysfs_sds_srv_cnt(void)
+{
+	struct dirent *sd;
+	char sdir[PATH_MAX];
+	int cnt = 0;
+	DIR *d;
+
+	d = opendir(PATH_SDS_SRV);
+	if (!d)
+		return 0;
+
+	for (sd = readdir(d); sd; sd = readdir(d)) {
+		if (sd->d_name[0] == '.')
+			continue;
+
+		sprintf(sdir, "%s/%s/sessions/", PATH_SDS_SRV, sd->d_name);
+		cnt += dir_cnt(sdir);
+	}
+	closedir(d);
+
+	return cnt;
+}
+
 static int ibnbd_sysfs_alloc(struct ibnbd_sess_dev ***sds,
 			     struct ibnbd_sess ***sess,
 			     struct ibnbd_path ***paths,
-			     int *sds_cnt, int *sess_cnt, int *path_cnt,
-			     const char *sds_path,
+			     int sds_cnt, int *sess_cnt, int *path_cnt,
 			     const char *sess_path)
 {
-	*sds_cnt = dir_cnt(sds_path);
-	if (*sds_cnt < 0)
-		return *sds_cnt;
-
 	*sess_cnt = dir_cnt(sess_path);
 	if (*sess_cnt < 0)
 		return *sess_cnt;
@@ -157,11 +175,10 @@ static int ibnbd_sysfs_alloc(struct ibnbd_sess_dev ***sds,
 	if (*path_cnt < 0)
 		return *path_cnt;
 
-	*sds_cnt += 1;
 	*sess_cnt += 1;
 	*path_cnt += 1;
 
-	*sds = calloc(*sds_cnt, sizeof(*sds));
+	*sds = calloc(sds_cnt, sizeof(*sds));
 	if (!*sds)
 		return -ENOMEM;
 
@@ -195,15 +212,29 @@ int ibnbd_sysfs_alloc_all(struct ibnbd_sess_dev ***sds_clt,
 
 	devs[0] = NULL;
 
+
+	*sds_clt_cnt = dir_cnt(PATH_SDS_CLT);
+	if (*sds_clt_cnt < 0)
+		return *sds_clt_cnt;
+
+
+	*sds_srv_cnt = ibnbd_sysfs_sds_srv_cnt();
+	if (*sds_srv_cnt < 0)
+		return *sds_srv_cnt;
+
+
+	*sds_clt_cnt += 1;
+	*sds_srv_cnt += 1;
+
 	ret = ibnbd_sysfs_alloc(sds_clt, sess_clt, paths_clt,
-				sds_clt_cnt, sess_clt_cnt, paths_clt_cnt,
-				PATH_SDS_CLT, PATH_SESS_CLT);
+				*sds_clt_cnt, sess_clt_cnt, paths_clt_cnt,
+				PATH_SESS_CLT);
 	if (ret)
 		return ret;
 
 	ret = ibnbd_sysfs_alloc(sds_srv, sess_srv, paths_srv,
-				sds_srv_cnt, sess_srv_cnt, paths_srv_cnt,
-				PATH_SDS_SRV, PATH_SESS_SRV);
+				*sds_srv_cnt, sess_srv_cnt, paths_srv_cnt,
+				PATH_SESS_SRV);
 	if (ret)
 		ibnbd_sysfs_free(*sds_clt, *sess_clt, *paths_clt);
 
