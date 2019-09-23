@@ -15,12 +15,12 @@ enum ibnbd_side {
  * A block device exported or imported
  */
 struct ibnbd_dev {
-	char 		  devname[NAME_MAX]; /* file under /dev/ */
-	char 		  devpath[PATH_MAX]; /* /dev/ibnbd<x>, /dev/ram<x> */
-	char		  io_mode[NAME_MAX]; /* access file/block */
-	unsigned long	  rx_sect;	     /* from /sys/block/../stats */
-	unsigned long	  tx_sect;	     /* from /sys/block/../stats */
-	char		  state[NAME_MAX];   /* ../ibnbd/state sysfs entry */
+	char		devname[NAME_MAX]; /* file under /dev/ */
+	char		devpath[PATH_MAX]; /* /dev/ibnbd<x>, /dev/ram<x> */
+	char		io_mode[NAME_MAX]; /* access file/block */
+	unsigned long	rx_sect;	   /* from /sys/block/../stats */
+	unsigned long	tx_sect;	   /* from /sys/block/../stats */
+	char		state[NAME_MAX];   /* ../ibnbd/state sysfs entry */
 };
 
 struct ibnbd_path {
@@ -53,14 +53,14 @@ struct ibnbd_sess {
 	int		  reconnects;
 
 	/* paths */
-	int 		  path_cnt;	/* path count */
+	int		  path_cnt;	/* path count */
 	struct ibnbd_path **paths;	/* paths */
 };
 
 struct ibnbd_sess_dev {
 	struct ibnbd_sess	*sess;			/* session */
 	char			mapping_path[NAME_MAX]; /* name for mapping */
-	char			access_mode[64]; 	/* ro/rw/migration */
+	char			access_mode[64];	/* ro/rw/migration */
 	struct ibnbd_dev	*dev;			/* ibnbd block device */
 };
 
