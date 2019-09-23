@@ -67,9 +67,6 @@ struct args {
 	unsigned int lstmode;
 	bool lstmode_set;
 
-	unsigned int showmode;
-	bool showmode_set;
-
 	unsigned int ibnbdmode;
 	bool ibnbdmode_set;
 
@@ -188,34 +185,24 @@ enum lstmode {
 	LST_PATHS
 };
 
-enum showmode {
-	SHOW_DEVICE,
-	SHOW_SESSION,
-	SHOW_PATH
-};
-
 static int parse_lst(int argc, char **argv, int i, const struct sarg *sarg)
 {
 	if (!strcasecmp(argv[i], "devices") ||
 	    !strcasecmp(argv[i], "device") ||
 	    !strcasecmp(argv[i], "devs") ||
-	    !strcasecmp(argv[i], "dev")) {
+	    !strcasecmp(argv[i], "dev"))
 		args.lstmode = LST_DEVICES;
-		args.showmode = SHOW_DEVICE;
-	} else if (!strcasecmp(argv[i], "sessions") ||
+	else if (!strcasecmp(argv[i], "sessions") ||
 		 !strcasecmp(argv[i], "session") ||
-		 !strcasecmp(argv[i], "sess")) {
+		 !strcasecmp(argv[i], "sess"))
 		args.lstmode = LST_SESSIONS;
-		args.showmode = SHOW_SESSION;
-	} else if (!strcasecmp(argv[i], "paths") ||
-		 !strcasecmp(argv[i], "path")) {
+	else if (!strcasecmp(argv[i], "paths") ||
+		 !strcasecmp(argv[i], "path"))
 		args.lstmode = LST_PATHS;
-		args.showmode = SHOW_PATH;
-	} else
+	else
 		return i;
 
 	args.lstmode_set = true;
-	args.showmode_set = true;
 
 	return i + 1;
 }
@@ -1072,23 +1059,6 @@ static bool match_device(struct ibnbd_sess_dev *d, const char *name)
 	return false;
 }
 
-/*
- * Find first ibnbd device by device name, path or mapping path
- */
-static bool device_exists(const char *name)
-{
-	int i;
-
-	for (i = 0; sds_clt[i]; i++)
-		if (match_device(sds_clt[i], name))
-			return true;
-	for (i = 0; sds_srv[i]; i++)
-		if (match_device(sds_srv[i], name))
-			return true;
-
-	return false;
-}
-
 static int find_devices(const char *name, struct ibnbd_sess_dev **devs,
 			struct ibnbd_sess_dev **res)
 {
@@ -1106,7 +1076,7 @@ static int find_devices(const char *name, struct ibnbd_sess_dev **devs,
 /*
  * Find all ibnbd devices by device name, path or mapping path
  */
-static int find_devices_all(const char *name, struct ibnbd_sess_dev **ds_imp,
+static int find_devs_all(const char *name, struct ibnbd_sess_dev **ds_imp,
 			    int *ds_imp_cnt, struct ibnbd_sess_dev **ds_exp,
 			    int *ds_exp_cnt)
 {
@@ -1123,42 +1093,17 @@ static int find_devices_all(const char *name, struct ibnbd_sess_dev **ds_imp,
 	return cnt_imp + cnt_exp;
 }
 
-static int show_device(const char *devname)
+static int show_device(struct ibnbd_sess_dev **clt, struct ibnbd_sess_dev **srv)
 {
-	struct ibnbd_sess_dev **ds_imp, **ds_exp, **ds;
 	struct table_fld flds[CLM_MAX_CNT];
+	struct ibnbd_sess_dev **ds;
 	struct table_column **cs;
-	int cnt, ret = 0, ds_imp_cnt, ds_exp_cnt;
 
-	ds_imp = calloc(sds_clt_cnt, sizeof(*ds_imp));
-	if (sds_clt_cnt && !ds_imp) {
-		ERR("Failed to alloc memory\n");
-		return -ENOMEM;
-	}
-
-	ds_exp = calloc(sds_srv_cnt, sizeof(*ds_exp));
-	if (sds_srv_cnt && !ds_exp) {
-		ERR("Failed to alloc memory\n");
-		ret = -ENOMEM;
-		goto free_imp;
-	}
-
-	cnt = find_devices_all(devname, ds_imp, &ds_imp_cnt, ds_exp, &ds_exp_cnt);
-	if (!cnt) {
-		ERR("Found no devices matching '%s'\n", devname);
-		ret = -ENOENT;
-		goto free_exp;
-	}
-	if (cnt > 1) {
-		INF("There are multiple devices matching '%s':\n", devname);
-		ret = list_devices(ds_imp, ds_imp_cnt, ds_exp, ds_exp_cnt);
-		goto free_exp;
-	}
-	if (ds_imp[0]) {
-		ds = ds_imp;
+	if (clt[0]) {
+		ds = clt;
 		cs = args.clms_devices_clt;
 	} else {
-		ds = ds_exp;
+		ds = srv;
 		cs = args.clms_devices_srv;
 	}
 
@@ -1181,11 +1126,7 @@ static int show_device(const char *devname)
 		break;
 	}
 
-free_exp:
-	free(ds_exp);
-free_imp:
-	free(ds_imp);
-	return ret;
+	return 0;
 }
 
 static bool match_sess(struct ibnbd_sess *s, const char *name)
@@ -1214,20 +1155,6 @@ static struct ibnbd_sess *find_session(const char *name,
 	return NULL;
 }
 
-static bool session_match_exists(const char *name)
-{
-	int i;
-
-	for (i = 0; sess_clt[i]; i++)
-		if (match_sess(sess_clt[i], name))
-			return true;
-	for (i = 0; sess_srv[i]; i++)
-		if (match_sess(sess_srv[i], name))
-			return true;
-
-	return false;
-}
-
 static int find_sessions_match(const char *name, struct ibnbd_sess **ss,
 			       struct ibnbd_sess **res)
 {
@@ -1242,7 +1169,7 @@ static int find_sessions_match(const char *name, struct ibnbd_sess **ss,
 	return cnt;
 }
 
-static int find_sessions_all(const char *name, struct ibnbd_sess **ss_clt,
+static int find_sess_all(const char *name, struct ibnbd_sess **ss_clt,
 			     int *ss_clt_cnt, struct ibnbd_sess **ss_srv,
 			     int *ss_srv_cnt)
 {
@@ -1291,20 +1218,6 @@ static bool match_path(struct ibnbd_path *p, const char *name)
 	return false;
 }
 
-static bool path_exists(const char *name)
-{
-	int i;
-
-	for (i = 0; paths_clt[i]; i++)
-		if (match_path(paths_clt[i], name))
-			return true;
-	for (i = 0; paths_srv[i]; i++)
-		if (match_path(paths_srv[i], name))
-			return true;
-
-	return false;
-}
-
 static int find_paths(const char *name, struct ibnbd_path **pp,
 		      struct ibnbd_path **res)
 {
@@ -1336,51 +1249,12 @@ static int find_paths_all(const char *name, struct ibnbd_path **pp_clt,
 	return cnt_clt + cnt_srv;
 }
 
-static int get_showmode(const char *name, enum showmode *mode)
+static int show_path(struct ibnbd_path **pp_clt, struct ibnbd_path **pp_srv)
 {
-	if (device_exists(name))
-		*mode = SHOW_DEVICE;
-	else if (session_match_exists(name))
-		*mode = SHOW_SESSION;
-	else if (path_exists(name))
-		*mode = SHOW_PATH;
-	else
-		return -ENOENT;
-
-	return 0;
-}
-
-static int show_path(const char *pathname)
-{
-	struct ibnbd_path **pp_clt, **pp_srv, **pp;
 	struct table_fld flds[CLM_MAX_CNT];
 	struct table_column **cs;
-	int cnt, res = 0, cnt_clt, cnt_srv;
+	struct ibnbd_path **pp;
 
-	pp_clt = calloc(paths_clt_cnt, sizeof(*pp_clt));
-	if (paths_clt_cnt && !pp_clt) {
-		ERR("Failed to alloc memory\n");
-		return -ENOMEM;
-	}
-
-	pp_srv = calloc(paths_srv_cnt, sizeof(*pp_srv));
-	if (paths_srv_cnt && !pp_srv) {
-		ERR("Failed to alloc memory\n");
-		res = -ENOMEM;
-		goto free_clt;
-	}
-
-	cnt = find_paths_all(pathname, pp_clt, &cnt_clt, pp_srv, &cnt_srv);
-	if (!cnt) {
-		ERR("Found no paths matching '%s'\n", pathname);
-		res = -ENOENT;
-		goto free_srv;
-	}
-	if (cnt > 1) {
-		INF("There are multiple paths matching '%s':\n", pathname);
-		res = list_paths(pp_clt, cnt_clt, pp_srv, cnt_srv);
-		goto free_srv;
-	}
 	if (pp_clt[0]) {
 		pp = pp_clt;
 		cs = args.clms_paths_clt;
@@ -1407,44 +1281,16 @@ static int show_path(const char *pathname)
 				       table_get_max_h_width(cs), trm);
 		break;
 	}
-free_srv:
-	free(pp_srv);
-free_clt:
-	free(pp_clt);
-	return res;
+
+	return 0;
 }
 
-static int show_session(const char *sessname)
+static int show_session(struct ibnbd_sess **ss_clt, struct ibnbd_sess **ss_srv)
 {
-	struct ibnbd_sess **ss_clt, **ss_srv, **ss;
 	struct table_fld flds[CLM_MAX_CNT];
 	struct table_column **cs, **ps;
-	int cnt, res = 0, cnt_clt, cnt_srv;
+	struct ibnbd_sess **ss;
 
-	ss_clt = calloc(sess_clt_cnt, sizeof(*ss_clt));
-	if (sess_clt_cnt && !ss_clt) {
-		ERR("Failed to alloc memory\n");
-		return -ENOMEM;
-	}
-
-	ss_srv = calloc(sess_srv_cnt, sizeof(*ss_srv));
-	if (sess_srv_cnt && !ss_srv) {
-		ERR("Failed to alloc memory\n");
-		res = -ENOMEM;
-		goto free_clt;
-	}
-
-	cnt = find_sessions_all(sessname, ss_clt, &cnt_clt, ss_srv, &cnt_srv);
-	if (!cnt) {
-		ERR("Found no sessions matching '%s'\n", sessname);
-		res = -ENOENT;
-		goto free_srv;
-	}
-	if (cnt > 1) {
-		INF("There are multiple sessions matching '%s':\n", sessname);
-		res = list_sessions(ss_clt, cnt_clt, ss_srv, cnt_srv);
-		goto free_srv;
-	}
 	if (ss_clt[0]) {
 		ss = ss_clt;
 		cs = args.clms_sessions_clt;
@@ -1479,44 +1325,81 @@ static int show_session(const char *sessname)
 
 		break;
 	}
-free_srv:
-	free(ss_srv);
-free_clt:
-	free(ss_clt);
 
-	return res;
+	return 0;
 }
 
 static int cmd_show(void)
 {
-	int rc;
+	struct ibnbd_sess_dev **ds_clt, **ds_srv;
+	struct ibnbd_path **pp_clt, **pp_srv;
+	struct ibnbd_sess **ss_clt, **ss_srv;
+	int c_ds_clt, c_ds_srv, c_ds = 0,
+	    c_pp_clt, c_pp_srv, c_pp = 0,
+	    c_ss_clt, c_ss_srv, c_ss = 0, ret;
 
-	if (!args.showmode_set) {
-		//FIXME
-		if (get_showmode(args.name, &args.showmode)) {
-			ERR("'%s' is neither device nor session nor path\n",
-			    args.name);
-			return -ENOENT;
+	pp_clt = calloc(paths_clt_cnt, sizeof(*pp_clt));
+	pp_srv = calloc(paths_srv_cnt, sizeof(*pp_srv));
+	ss_clt = calloc(sess_clt_cnt, sizeof(*ss_clt));
+	ss_srv = calloc(sess_srv_cnt, sizeof(*ss_srv));
+	ds_clt = calloc(sds_clt_cnt, sizeof(*ds_clt));
+	ds_srv = calloc(sds_srv_cnt, sizeof(*ds_srv));
+
+	if ((paths_clt_cnt && !pp_clt) ||
+	    (paths_srv_cnt && !pp_srv) ||
+	    (sess_clt_cnt && !ss_clt) ||
+	    (sess_srv_cnt && !ss_srv) ||
+	    (sds_clt_cnt && !ds_clt) ||
+	    (sds_srv_cnt && !ds_srv)) {
+		ERR("Failed to alloc memory\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+	if (!args.lstmode_set || args.lstmode == LST_PATHS)
+		c_pp = find_paths_all(args.name, pp_clt, &c_pp_clt, pp_srv,
+				      &c_pp_srv);
+	if (!args.lstmode_set || args.lstmode == LST_SESSIONS)
+		c_ss = find_sess_all(args.name, ss_clt, &c_ss_clt, ss_srv,
+				     &c_ss_srv);
+	if (!args.lstmode_set || args.lstmode == LST_DEVICES)
+		c_ds = find_devs_all(args.name, ds_clt, &c_ds_clt, ds_srv,
+				     &c_ds_srv);
+	if (c_pp + c_ss + c_ds > 1) {
+		ERR("Multiple entries match '%s'\n", args.name);
+		if (c_pp) {
+			printf("Paths:\n");
+			list_paths(pp_clt, c_pp_clt, pp_srv, c_pp_srv);
 		}
-		args.showmode_set = true;
+		if (c_ss) {
+			printf("Sessions:\n");
+			list_sessions(ss_clt, c_ss_clt, ss_srv, c_ss_srv);
+		}
+		if (c_ds) {
+			printf("Devices:\n");
+			list_devices(ds_clt, c_ds_clt, ds_srv, c_ds_srv);
+		}
+		ret = -EINVAL;
+		goto out;
 	}
 
-	switch (args.showmode) {
-	case SHOW_DEVICE:
-		rc = show_device(args.name);
-		break;
-	case SHOW_SESSION:
-		rc = show_session(args.name);
-		break;
-	case SHOW_PATH:
-		rc = show_path(args.name);
-		break;
-	default:
-		assert(0);
-		break;
+	if (c_ds)
+		ret = show_device(ds_clt, ds_srv);
+	else if (c_ss)
+		ret = show_session(ss_clt, ss_srv);
+	else if (c_pp)
+		ret = show_path(pp_clt, pp_srv);
+	else {
+		ERR("There is no entry matching '%s'\n", args.name);
+		ret = -ENOENT;
 	}
-
-	return rc;
+out:
+	free(ds_clt);
+	free(ds_srv);
+	free(pp_clt);
+	free(pp_srv);
+	free(ss_clt);
+	free(ss_srv);
+	return ret;
 }
 
 static int parse_name(int argc, char **argv, int i)
