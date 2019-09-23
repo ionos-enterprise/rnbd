@@ -560,7 +560,6 @@ static int list_devices_term(struct ibnbd_sess_dev **sds,
 
 	free(flds);
 
-
 	return 0;
 }
 
@@ -613,6 +612,11 @@ static void list_devices_xml(struct ibnbd_sess_dev **sds,
 static int list_devices(struct ibnbd_sess_dev **d_clt, int d_clt_cnt,
 			struct ibnbd_sess_dev **d_srv, int d_srv_cnt)
 {
+	if (!(args.ibnbdmode & IBNBD_CLIENT))
+		d_clt_cnt = 0;
+	if (!(args.ibnbdmode & IBNBD_SERVER))
+		d_srv_cnt = 0;
+
 	switch (args.fmt) {
 	case FMT_CSV:
 		if (d_clt_cnt && d_srv_cnt)
@@ -845,6 +849,11 @@ static void list_sessions_xml(struct ibnbd_sess **sessions,
 static int list_sessions(struct ibnbd_sess **s_clt, int clt_s_num,
 			 struct ibnbd_sess **s_srv, int srv_s_num)
 {
+	if (!(args.ibnbdmode & IBNBD_CLIENT))
+		clt_s_num = 0;
+	if (!(args.ibnbdmode & IBNBD_SERVER))
+		srv_s_num = 0;
+
 	switch (args.fmt) {
 	case FMT_CSV:
 		if (clt_s_num && srv_s_num)
@@ -958,6 +967,11 @@ static void list_paths_xml(struct ibnbd_path **paths,
 static int list_paths(struct ibnbd_path **p_clt, int clt_p_num,
 		      struct ibnbd_path **p_srv, int srv_p_num)
 {
+	if (!(args.ibnbdmode & IBNBD_CLIENT))
+		clt_p_num = 0;
+	if (!(args.ibnbdmode & IBNBD_SERVER))
+		srv_p_num = 0;
+
 	switch (args.fmt) {
 	case FMT_CSV:
 		if (clt_p_num && srv_p_num)
