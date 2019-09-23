@@ -457,10 +457,9 @@ static void print_clms_list(struct table_column **clms)
 static void help_fields(void)
 {
 	print_opt("{fields}",
-		  "Comma separated list of fields to be printed."
-		  " The list can be");
-	print_opt("", "prefixed with '+' or '-' to add or remove fields"
-		      " from the ");
+		  "Comma separated list of fields to be printed. The list can be");
+	print_opt("",
+		  "prefixed with '+' or '-' to add or remove fields from the ");
 	print_opt("", "default selection.\n");
 }
 
@@ -1048,7 +1047,8 @@ static int cmd_list(void)
 	switch (args.lstmode) {
 	case LST_DEVICES:
 	default:
-		rc = list_devices(sds_clt, sds_clt_cnt - 1, sds_srv, sds_srv_cnt - 1);
+		rc = list_devices(sds_clt, sds_clt_cnt - 1, sds_srv,
+				  sds_srv_cnt - 1);
 		break;
 	case LST_SESSIONS:
 		rc = list_sessions(sess_clt, sess_clt_cnt - 1, sess_srv,
@@ -1153,7 +1153,7 @@ static bool match_sess(struct ibnbd_sess *s, const char *name)
 	at = strchr(s->sessname, '@');
 	if (at && (!strcmp(name, at + 1) ||
 		   !strncmp(name, s->sessname, at - s->sessname)))
-			return true;
+		return true;
 	return false;
 }
 
@@ -1435,13 +1435,11 @@ static void help_show(struct cmd *cmd)
 
 	printf("\nArguments:\n");
 	print_opt("<name>",
-		  "Name of a local or a remote block device,"
-		  " session name, path name or remote hostname.");
-	print_opt("", "I.e. ibnbd0, /dev/ibnbd0,"
-		      " d12aef94-4110-4321-9373-3be8494a557b,"
-		      " ps401a-1@st401b-2, st401b-2, <ip1>@<ip2>, etc.");
-	print_opt("", "In order to display path information,"
-		      " path name or identifier");
+		  "Name of a local or a remote block device, session name, path name or remote hostname.");
+	print_opt("",
+		  "I.e. ibnbd0, /dev/ibnbd0, d12aef94-4110-4321-9373-3be8494a557b, ps401a-1@st401b-2, st401b-2, <ip1>@<ip2>, etc.");
+	print_opt("",
+		  "In order to display path information, path name or identifier");
 	print_opt("", "has to be provided, i.e. st401b-2:1.");
 
 	printf("\nOptions:\n");
@@ -1462,8 +1460,8 @@ static void help_show(struct cmd *cmd)
 
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
-	print_opt("{mode}", "Information to print: device|session|path."
-			    " Default: device.");
+	print_opt("{mode}",
+		  "Information to print: device|session|path. Default: device.");
 
 	print_sarg_descr("help");
 }
@@ -1481,10 +1479,10 @@ static void help_map(struct cmd *cmd)
 	print_opt("<path>", "Path(s) to establish: [src_addr@]dst_addr");
 	print_opt("", "Address is [ip:]<ipv4>, [ip:]<ipv6> or gid:<gid>");
 
-	print_opt("{io_mode}", "IO Mode to use on server side: fileio|blockio."
-		  " Default: blockio");
-	print_opt("{rw}", "Access permission on server side: ro|rw|migration."
-		  " Default: rw");
+	print_opt("{io_mode}",
+		  "IO Mode to use on server side: fileio|blockio. Default: blockio");
+	print_opt("{rw}",
+		  "Access permission on server side: ro|rw|migration. Default: rw");
 	print_sarg_descr("verbose");
 	print_sarg_descr("help");
 }
@@ -1552,16 +1550,16 @@ static int cmd_map(void)
 	sess = find_session(sessname, sess_clt);
 
 	if (!sess && !args.path_cnt) {
-		ERR("Client session '%s' not found. Please provide"
-		    " at least one path to establish a new one.\n",
+		ERR(
+		    "Client session '%s' not found. Please provide at least one path to establish a new one.\n",
 		    args.from);
 		return -EINVAL;
 	}
 
 	if (sess && args.path_cnt)
-		INF("Session '%s' exists. Provided paths will be ignored"
-		    " by the driver. Please use addpath to add a path to"
-		    " an existsing sesion.\n", args.from);
+		INF(
+		    "Session '%s' exists. Provided paths will be ignored by the driver. Please use addpath to add a path to an existsing sesion.\n",
+		    args.from);
 
 	cnt = snprintf(cmd, sizeof(cmd), "sessname=%s", sessname);
 	cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, " device_path=%s",
@@ -1618,8 +1616,9 @@ static struct ibnbd_sess_dev *find_single_device(const char *name,
 	}
 
 	if (cnt > 1) {
-		ERR("Please specify an exact path. There are"
-		    " multiple devices matching '%s':\n", name);
+		ERR(
+		"Please specify an exact path. There are multiple devices matching '%s':\n",
+		name);
 		list_devices(devs, cnt, &ds, 0);
 		goto free;
 	}
@@ -1712,8 +1711,7 @@ static void help_remap(struct cmd *cmd)
 
 	printf("\nArguments:\n");
 	print_opt("<identifier>",
-		  "Identifier of a device to be remapped. Or"
-		  " identifier of a session to remap all devices on.");
+		  "Identifier of a device to be remapped. Or identifier of a session to remap all devices on.");
 
 	printf("\nOptions:\n");
 	print_sarg_descr("force");
@@ -1776,8 +1774,8 @@ static void help_addpath(struct cmd *cmd)
 		  "Name of the session to add the new path to");
 	print_opt("<path>",
 		  "Path to be added: [src_addr,]dst_addr");
-	print_opt("", "Address is of the form ip:<ipv4>, ip:<ipv6> or"
-		      " gid:<gid>");
+	print_opt("",
+		  "Address is of the form ip:<ipv4>, ip:<ipv6> or gid:<gid>");
 
 	printf("\nOptions:\n");
 	print_sarg_descr("verbose");
@@ -1815,13 +1813,11 @@ static int cmd_delpath(void)
 static struct cmd cmds[] = {
 	{"list",
 		"List block device or transport related information",
-		"List block device or transport related information: "
-		"devices, sessions, paths, etc.",
+		"List block device or transport related information: devices, sessions, paths, etc.",
 		cmd_list, NULL, help_list},
 	{"show",
 		"Show information about a device, a session or a path",
-		"Show information about an ibnbd block- or transport- item: "
-		"device, session or path.",
+		"Show information about an ibnbd block- or transport- item: device, session or path.",
 		cmd_show, parse_name, help_show},
 	{"map",
 		"Map a device from a given server",
@@ -1837,8 +1833,7 @@ static struct cmd cmds[] = {
 		cmd_unmap, parse_name, help_unmap},
 	{"remap",
 		"Remap a device or all devices on a session",
-		"Unmap and map again an imported device or do this "
-		"for all devices of a given session",
+		"Unmap and map again an imported device or do this for all devices of a given session",
 		 cmd_remap, parse_name, help_remap},
 	{"disconnect",
 		"Disconnect a path or a session",
@@ -2188,11 +2183,13 @@ int main(int argc, char **argv)
 	if (args.help_set && cmd->help)
 		cmd->help(cmd);
 	else if (cmd->func) {
-		/*if (args.ibnbdmode == IBNBD_NONE) {
+		/*
+		if (args.ibnbdmode == IBNBD_NONE) {
 			ERR("ibnbd modules not loaded\n");
 			ret = -ENOENT;
 			goto free;
-		}*/
+		}
+		*/
 		ret = cmd->func();
 	}
 free:
