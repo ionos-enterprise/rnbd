@@ -131,7 +131,7 @@ int path_to_shortdesc(char *str, size_t len, enum color *clr,
 	if (!p->sess)
 		return 0;
 
-	if (!strcmp(p->state, "connected"))
+	if (!p->state[0] || !strcmp(p->state, "connected"))
 		c = CDIM;
 	else
 		c = CRED;
