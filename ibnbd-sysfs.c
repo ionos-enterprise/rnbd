@@ -24,7 +24,7 @@ int printf_sysfs(const char *dir, const char *entry, const char *format, ...)
 
 	snprintf(path, sizeof(path), "%s/%s", dir, entry);
 
-	f = fopen(path,"w");
+	f = fopen(path, "w");
 	if (!f)
 		return -1;
 
@@ -46,7 +46,7 @@ int scanf_sysfs(const char *dir, const char *entry, const char *format, ...)
 
 	snprintf(path, sizeof(path), "%s/%s", dir, entry);
 
-	f = fopen(path,"r");
+	f = fopen(path, "r");
 	if (!f)
 		return -1;
 
@@ -292,7 +292,8 @@ static struct ibnbd_path *add_path(const char *sdir,
 	strcpy(ppath, sdir);
 	strcat(ppath, pname);
 
-	for (i = 0; paths[i]; i++);
+	for (i = 0; paths[i]; i++)
+		;
 
 	p = calloc(1, sizeof(**paths));
 	if (!p)
@@ -412,7 +413,8 @@ static struct ibnbd_sess_dev *add_sess_dev(const char *devname,
 		sprintf(tmp, PATH_SDS_SRV "%s/sessions/%s", devname,
 			s->sessname);
 
-	for (i = 0; sds[i]; i++);
+	for (i = 0; sds[i]; i++)
+		;
 
 	sds[i] = calloc(1, sizeof(**sds));
 	if (!sds[i])
