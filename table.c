@@ -277,21 +277,17 @@ void table_flds_del_not_num(struct table_fld *flds,
 }
 
 int table_header_print_term(const char *prefix, struct table_column **cs,
-			    int trm, char align)
+			    int trm)
 {
 	struct table_column *c;
-	char al = align;
 
 	printf("%s", prefix);
 	for (c = *cs; c; c = *++cs) {
-		if (align == 'a')
-			al = c->clm_align;
-
-		if (al == 'c')
+		if (c->clm_align == 'c')
 			clr_print(trm, c->hdr_color, "%*s%*s" CLM_DLM,
 				  (c->m_width + c->hdr_width) / 2, c->m_header,
 				  (c->m_width - c->hdr_width + 1) / 2, "");
-		else if (al == 'r')
+		else if (c->clm_align == 'r')
 			clr_print(trm, c->hdr_color, "%*s" CLM_DLM,
 				  c->m_width, c->m_header);
 		else
@@ -478,7 +474,7 @@ int table_tbl_print_term(const char *prefix, struct table_column **clm, int trm)
 {
 	int row = 0;
 
-	table_header_print_term(prefix, l_clmns, trm, 'a');
+	table_header_print_term(prefix, l_clmns, trm);
 	while (clm[row]) {
 		table_row_print(clm[row], FMT_TERM, prefix, l_clmns, trm, 1, 0);
 		row++;

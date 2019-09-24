@@ -544,7 +544,7 @@ static int list_devices_term(struct ibnbd_sess_dev **sds,
 				    cs, 1, 0);
 
 	if (!args.noheaders_set)
-		table_header_print_term("", cs, trm, 'a');
+		table_header_print_term("", cs, trm);
 
 	for (i = 0; i < dev_num; i++)
 		table_flds_print_term("", flds + i * cs_cnt,
@@ -720,7 +720,7 @@ static int list_paths_term(struct ibnbd_path **paths, int path_cnt,
 		table_row_stringify(&total, flds + fld_cnt, cs, 1, 0);
 
 	if (!args.noheaders_set && !tree)
-		table_header_print_term("", cs, trm, 'a');
+		table_header_print_term("", cs, trm);
 
 	fld_cnt = 0;
 	for (i = 0; i < path_cnt; i++) {
@@ -782,7 +782,7 @@ static int list_sessions_term(struct ibnbd_sess **sessions,
 	}
 
 	if (!args.noheaders_set)
-		table_header_print_term("", cs, trm, 'a');
+		table_header_print_term("", cs, trm);
 
 	for (i = 0; sessions[i]; i++) {
 		table_flds_print_term("", flds + i * cs_cnt,

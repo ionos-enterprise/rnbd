@@ -149,7 +149,7 @@ void table_flds_del_not_num(struct table_fld *flds,
 			    struct table_column **cs);
 
 int table_header_print_term(const char *prefix, struct table_column **cs,
-			    int clr, char align);
+			    int clr);
 
 void table_header_print_csv(struct table_column **cs);
 /*
