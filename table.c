@@ -5,8 +5,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <stdbool.h>
 
-int clr_print(enum color trm, enum color clr, const char *format, ...)
+int clr_print(bool trm, enum color clr, const char *format, ...)
 {
 	va_list args;
 	int ret;
@@ -89,7 +90,7 @@ int table_get_max_h_width(struct table_column **cs)
 
 void table_entry_print_term(const char *prefix, struct table_fld *flds,
 			    struct table_column **cs, int hdr_width,
-			    int trm)
+			    bool trm)
 {
 	struct table_column *c;
 	int clm;
@@ -101,7 +102,7 @@ void table_entry_print_term(const char *prefix, struct table_fld *flds,
 }
 
 int table_fld_print_as_str(struct table_fld *fld,
-			   struct table_column *cs, int trm)
+			   struct table_column *cs, bool trm)
 {
 	if (cs->m_type == FLD_STR)
 		return clr_print(trm, fld->clr, "\"%s\"", fld->str);
@@ -110,7 +111,7 @@ int table_fld_print_as_str(struct table_fld *fld,
 }
 
 int table_flds_print_term(const char *pre, struct table_fld *flds,
-			  struct table_column **cs, int trm, int pwidth)
+			  struct table_column **cs, bool trm, int pwidth)
 {
 	struct table_column *c = *cs;
 	int clm = 0;
@@ -133,7 +134,7 @@ int table_flds_print_term(const char *pre, struct table_fld *flds,
 
 /* FIXME: escape ',' in strings */
 int table_flds_print_csv(struct table_fld *flds,
-			 struct table_column **cs, int trm)
+			 struct table_column **cs, bool trm)
 {
 	struct table_column *c = *cs;
 	int clm;
@@ -153,7 +154,7 @@ int table_flds_print_csv(struct table_fld *flds,
 
 /*FIXME: escape '"' in strings */
 int table_flds_print_json(const char *prefix, struct table_fld *flds,
-			  struct table_column **cs, int trm)
+			  struct table_column **cs, bool trm)
 {
 	struct table_column *c = *cs;
 	int clm;
@@ -178,7 +179,7 @@ int table_flds_print_json(const char *prefix, struct table_fld *flds,
 }
 
 int table_flds_print_xml(const char *prefix, struct table_fld *flds,
-			 struct table_column **cs, int trm)
+			 struct table_column **cs, bool trm)
 {
 	struct table_column *c = *cs;
 	int clm;
@@ -194,7 +195,7 @@ int table_flds_print_xml(const char *prefix, struct table_fld *flds,
 
 int table_flds_print(enum fmt_type fmt, const char *prefix,
 		     struct table_fld *flds, struct table_column **cs,
-		     int trm, int pwidth)
+		     bool trm, int pwidth)
 {
 	switch (fmt) {
 	case FMT_TERM:
@@ -211,7 +212,7 @@ int table_flds_print(enum fmt_type fmt, const char *prefix,
 }
 
 int table_row_print(void *v, enum fmt_type fmt, const char *pre,
-		    struct table_column **cs, int trm, int humanize,
+		    struct table_column **cs, bool trm, int humanize,
 		    size_t pre_len)
 {
 	struct table_fld flds[CLM_MAX_CNT];
@@ -233,7 +234,7 @@ size_t print_line(char *str, size_t len, int width)
 }
 
 int table_row_print_line(const char *pre, struct table_column **clms,
-			 int trm, int humanize, size_t pre_len)
+			 bool trm, int humanize, size_t pre_len)
 {
 	struct table_column **cs = clms, *c;
 	struct table_fld flds[CLM_MAX_CNT];
@@ -277,7 +278,7 @@ void table_flds_del_not_num(struct table_fld *flds,
 }
 
 int table_header_print_term(const char *prefix, struct table_column **cs,
-			    int trm)
+			    bool trm)
 {
 	struct table_column *c;
 
@@ -470,7 +471,8 @@ static struct table_column *l_clmns[] = {
 	NULL
 };
 
-int table_tbl_print_term(const char *prefix, struct table_column **clm, int trm)
+int table_tbl_print_term(const char *prefix, struct table_column **clm,
+			 bool trm)
 {
 	int row = 0;
 
