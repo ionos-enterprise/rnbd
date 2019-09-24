@@ -1,6 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0
+#include "levenshtein.h"
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include "levenshtein.h"
 
 /*
  * This function implements the Damerau-Levenshtein algorithm to
