@@ -12,7 +12,6 @@
 
 #include "ibnbd-sysfs.h"
 
-struct stat st;
 struct ibnbd_dev *devs[4096]; /* FIXME: this has to be a list */
 
 int printf_sysfs(const char *dir, const char *entry, const char *format, ...)
