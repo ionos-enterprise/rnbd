@@ -495,7 +495,7 @@ static void help_list(struct cmd *cmd)
 	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Path Fields"));
 	print_fields(def_clms_paths_clt, def_clms_paths_srv, all_clms_paths);
 
-	printf("\n%sProvide 'all' to print all available fields\n", HPRE);
+	printf("%sProvide 'all' to print all available fields\n", HPRE);
 
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
@@ -1456,7 +1456,7 @@ static void help_show(struct cmd *cmd)
 	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Paths Fields"));
 	print_fields(def_clms_paths_clt, def_clms_paths_srv, all_clms_paths);
 
-	printf("\n%sProvide 'all' to print all available fields\n", HPRE);
+	printf("%sProvide 'all' to print all available fields\n", HPRE);
 
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
