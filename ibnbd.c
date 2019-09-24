@@ -828,7 +828,8 @@ static void list_sessions_json(struct ibnbd_sess **sessions,
 	for (i = 0; sessions[i]; i++) {
 		if (i)
 			printf(",\n");
-		table_row_print(sessions[i], FMT_JSON, "\t\t", cs, false, false, 0);
+		table_row_print(sessions[i], FMT_JSON, "\t\t", cs, false, false,
+				0);
 	}
 
 	printf("\n\t]");
@@ -841,7 +842,8 @@ static void list_sessions_xml(struct ibnbd_sess **sessions,
 
 	for (i = 0; sessions[i]; i++) {
 		printf("\t<session>\n");
-		table_row_print(sessions[i], FMT_XML, "\t\t", cs, false, false, 0);
+		table_row_print(sessions[i], FMT_XML, "\t\t", cs, false, false,
+				0);
 		printf("\t</session>\n");
 	}
 }
@@ -945,7 +947,8 @@ static void list_paths_json(struct ibnbd_path **paths,
 	for (i = 0; paths[i]; i++) {
 		if (i)
 			printf(",\n");
-		table_row_print(paths[i], FMT_JSON, "\t\t", cs, false, false, 0);
+		table_row_print(paths[i], FMT_JSON, "\t\t", cs, false, false,
+				0);
 	}
 
 	printf("\n\t]");
@@ -2185,12 +2188,12 @@ int main(int argc, char **argv)
 		cmd->help(cmd);
 	else if (cmd->func) {
 		/*
-		if (args.ibnbdmode == IBNBD_NONE) {
-			ERR("ibnbd modules not loaded\n");
-			ret = -ENOENT;
-			goto free;
-		}
-		*/
+		 * if (args.ibnbdmode == IBNBD_NONE) {
+		 *	ERR("ibnbd modules not loaded\n");
+		 *	ret = -ENOENT;
+		 *	goto free;
+		 * }
+		 */
 		ret = cmd->func();
 	}
 free:
