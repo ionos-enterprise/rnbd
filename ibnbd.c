@@ -534,14 +534,14 @@ static int list_devices_term(struct ibnbd_sess_dev **sds,
 	}
 
 	for (i = 0; sds[i]; i++) {
-		table_row_stringify(sds[i], flds + i * cs_cnt, cs, 1, 0);
+		table_row_stringify(sds[i], flds + i * cs_cnt, cs, true, 0);
 		total.dev->rx_sect += sds[i]->dev->rx_sect;
 		total.dev->tx_sect += sds[i]->dev->tx_sect;
 	}
 
 	if (!args.nototals_set)
 		table_row_stringify(&total, flds + i * cs_cnt,
-				    cs, 1, 0);
+				    cs, true, 0);
 
 	if (!args.noheaders_set)
 		table_header_print_term("", cs, trm);
@@ -574,7 +574,7 @@ static void list_devices_csv(struct ibnbd_sess_dev **sds,
 		table_header_print_csv(cs);
 
 	for (i = 0; sds[i]; i++)
-		table_row_print(sds[i], FMT_CSV, "", cs, 0, 0, 0);
+		table_row_print(sds[i], FMT_CSV, "", cs, false, false, 0);
 }
 
 static void list_devices_json(struct ibnbd_sess_dev **sds,
@@ -590,7 +590,7 @@ static void list_devices_json(struct ibnbd_sess_dev **sds,
 	for (i = 0; sds[i]; i++) {
 		if (i)
 			printf(",\n");
-		table_row_print(sds[i], FMT_JSON, "\t\t", cs, 0, 0, 0);
+		table_row_print(sds[i], FMT_JSON, "\t\t", cs, false, false, 0);
 	}
 
 	printf("\n\t]");
@@ -603,7 +603,7 @@ static void list_devices_xml(struct ibnbd_sess_dev **sds,
 
 	for (i = 0; sds[i]; i++) {
 		printf("\t<device>\n");
-		table_row_print(sds[i], FMT_XML, "\t\t", cs, 0, 0, 0);
+		table_row_print(sds[i], FMT_XML, "\t\t", cs, false, false, 0);
 		printf("\t</device>\n");
 	}
 }
@@ -706,7 +706,7 @@ static int list_paths_term(struct ibnbd_path **paths, int path_cnt,
 	}
 
 	for (i = 0; i < path_cnt; i++) {
-		table_row_stringify(paths[i], flds + fld_cnt, cs, 1, 0);
+		table_row_stringify(paths[i], flds + fld_cnt, cs, true, 0);
 
 		fld_cnt += cs_cnt;
 
@@ -717,7 +717,7 @@ static int list_paths_term(struct ibnbd_path **paths, int path_cnt,
 	}
 
 	if (!args.nototals_set)
-		table_row_stringify(&total, flds + fld_cnt, cs, 1, 0);
+		table_row_stringify(&total, flds + fld_cnt, cs, true, 0);
 
 	if (!args.noheaders_set && !tree)
 		table_header_print_term("", cs, trm);
@@ -766,7 +766,8 @@ static int list_sessions_term(struct ibnbd_sess **sessions,
 	}
 
 	for (i = 0; sessions[i]; i++) {
-		table_row_stringify(sessions[i], flds + i * cs_cnt, cs, 1, 0);
+		table_row_stringify(sessions[i], flds + i * cs_cnt, cs, true,
+				    0);
 
 		total.act_path_cnt += sessions[i]->act_path_cnt;
 		total.path_cnt += sessions[i]->path_cnt;
@@ -778,7 +779,7 @@ static int list_sessions_term(struct ibnbd_sess **sessions,
 
 	if (!args.nototals_set) {
 		table_row_stringify(&total, flds + sess_num * cs_cnt,
-				    cs, 1, 0);
+				    cs, true, 0);
 	}
 
 	if (!args.noheaders_set)
@@ -814,7 +815,7 @@ static void list_sessions_csv(struct ibnbd_sess **sessions,
 		table_header_print_csv(cs);
 
 	for (i = 0; sessions[i]; i++)
-		table_row_print(sessions[i], FMT_CSV, "", cs, 0, 0, 0);
+		table_row_print(sessions[i], FMT_CSV, "", cs, false, false, 0);
 }
 
 static void list_sessions_json(struct ibnbd_sess **sessions,
@@ -827,7 +828,7 @@ static void list_sessions_json(struct ibnbd_sess **sessions,
 	for (i = 0; sessions[i]; i++) {
 		if (i)
 			printf(",\n");
-		table_row_print(sessions[i], FMT_JSON, "\t\t", cs, 0, 0, 0);
+		table_row_print(sessions[i], FMT_JSON, "\t\t", cs, false, false, 0);
 	}
 
 	printf("\n\t]");
@@ -840,7 +841,7 @@ static void list_sessions_xml(struct ibnbd_sess **sessions,
 
 	for (i = 0; sessions[i]; i++) {
 		printf("\t<session>\n");
-		table_row_print(sessions[i], FMT_XML, "\t\t", cs, 0, 0, 0);
+		table_row_print(sessions[i], FMT_XML, "\t\t", cs, false, false, 0);
 		printf("\t</session>\n");
 	}
 }
@@ -931,7 +932,7 @@ static void list_paths_csv(struct ibnbd_path **paths,
 		table_header_print_csv(cs);
 
 	for (i = 0; paths[i]; i++)
-		table_row_print(paths[i], FMT_CSV, "", cs, 0, 0, 0);
+		table_row_print(paths[i], FMT_CSV, "", cs, false, false, 0);
 }
 
 static void list_paths_json(struct ibnbd_path **paths,
@@ -944,7 +945,7 @@ static void list_paths_json(struct ibnbd_path **paths,
 	for (i = 0; paths[i]; i++) {
 		if (i)
 			printf(",\n");
-		table_row_print(paths[i], FMT_JSON, "\t\t", cs, 0, 0, 0);
+		table_row_print(paths[i], FMT_JSON, "\t\t", cs, false, false, 0);
 	}
 
 	printf("\n\t]");
@@ -957,7 +958,7 @@ static void list_paths_xml(struct ibnbd_path **paths,
 
 	for (i = 0; paths[i]; i++) {
 		printf("\t<path>\n");
-		table_row_print(paths[i], FMT_XML, "\t\t", cs, 0, 0, 0);
+		table_row_print(paths[i], FMT_XML, "\t\t", cs, false, false, 0);
 		printf("\t</path>\n");
 	}
 }
@@ -1134,7 +1135,7 @@ static int show_device(struct ibnbd_sess_dev **clt, struct ibnbd_sess_dev **srv)
 		break;
 	case FMT_TERM:
 	default:
-		table_row_stringify(ds[0], flds, cs, 1, 0);
+		table_row_stringify(ds[0], flds, cs, true, 0);
 		table_entry_print_term("", flds, cs, table_get_max_h_width(cs),
 				       trm);
 		break;
@@ -1289,7 +1290,7 @@ static int show_path(struct ibnbd_path **pp_clt, struct ibnbd_path **pp_srv)
 		break;
 	case FMT_TERM:
 	default:
-		table_row_stringify(pp[0], flds, cs, 1, 0);
+		table_row_stringify(pp[0], flds, cs, true, 0);
 		table_entry_print_term("", flds, cs,
 				       table_get_max_h_width(cs), trm);
 		break;
@@ -1327,7 +1328,7 @@ static int show_session(struct ibnbd_sess **ss_clt, struct ibnbd_sess **ss_srv)
 		break;
 	case FMT_TERM:
 	default:
-		table_row_stringify(ss[0], flds, cs, 1, 0);
+		table_row_stringify(ss[0], flds, cs, true, 0);
 		table_entry_print_term("", flds, cs,
 				       table_get_max_h_width(cs), trm);
 		printf("%s%s%s", CLR(trm, CBLD, ss[0]->sessname));
