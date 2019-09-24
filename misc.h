@@ -3,6 +3,7 @@
 #define __H_MISC
 
 #include <ctype.h>	/* for isspace() */
+#include <stddef.h>
 
 #define ARRSIZE(x) (sizeof(x) / sizeof(*x))
 
@@ -94,14 +95,6 @@ static int str_to_size(char *str, uint64_t *size)
 	*size = num << bits[index].bits;
 	return 0;
 }
-
-#ifndef offsetof
-#ifdef __compiler_offsetof
-#define offsetof(TYPE,MEMBER) __compiler_offsetof(TYPE,MEMBER)
-#else
-#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
-#endif
-#endif
 
 #define container_of(ptr, type, member) ({                      \
 		const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
