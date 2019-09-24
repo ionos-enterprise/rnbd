@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 #include "table.h"
 
 int i_to_byte_unit(char *str, size_t len, uint64_t v, int humanize);

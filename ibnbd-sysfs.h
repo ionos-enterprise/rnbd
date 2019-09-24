@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 #include <limits.h>
 
 #define PATH_IBNBD_CLT "/sys/class/ibnbd-client/ctl/"

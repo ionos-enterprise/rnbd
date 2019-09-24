@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 #include "table.h"
 #include <ctype.h>	/* for isspace(); */
 #include <stdarg.h>
