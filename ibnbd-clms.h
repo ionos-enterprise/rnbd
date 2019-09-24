@@ -1,10 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include "table.h"
 
-int i_to_byte_unit(char *str, size_t len, uint64_t v, int humanize);
+int i_to_byte_unit(char *str, size_t len, uint64_t v, bool humanize);
 
 static int byte_to_str(char *str, size_t len, enum color *clr, void *v,
-		       int humanize)
+		       bool humanize)
 {
 	*clr = CNRM;
 	return i_to_byte_unit(str, len, *(uint64_t *)v, humanize);
@@ -20,7 +20,7 @@ static int byte_to_str(char *str, size_t len, enum color *clr, void *v,
 	    align, h_clr, c_clr, m_descr, sizeof(m_header) - 1, 0)
 
 static int sd_state_to_str(char *str, size_t len, enum color *clr, void *v,
-			   int humanize)
+			   bool humanize)
 {
 	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
 						 sess);
@@ -37,7 +37,7 @@ CLM_SD(mapping_path, "Mapping Path", FLD_STR, NULL, 'l', CNRM, CBLD,
 	"Mapping name of the remote device");
 
 static int sdd_io_mode_to_str(char *str, size_t len, enum color *clr, void *v,
-			     int humanize)
+			     bool humanize)
 {
 	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
 						 sess);
@@ -50,7 +50,7 @@ CLM_SD(access_mode, "Access Mode", FLD_STR, NULL, 'l', CNRM,
 	CNRM, "RW mode of the device: ro, rw or migration");
 
 static int sd_devname_to_str(char *str, size_t len, enum color *clr,
-			     void *v, int humanize)
+			     void *v, bool humanize)
 {
 	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
 						 sess);
@@ -65,7 +65,7 @@ static struct table_column clm_ibnbd_dev_devname =
 		CNRM, CNRM, "Device name under /dev/. I.e. ibnbd0");
 
 static int sd_devpath_to_str(char *str, size_t len, enum color *clr,
-			     void *v, int humanize)
+			     void *v, bool humanize)
 {
 	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
 						 sess);
@@ -85,7 +85,7 @@ static struct table_column clm_ibnbd_dev_io_mode =
 		"IO submission mode of the target device: file/block");
 
 static int sd_rx_to_str(char *str, size_t len, enum color *clr, void *v,
-		       int humanize)
+		       bool humanize)
 {
 	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
 						 sess);
@@ -100,7 +100,7 @@ static struct table_column clm_ibnbd_dev_rx_sect =
 	"Amount of data read from the device");
 
 static int sd_tx_to_str(char *str, size_t len, enum color *clr, void *v,
-		       int humanize)
+		       bool humanize)
 {
 	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
 						 sess);
@@ -120,7 +120,7 @@ static struct table_column clm_ibnbd_dev_state =
 		CNRM, "State of the IBNBD device. (client only)");
 
 static int dev_sessname_to_str(char *str, size_t len, enum color *clr,
-			       void *v, int humanize)
+			       void *v, bool humanize)
 {
 	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
 						 sess);
@@ -137,7 +137,7 @@ static struct table_column clm_ibnbd_sess_dev_sessname =
 		CNRM, CNRM, "Name of the IBTRS session of the device");
 
 static int sd_sess_to_direction(char *str, size_t len, enum color *clr,
-				void *v, int humanize)
+				void *v, bool humanize)
 {
 	struct ibnbd_sess_dev *p = container_of(v, struct ibnbd_sess_dev, sess);
 
@@ -249,7 +249,7 @@ CLM_S(path_uu, "PS", FLD_STR, NULL, 'l', CNRM, CNRM,
 	"Up (U) or down (_) state of every path");
 
 static int act_path_cnt_to_state(char *str, size_t len, enum color *clr,
-				    void *v, int humanize)
+				    void *v, bool humanize)
 {
 	int act_path_cnt = *(int *)v;
 
@@ -269,7 +269,7 @@ static struct table_column clm_ibnbd_sess_state =
 		"State of the session.");
 
 static int sess_side_to_direction(char *str, size_t len, enum color *clr,
-				  void *v, int humanize)
+				  void *v, bool humanize)
 {
 	struct ibnbd_sess *s = container_of(v, struct ibnbd_sess, side);
 
@@ -350,7 +350,7 @@ static struct table_column *def_clms_sessions_srv[] = {
 	    m_descr, sizeof(m_header) - 1, 0)
 
 static int ibnbd_path_state_to_str(char *str, size_t len, enum color *clr,
-				   void *v, int humanize)
+				   void *v, bool humanize)
 {
 	struct ibnbd_path *p = container_of(v, struct ibnbd_path, state);
 
@@ -378,7 +378,7 @@ CLM_P(inflights, "Inflights", FLD_INT, NULL, 'r', CNRM, CNRM, "Inflights");
 CLM_P(reconnects, "Reconnects", FLD_INT, NULL, 'r', CNRM, CNRM, "Reconnects");
 
 static int path_to_sessname(char *str, size_t len, enum color *clr,
-			    void *v, int humanize)
+			    void *v, bool humanize)
 {
 	struct ibnbd_path *p = container_of(v, struct ibnbd_path, sess);
 
@@ -400,14 +400,14 @@ static struct table_column clm_ibnbd_path_sessname =
 	       CNRM, CNRM, "Name of the session.");
 
 int path_to_shortdesc(char *str, size_t len, enum color *clr,
-		      void *v, int humanize);
+		      void *v, bool humanize);
 
 static struct table_column clm_ibnbd_path_shortdesc =
 	_CLM_P("shortdesc", sess, "Short", FLD_STR,
 	       path_to_shortdesc, 'l', CNRM, CNRM, "Short description");
 
 static int path_sess_to_direction(char *str, size_t len, enum color *clr,
-				  void *v, int humanize)
+				  void *v, bool humanize)
 {
 	struct ibnbd_path *p = container_of(v, struct ibnbd_path, sess);
 

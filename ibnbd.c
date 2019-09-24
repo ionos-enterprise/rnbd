@@ -42,7 +42,7 @@ static int sds_clt_cnt, sds_srv_cnt,
 /*
  * True if STDOUT is a terminal
  */
-static int trm;
+bool trm;
 
 struct path {
 	const char *src;
@@ -106,7 +106,7 @@ struct args {
 
 static struct args args;
 
-int i_to_byte_unit(char *str, size_t len, uint64_t v, int humanize)
+int i_to_byte_unit(char *str, size_t len, uint64_t v, bool humanize)
 {
 	if (humanize)
 		if (args.unit_set)
@@ -119,7 +119,7 @@ int i_to_byte_unit(char *str, size_t len, uint64_t v, int humanize)
 }
 
 int path_to_shortdesc(char *str, size_t len, enum color *clr,
-		      void *v, int humanize)
+		      void *v, bool humanize)
 {
 	struct ibnbd_path *p = container_of(v, struct ibnbd_path, sess);
 	enum color c;
