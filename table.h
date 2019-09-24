@@ -160,12 +160,12 @@ struct table_column *table_find_column(const char *name,
 /*
  * Parse @delim separated list of fields @names to be selected and
  * add corresponding columns from the list of all columns @all
- * (NULL terminated array); to the array which should contain
+ * (NULL terminated array) to the array which should contain
  * the selection @sub (last element will be NULL)
  * @sub_len is the max number of elemnts in the target array @sub
  *
  * If parsing succeeds, returns 0.
- * -EINVAL is returned if corresponding column can't be found.
+ * -EINVAL is returned if any of the columns can't be found.
  */
 int table_select_columns(const char *names, const char *delim,
 			 struct table_column **all,
