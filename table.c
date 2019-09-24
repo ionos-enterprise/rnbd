@@ -234,7 +234,7 @@ size_t print_line(char *str, size_t len, int width)
 }
 
 int table_row_print_line(const char *pre, struct table_column **clms,
-			 bool trm, bool humanize, size_t pre_len)
+			 bool trm, size_t pre_len)
 {
 	struct table_column **cs = clms, *c;
 	struct table_fld flds[CLM_MAX_CNT];

@@ -143,7 +143,7 @@ int table_row_print(void *v, enum fmt_type fmt, const char *pre,
 size_t print_line(char *str, size_t len, int width);
 
 int table_row_print_line(const char *pre, struct table_column **clms,
-			 bool trm, bool humanize, size_t pre_len);
+			 bool trm, size_t pre_len);
 
 void table_flds_del_not_num(struct table_fld *flds,
 			    struct table_column **cs);
