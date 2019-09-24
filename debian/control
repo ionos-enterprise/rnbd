@@ -4,7 +4,6 @@ Section: admin
 Priority: optional
 Build-Depends: debhelper (>= 7),
                exuberant-ctags,
-               uuid-dev,
                bash-completion,
 Standards-Version: 3.9.5
 Homepage: https://gitlab.pb.local/ibnbd/ibnbd-tool.git
