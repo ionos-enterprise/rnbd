@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 enum fld_type {
 	FLD_STR,
@@ -51,14 +52,6 @@ struct table_column {
 	enum color	clm_color;
 	unsigned long	s_off;	/* TODO: ugly move to an embedding struct */
 };
-
-#ifndef offsetof
-#ifdef __compiler_offsetof
-#define offsetof(TYPE, MEMBER) __compiler_offsetof(TYPE, MEMBER)
-#else
-#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
-#endif
-#endif
 
 #define _CLM(str, s_name, name, header, type, tostr, align, h_clr, c_clr,\
 	     descr, width, off) \
