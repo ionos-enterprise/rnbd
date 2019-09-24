@@ -4,7 +4,6 @@
 #include <inttypes.h>
 #include <string.h>
 #include <unistd.h>	/* for isatty() */
-#include <assert.h>
 #include <stdbool.h>
 
 #include "levenshtein.h"
@@ -276,7 +275,8 @@ static int parse_unit(int argc, char **argv, int i, const struct sarg *sarg)
 	int rc;
 
 	rc = get_unit_index(sarg->str, &args.unit_id);
-	assert(rc == 0);
+	if (rc < 0)
+		return i;
 
 	clm_set_hdr_unit(&clm_ibnbd_dev_rx_sect, sarg->descr);
 	clm_set_hdr_unit(&clm_ibnbd_dev_tx_sect, sarg->descr);

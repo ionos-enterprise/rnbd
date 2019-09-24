@@ -152,7 +152,7 @@ static int sd_sess_to_direction(char *str, size_t len, enum color *clr,
 	case IBNBD_SRV:
 		return snprintf(str, len, "export");
 	default:
-		assert(0);
+		return snprintf(str, len, "?");
 	}
 }
 
@@ -423,7 +423,7 @@ static int path_sess_to_direction(char *str, size_t len, enum color *clr,
 	case IBNBD_SRV:
 		return snprintf(str, len, "incoming");
 	default:
-		assert(0);
+		return snprintf(str, len, "?");
 	}
 }
 
