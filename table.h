@@ -140,8 +140,6 @@ int table_row_print(void *v, enum fmt_type fmt, const char *pre,
 		    struct table_column **cs, bool trm, bool humanize,
 		    size_t pre_len);
 
-size_t print_line(char *str, size_t len, int width);
-
 int table_row_print_line(const char *pre, struct table_column **clms,
 			 bool trm, size_t pre_len);
 
@@ -158,10 +156,7 @@ void table_header_print_csv(struct table_column **cs);
  */
 struct table_column *table_find_column(const char *name,
 				       struct table_column **clms);
-/*
- * remove all spaces from the string @s in place
- */
-void table_trim(char *s);
+
 /*
  * Parse @delim separated list of fields @names to be selected and
  * add corresponding columns from the list of all columns @all
