@@ -360,11 +360,11 @@ static struct sarg sargs[] = {
 	{0}
 };
 
-static struct sarg *find_sarg(char *str, const struct sarg *sargs)
+static const struct sarg *find_sarg(char *str, const struct sarg *sargs)
 {
 	do {
 		if (!strcasecmp(str, (*sargs).str))
-			return (struct sarg *)sargs;
+			return sargs;
 	} while ((*++sargs).str);
 
 	return NULL;
@@ -381,7 +381,7 @@ static void print_opt(const char *opt, const char *descr)
 
 static void print_sarg_descr(char *str)
 {
-	struct sarg *s;
+	const struct sarg *s;
 
 	s = find_sarg(str, sargs);
 	if (s)
@@ -394,15 +394,15 @@ struct cmd {
 	const char *long_d;
 	int (*func)(void);
 	int (*parse_args)(int argc, char **args, int i);
-	void (*help)(struct cmd *cmd);
+	void (*help)(const struct cmd *cmd);
 	int dist;
 };
 
-static struct cmd *find_cmd(char *cmd, const struct cmd *cmds)
+static const struct cmd *find_cmd(char *cmd, const struct cmd *cmds)
 {
 	do {
 		if (!strcmp(cmd, (*cmds).cmd))
-			return (struct cmd *)cmds;
+			return cmds;
 	} while ((*++cmds).cmd);
 
 	return NULL;
@@ -436,7 +436,7 @@ static void print_help(const char *program_name, const struct cmd *cmds)
 
 static int cmd_help(void);
 
-static void cmd_print_usage(struct cmd *cmd, const char *a)
+static void cmd_print_usage(const struct cmd *cmd, const char *a)
 {
 	printf("Usage: %s%s%s %s%s%s %s[OPTIONS]\n",
 	       CLR(trm, CBLD, args.pname), CLR(trm, CBLD, cmd->cmd), a);
@@ -475,7 +475,7 @@ static void print_fields(struct table_column **def_clt,
 	printf("\n");
 }
 
-static void help_list(struct cmd *cmd)
+static void help_list(const struct cmd *cmd)
 {
 	cmd_print_usage(cmd, "");
 
@@ -1433,7 +1433,7 @@ static int parse_name(int argc, char **argv, int i)
 	return j + 1;
 }
 
-static void help_show(struct cmd *cmd)
+static void help_show(const struct cmd *cmd)
 {
 	cmd_print_usage(cmd, "<name> [path] ");
 
@@ -1470,7 +1470,7 @@ static void help_show(struct cmd *cmd)
 	print_sarg_descr("help");
 }
 
-static void help_map(struct cmd *cmd)
+static void help_map(const struct cmd *cmd)
 {
 	cmd_print_usage(cmd, "<path> from <server> ");
 
@@ -1660,7 +1660,7 @@ static int cmd_resize(void)
 	return ret;
 }
 
-static void help_resize(struct cmd *cmd)
+static void help_resize(const struct cmd *cmd)
 {
 	cmd_print_usage(cmd, "<device name or path or mapping path> ");
 
@@ -1673,7 +1673,7 @@ static void help_resize(struct cmd *cmd)
 	print_sarg_descr("help");
 }
 
-static void help_unmap(struct cmd *cmd)
+static void help_unmap(const struct cmd *cmd)
 {
 	cmd_print_usage(cmd, "<device name or path or mapping path> ");
 
@@ -1709,7 +1709,7 @@ static int cmd_unmap(void)
 	return ret;
 }
 
-static void help_remap(struct cmd *cmd)
+static void help_remap(const struct cmd *cmd)
 {
 	cmd_print_usage(cmd, "<devname|sessname> ");
 
@@ -1729,7 +1729,7 @@ static int cmd_remap(void)
 	return 0;
 }
 
-static void help_reconnect(struct cmd *cmd)
+static void help_reconnect(const struct cmd *cmd)
 {
 	cmd_print_usage(cmd, "<path or session> ");
 
@@ -1749,7 +1749,7 @@ static int cmd_reconnect(void)
 	return 0;
 }
 
-static void help_disconnect(struct cmd *cmd)
+static void help_disconnect(const struct cmd *cmd)
 {
 	cmd_print_usage(cmd, "<path or session> ");
 
@@ -1769,7 +1769,7 @@ static int cmd_disconnect(void)
 	return 0;
 }
 
-static void help_addpath(struct cmd *cmd)
+static void help_addpath(const struct cmd *cmd)
 {
 	cmd_print_usage(cmd, "<session> <path> ");
 
@@ -1792,9 +1792,9 @@ static int cmd_addpath(void)
 	return 0;
 }
 
-static void help_help(struct cmd *cmd);
+static void help_help(const struct cmd *cmd);
 
-static void help_delpath(struct cmd *cmd)
+static void help_delpath(const struct cmd *cmd)
 {
 	cmd_print_usage(cmd, "<path> ");
 
@@ -1862,7 +1862,7 @@ static struct cmd cmds[] = {
 	{ 0 }
 };
 
-static void help_help(struct cmd *cmd)
+static void help_help(const struct cmd *cmd)
 {
 	print_help(args.pname, cmds);
 }
@@ -2066,8 +2066,8 @@ static void default_args(void)
 int main(int argc, char **argv)
 {
 	int ret = 0, i, rcd, rcs, rcp;
-	struct sarg *sarg;
-	struct cmd *cmd;
+	const struct sarg *sarg;
+	const struct cmd *cmd;
 
 	trm = (isatty(STDOUT_FILENO) == 1);
 
