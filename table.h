@@ -37,7 +37,7 @@ enum color {
 	CSTRIKETHROUGH,
 };
 
-struct args;
+struct ibnbd_ctx;
 
 struct table_column {
 	const char	*m_name;
@@ -47,7 +47,7 @@ struct table_column {
 	enum fld_type	m_type;
 	int		m_width;
 	unsigned long	m_offset;
-	int		(*m_tostr)(char *str, size_t len, const struct args *args,
+	int		(*m_tostr)(char *str, size_t len, const struct ibnbd_ctx *ctx,
 				   enum color *clr, void *v, bool humanize);
 	char		clm_align;
 	enum color	hdr_color;
@@ -109,7 +109,7 @@ static const char * const colors[] = {
 int clr_print(bool trm, enum color clr, const char *format, ...);
 
 int table_row_stringify(void *s, struct table_fld *flds,
-			struct table_column **cs, const struct args *args,
+			struct table_column **cs, const struct ibnbd_ctx *ctx,
 			bool humanize, int pre_len);
 
 int table_get_max_h_width(struct table_column **cs);
@@ -140,7 +140,7 @@ int table_flds_print(enum fmt_type fmt, const char *prefix,
 
 int table_row_print(void *v, enum fmt_type fmt, const char *pre,
 		    struct table_column **cs, bool trm,
-		    const struct args *args, bool humanize,
+		    const struct ibnbd_ctx *ctx, bool humanize,
 		    size_t pre_len);
 
 int table_row_print_line(const char *pre, struct table_column **clms,
@@ -180,7 +180,7 @@ int table_extend_columns(const char *names, const char *delim,
 			 int sub_len);
 
 int table_tbl_print_term(const char *prefix, struct table_column **clm,
-			 bool trm, const struct args *args);
+			 bool trm, const struct ibnbd_ctx *ctx);
 
 int table_clm_cnt(struct table_column **cs);
 

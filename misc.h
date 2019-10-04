@@ -7,6 +7,16 @@
 
 #define ARRSIZE(x) (sizeof(x) / sizeof(*x))
 
+#define ERR(trm, fmt, ...)			\
+	do { \
+		if (trm) \
+			printf("%s%s", colors[CRED], colors[CBLD]); \
+		printf("error: "); \
+		if (trm) \
+			printf("%s", colors[CNRM]); \
+		printf(fmt, ##__VA_ARGS__); \
+	} while (0)
+
 struct bit_str {
 	const char	*str;
 	const char	bits;
@@ -20,7 +30,7 @@ struct path {
 	const char *dst;
 };
 
-struct args {
+struct ibnbd_ctx {
 	const char *pname;
 	const char *name;
 
@@ -91,51 +101,51 @@ void trim(char *s);
  */
 int str_to_size(char *str, uint64_t *size);
 
-int i_to_byte_unit(char *str, size_t len, const struct args *args, uint64_t v, bool humanize);
+int i_to_byte_unit(char *str, size_t len, const struct ibnbd_ctx *ctx, uint64_t v, bool humanize);
 
-int byte_to_str(char *str, size_t len, const struct args *args,
+int byte_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		enum color *clr, void *v, bool humanize);
 
-int sd_state_to_str(char *str, size_t len, const struct args *args,
+int sd_state_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		    enum color *clr, void *v, bool humanize);
 
-int sdd_io_mode_to_str(char *str, size_t len, const struct args *args,
+int sdd_io_mode_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		       enum color *clr, void *v, bool humanize);
 
-int sd_devname_to_str(char *str, size_t len, const struct args *args,
+int sd_devname_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		      enum color *clr, void *v, bool humanize);
 
-int sd_devpath_to_str(char *str, size_t len, const struct args *args,
+int sd_devpath_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		      enum color *clr, void *v, bool humanize);
 
-int sd_rx_to_str(char *str, size_t len, const struct args *args,
+int sd_rx_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		 enum color *clr, void *v, bool humanize);
 
-int sd_tx_to_str(char *str, size_t len, const struct args *args,
+int sd_tx_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		 enum color *clr, void *v, bool humanize);
 
-int dev_sessname_to_str(char *str, size_t len, const struct args *args,
+int dev_sessname_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 			enum color *clr, void *v, bool humanize);
 
-int ibnbd_path_state_to_str(char *str, size_t len, const struct args *args,
+int ibnbd_path_state_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 			    enum color *clr, void *v, bool humanize);
 
-int path_to_sessname(char *str, size_t len, const struct args *args,
+int path_to_sessname(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		     enum color *clr, void *v, bool humanize);
 
-int sd_sess_to_direction(char *str, size_t len, const struct args *args,
+int sd_sess_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
 			 enum color *clr, void *v, bool humanize);
 
-int act_path_cnt_to_state(char *str, size_t len, const struct args *args,
+int act_path_cnt_to_state(char *str, size_t len, const struct ibnbd_ctx *ctx,
 			  enum color *clr, void *v, bool humanize);
 
-int sess_side_to_direction(char *str, size_t len, const struct args *args,
+int sess_side_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
 			   enum color *clr, void *v, bool humanize);
 
-int path_sess_to_direction(char *str, size_t len, const struct args *args,
+int path_sess_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
 			   enum color *clr, void *v, bool humanize);
 
-int path_to_shortdesc(char *str, size_t len, const struct args *args,
+int path_to_shortdesc(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		      enum color *clr, void *v, bool humanize);
 
 #define container_of(ptr, type, member) ({                      \

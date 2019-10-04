@@ -90,7 +90,7 @@ int i_to_str(uint64_t d, char *str, size_t len, int prec)
 			(double)d / (1L << bits[i].bits), bits[i].str);
 }
 
-int sd_state_to_str(char *str, size_t len, const struct args *args,
+int sd_state_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		    enum color *clr, void *v, bool humanize)
 {
 	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
@@ -104,14 +104,14 @@ int sd_state_to_str(char *str, size_t len, const struct args *args,
 	return snprintf(str, len, "%s", sd->dev->state);
 }
 
-int byte_to_str(char *str, size_t len, const struct args *args,
+int byte_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		enum color *clr, void *v, bool humanize)
 {
 	*clr = CNRM;
-	return i_to_byte_unit(str, len, args, *(uint64_t *)v, humanize);
+	return i_to_byte_unit(str, len, ctx, *(uint64_t *)v, humanize);
 }
 
-int sdd_io_mode_to_str(char *str, size_t len, const struct args *args,
+int sdd_io_mode_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		       enum color *clr, void *v, bool humanize)
 {
 	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
@@ -121,7 +121,7 @@ int sdd_io_mode_to_str(char *str, size_t len, const struct args *args,
 	return snprintf(str, len, "%s", sd->dev->io_mode);
 }
 
-int sd_devname_to_str(char *str, size_t len, const struct args *args,
+int sd_devname_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		      enum color *clr, void *v, bool humanize)
 {
 	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
@@ -132,7 +132,7 @@ int sd_devname_to_str(char *str, size_t len, const struct args *args,
 	return snprintf(str, len, "%s", sd->dev->devname);
 }
 
-int sd_devpath_to_str(char *str, size_t len, const struct args *args,
+int sd_devpath_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		      enum color *clr, void *v, bool humanize)
 {
 	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
@@ -143,7 +143,7 @@ int sd_devpath_to_str(char *str, size_t len, const struct args *args,
 	return snprintf(str, len, "%s", sd->dev->devpath);
 }
 
-int sd_rx_to_str(char *str, size_t len, const struct args *args,
+int sd_rx_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		 enum color *clr, void *v, bool humanize)
 {
 	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
@@ -151,10 +151,10 @@ int sd_rx_to_str(char *str, size_t len, const struct args *args,
 
 	*clr = CNRM;
 
-	return i_to_byte_unit(str, len, args, sd->dev->rx_sect << 9, humanize);
+	return i_to_byte_unit(str, len, ctx, sd->dev->rx_sect << 9, humanize);
 }
 
-int sd_tx_to_str(char *str, size_t len, const struct args *args,
+int sd_tx_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		 enum color *clr, void *v, bool humanize)
 {
 	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
@@ -162,10 +162,10 @@ int sd_tx_to_str(char *str, size_t len, const struct args *args,
 
 	*clr = CNRM;
 
-	return i_to_byte_unit(str, len, args, sd->dev->tx_sect << 9, humanize);
+	return i_to_byte_unit(str, len, ctx, sd->dev->tx_sect << 9, humanize);
 }
 
-int dev_sessname_to_str(char *str, size_t len, const struct args *args,
+int dev_sessname_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 			enum color *clr, void *v, bool humanize)
 {
 	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
@@ -178,7 +178,7 @@ int dev_sessname_to_str(char *str, size_t len, const struct args *args,
 	return snprintf(str, len, "%s", sd->sess->sessname);
 }
 
-int ibnbd_path_state_to_str(char *str, size_t len, const struct args *args,
+int ibnbd_path_state_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 			    enum color *clr, void *v, bool humanize)
 {
 	struct ibnbd_path *p = container_of(v, struct ibnbd_path, state);
@@ -191,7 +191,7 @@ int ibnbd_path_state_to_str(char *str, size_t len, const struct args *args,
 	return snprintf(str, len, "%s", p->state);
 }
 
-int path_to_sessname(char *str, size_t len, const struct args *args,
+int path_to_sessname(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		     enum color *clr, void *v, bool humanize)
 {
 	struct ibnbd_path *p = container_of(v, struct ibnbd_path, sess);
@@ -204,7 +204,7 @@ int path_to_sessname(char *str, size_t len, const struct args *args,
 		return snprintf(str, len, "%s", "");
 }
 
-int sd_sess_to_direction(char *str, size_t len, const struct args *args,
+int sd_sess_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
 			 enum color *clr, void *v, bool humanize)
 {
 	struct ibnbd_sess_dev *p = container_of(v, struct ibnbd_sess_dev, sess);
@@ -224,19 +224,19 @@ int sd_sess_to_direction(char *str, size_t len, const struct args *args,
 	}
 }
 
-int i_to_byte_unit(char *str, size_t len, const struct args *args, uint64_t v, bool humanize)
+int i_to_byte_unit(char *str, size_t len, const struct ibnbd_ctx *ctx, uint64_t v, bool humanize)
 {
 	if (humanize)
-		if (args->unit_set)
-			return i_to_str_unit(v, str, len, args->unit_id,
-					     args->prec);
+		if (ctx->unit_set)
+			return i_to_str_unit(v, str, len, ctx->unit_id,
+					     ctx->prec);
 		else
-			return i_to_str(v, str, len, args->prec);
+			return i_to_str(v, str, len, ctx->prec);
 	else
 		return snprintf(str, len, "%" PRIu64, v);
 }
 
-int path_to_shortdesc(char *str, size_t len, const struct args *args,
+int path_to_shortdesc(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		      enum color *clr, void *v, bool humanize)
 {
 	struct ibnbd_path *p = container_of(v, struct ibnbd_path, sess);
@@ -254,10 +254,10 @@ int path_to_shortdesc(char *str, size_t len, const struct args *args,
 		c = CRED;
 
 	return snprintf(str, len, "%s %d %s%s%s", p->hca_name, p->hca_port,
-			CLR(args->trm, c, p->pathname));
+			CLR(ctx->trm, c, p->pathname));
 }
 
-int act_path_cnt_to_state(char *str, size_t len, const struct args *args,
+int act_path_cnt_to_state(char *str, size_t len, const struct ibnbd_ctx *ctx,
 			  enum color *clr, void *v, bool humanize)
 {
 	int act_path_cnt = *(int *)v;
@@ -273,7 +273,7 @@ int act_path_cnt_to_state(char *str, size_t len, const struct args *args,
 }
 
 
-int sess_side_to_direction(char *str, size_t len, const struct args *args,
+int sess_side_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
 			   enum color *clr, void *v, bool humanize)
 {
 	struct ibnbd_sess *s = container_of(v, struct ibnbd_sess, side);
@@ -286,7 +286,7 @@ int sess_side_to_direction(char *str, size_t len, const struct args *args,
 }
 
 
-int path_sess_to_direction(char *str, size_t len, const struct args *args,
+int path_sess_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
 			   enum color *clr, void *v, bool humanize)
 {
 	struct ibnbd_path *p = container_of(v, struct ibnbd_path, sess);

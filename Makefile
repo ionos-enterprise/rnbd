@@ -17,7 +17,7 @@ OBJ = $(SRC:.c=.o)
 TARGETS_OBJ = ibnbd.o
 TARGETS = $(TARGETS_OBJ:.o=)
 
-      ibnbd_OBJ = levenshtein.o misc.o table.o ibnbd-sysfs.o
+      ibnbd_OBJ = levenshtein.o misc.o table.o ibnbd-sysfs.o list.o
 
 SYMLINKS = ibnbd-clt2 ibnbd-srv2
 

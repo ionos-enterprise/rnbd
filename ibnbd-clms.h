@@ -330,7 +330,7 @@ static struct table_column *clms_paths_sess_srv[] = {
 	NULL
 };
 
-static struct table_column *clms_paths_shortdesc[] = {
+struct table_column *clms_paths_shortdesc[] = {
 	&clm_ibnbd_path_shortdesc,
 	NULL
 };
