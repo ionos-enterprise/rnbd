@@ -17,14 +17,19 @@ OBJ = $(SRC:.c=.o)
 TARGETS_OBJ = ibnbd.o
 TARGETS = $(TARGETS_OBJ:.o=)
 
-      ibnbd_OBJ = levenshtein.o table.o ibnbd-sysfs.o
+      ibnbd_OBJ = levenshtein.o misc.o table.o ibnbd-sysfs.o
+
+SYMLINKS = ibnbd-clt2 ibnbd-srv2
 
 .PHONY: all
-all: $(TARGETS)
+all: $(TARGETS) $(SYMLINKS)
 
 $(TARGETS): $(OBJ)
 	$(CC) -o $@ $@.o $($@_OBJ) $(LIBS)
 
+$(SYMLINKS): $(TARGETS)
+	ln -s $(TARGETS) $@
+	touch $@
 
 ifneq ($(MAKECMDGOALS),clean)
 # do not include for 'clean' goal. make won’t create *.d only to
@@ -42,4 +47,4 @@ endif
 
 .PHONY: clean
 clean:
-	rm -f *~ $(TARGETS) $(OBJ) $(OBJ:.o=.d)
+	rm -f *~ $(SYMLINKS) $(TARGETS) $(OBJ) $(OBJ:.o=.d)

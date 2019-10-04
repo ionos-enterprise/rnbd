@@ -15,10 +15,10 @@
 
 #define ERR(fmt, ...) \
 	do { \
-		if (trm) \
+		if (args.trm) \
 			printf("%s%s", colors[CRED], colors[CBLD]); \
 		printf("error: "); \
-		if (trm) \
+		if (args.trm) \
 			printf("%s", colors[CNRM]); \
 		printf(fmt, ##__VA_ARGS__); \
 	} while (0)
@@ -39,105 +39,7 @@ static int sds_clt_cnt, sds_srv_cnt,
 	   sess_clt_cnt, sess_srv_cnt,
 	   paths_clt_cnt, paths_srv_cnt;
 
-/*
- * True if STDOUT is a terminal
- */
-bool trm;
-
-struct path {
-	const char *src;
-	const char *dst;
-};
-
-struct args {
-	const char *pname;
-	const char *name;
-
-	uint64_t size_sect;
-	bool size_set;
-	short sign;
-
-	enum fmt_type fmt;
-	bool fmt_set;
-
-	char io_mode[64];
-	bool io_mode_set;
-
-	unsigned int lstmode;
-	bool lstmode_set;
-
-	unsigned int ibnbdmode;
-	bool ibnbdmode_set;
-
-	const char *access_mode;
-	bool access_mode_set;
-
-	struct table_column *clms_devices_clt[CLM_MAX_CNT];
-	struct table_column *clms_devices_srv[CLM_MAX_CNT];
-
-	struct table_column *clms_sessions_clt[CLM_MAX_CNT];
-	struct table_column *clms_sessions_srv[CLM_MAX_CNT];
-
-	struct table_column *clms_paths_clt[CLM_MAX_CNT];
-	struct table_column *clms_paths_srv[CLM_MAX_CNT];
-
-	bool notree_set;
-	bool noterm_set;
-	bool help_set;
-	bool verbose_set;
-
-	int unit_id;
-	bool unit_set;
-	char unit[5];
-
-	int prec;
-	bool prec_set;
-
-	bool noheaders_set;
-	bool nototals_set;
-	bool force_set;
-
-	struct path paths[32]; /* lazy */
-	int path_cnt;
-
-	const char *from;
-	bool from_set;
-};
-
 static struct args args;
-
-int i_to_byte_unit(char *str, size_t len, uint64_t v, bool humanize)
-{
-	if (humanize)
-		if (args.unit_set)
-			return i_to_str_unit(v, str, len, args.unit_id,
-					     args.prec);
-		else
-			return i_to_str(v, str, len, args.prec);
-	else
-		return snprintf(str, len, "%" PRIu64, v);
-}
-
-int path_to_shortdesc(char *str, size_t len, enum color *clr,
-		      void *v, bool humanize)
-{
-	struct ibnbd_path *p = container_of(v, struct ibnbd_path, sess);
-	enum color c;
-
-	*clr = CDIM;
-
-	/* return if sess not set (this is the case if called on a total) */
-	if (!p->sess)
-		return 0;
-
-	if (!p->state[0] || !strcmp(p->state, "connected"))
-		c = CDIM;
-	else
-		c = CRED;
-
-	return snprintf(str, len, "%s %d %s%s%s", p->hca_name, p->hca_port,
-			CLR(trm, c, p->pathname));
-}
 
 struct sarg {
 	const char *str;
@@ -410,12 +312,12 @@ static const struct cmd *find_cmd(char *cmd, const struct cmd *cmds)
 
 static void print_usage(const char *program_name, const struct cmd *cmds)
 {
-	printf("Usage: %s%s%s {", CLR(trm, CBLD, program_name));
+	printf("Usage: %s%s%s {", CLR(args.trm, CBLD, program_name));
 
-	clr_print(trm, CBLD, "%s", (*cmds).cmd);
+	clr_print(args.trm, CBLD, "%s", (*cmds).cmd);
 
 	while ((*++cmds).cmd)
-		printf("|%s%s%s", CLR(trm, CBLD, (*cmds).cmd));
+		printf("|%s%s%s", CLR(args.trm, CBLD, (*cmds).cmd));
 
 	printf("} [ARGUMENTS]\n");
 }
@@ -439,7 +341,7 @@ static int cmd_help(void);
 static void cmd_print_usage(const struct cmd *cmd, const char *a)
 {
 	printf("Usage: %s%s%s %s%s%s %s[OPTIONS]\n",
-	       CLR(trm, CBLD, args.pname), CLR(trm, CBLD, cmd->cmd), a);
+	       CLR(args.trm, CBLD, args.pname), CLR(args.trm, CBLD, cmd->cmd), a);
 	printf("\n%s\n", cmd->long_d);
 }
 
@@ -467,7 +369,7 @@ static void print_fields(struct table_column **def_clt,
 			 struct table_column **def_srv,
 			 struct table_column **all)
 {
-	table_tbl_print_term(HPRE, all, trm);
+	table_tbl_print_term(HPRE, all, args.trm, &args);
 	printf("\n%sDefault client: ", HPRE);
 	print_clms_list(def_clt);
 	printf("%sDefault server: ", HPRE);
@@ -484,15 +386,15 @@ static void help_list(const struct cmd *cmd)
 	print_opt("", "Default: devices.");
 	help_fields();
 
-	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Device Fields"));
+	printf("%s%s%s%s\n", HPRE, CLR(args.trm, CDIM, "Device Fields"));
 	print_fields(def_clms_devices_clt, def_clms_devices_srv,
 		     all_clms_devices);
 
-	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Session Fields"));
+	printf("%s%s%s%s\n", HPRE, CLR(args.trm, CDIM, "Session Fields"));
 	print_fields(def_clms_sessions_clt, def_clms_sessions_srv,
 		     all_clms_sessions);
 
-	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Path Fields"));
+	printf("%s%s%s%s\n", HPRE, CLR(args.trm, CDIM, "Path Fields"));
 	print_fields(def_clms_paths_clt, def_clms_paths_srv, all_clms_paths);
 
 	printf("%sProvide 'all' to print all available fields\n", HPRE);
@@ -534,27 +436,27 @@ static int list_devices_term(struct ibnbd_sess_dev **sds,
 	}
 
 	for (i = 0; sds[i]; i++) {
-		table_row_stringify(sds[i], flds + i * cs_cnt, cs, true, 0);
+		table_row_stringify(sds[i], flds + i * cs_cnt, cs, &args, true, 0);
 		total.dev->rx_sect += sds[i]->dev->rx_sect;
 		total.dev->tx_sect += sds[i]->dev->tx_sect;
 	}
 
 	if (!args.nototals_set)
 		table_row_stringify(&total, flds + i * cs_cnt,
-				    cs, true, 0);
+				    cs, &args, true, 0);
 
 	if (!args.noheaders_set)
-		table_header_print_term("", cs, trm);
+		table_header_print_term("", cs, args.trm);
 
 	for (i = 0; i < dev_num; i++)
 		table_flds_print_term("", flds + i * cs_cnt,
-				      cs, trm, 0);
+				      cs, args.trm, 0);
 
 	if (!args.nototals_set) {
-		table_row_print_line("", cs, trm, 0);
+		table_row_print_line("", cs, args.trm, 0);
 		table_flds_del_not_num(flds + i * cs_cnt, cs);
 		table_flds_print_term("", flds + i * cs_cnt,
-				      cs, trm, 0);
+				      cs, args.trm, 0);
 	}
 
 	free(flds);
@@ -574,7 +476,7 @@ static void list_devices_csv(struct ibnbd_sess_dev **sds,
 		table_header_print_csv(cs);
 
 	for (i = 0; sds[i]; i++)
-		table_row_print(sds[i], FMT_CSV, "", cs, false, false, 0);
+		table_row_print(sds[i], FMT_CSV, "", cs, false, &args, false, 0);
 }
 
 static void list_devices_json(struct ibnbd_sess_dev **sds,
@@ -590,7 +492,7 @@ static void list_devices_json(struct ibnbd_sess_dev **sds,
 	for (i = 0; sds[i]; i++) {
 		if (i)
 			printf(",\n");
-		table_row_print(sds[i], FMT_JSON, "\t\t", cs, false, false, 0);
+		table_row_print(sds[i], FMT_JSON, "\t\t", cs, false, &args, false, 0);
 	}
 
 	printf("\n\t]");
@@ -603,7 +505,7 @@ static void list_devices_xml(struct ibnbd_sess_dev **sds,
 
 	for (i = 0; sds[i]; i++) {
 		printf("\t<device>\n");
-		table_row_print(sds[i], FMT_XML, "\t\t", cs, false, false, 0);
+		table_row_print(sds[i], FMT_XML, "\t\t", cs, false, &args, false, 0);
 		printf("\t</device>\n");
 	}
 }
@@ -668,13 +570,13 @@ static int list_devices(struct ibnbd_sess_dev **d_clt, int d_clt_cnt,
 	case FMT_TERM:
 	default:
 		if (d_clt_cnt && d_srv_cnt && !args.noheaders_set)
-			printf("%s%s%s\n", CLR(trm, CDIM, "Imported devices"));
+			printf("%s%s%s\n", CLR(args.trm, CDIM, "Imported devices"));
 
 		if (d_clt_cnt)
 			list_devices_term(d_clt, args.clms_devices_clt);
 
 		if (d_clt_cnt && d_srv_cnt && !args.noheaders_set)
-			printf("%s%s%s\n", CLR(trm, CDIM, "Exported devices"));
+			printf("%s%s%s\n", CLR(args.trm, CDIM, "Exported devices"));
 
 		if (d_srv_cnt)
 			list_devices_term(d_srv, args.clms_devices_srv);
@@ -706,7 +608,7 @@ static int list_paths_term(struct ibnbd_path **paths, int path_cnt,
 	}
 
 	for (i = 0; i < path_cnt; i++) {
-		table_row_stringify(paths[i], flds + fld_cnt, cs, true, 0);
+		table_row_stringify(paths[i], flds + fld_cnt, cs, &args, true, 0);
 
 		fld_cnt += cs_cnt;
 
@@ -717,23 +619,23 @@ static int list_paths_term(struct ibnbd_path **paths, int path_cnt,
 	}
 
 	if (!args.nototals_set)
-		table_row_stringify(&total, flds + fld_cnt, cs, true, 0);
+		table_row_stringify(&total, flds + fld_cnt, cs, &args, true, 0);
 
 	if (!args.noheaders_set && !tree)
-		table_header_print_term("", cs, trm);
+		table_header_print_term("", cs, args.trm);
 
 	fld_cnt = 0;
 	for (i = 0; i < path_cnt; i++) {
 		table_flds_print_term(
 			!tree ? "" : i < path_cnt - 1 ?
-			"├─ " : "└─ ", flds + fld_cnt, cs, trm, 0);
+			"├─ " : "└─ ", flds + fld_cnt, cs, args.trm, 0);
 		fld_cnt += cs_cnt;
 	}
 
 	if (!args.nototals_set && table_has_num(cs) && !tree) {
-		table_row_print_line("", cs, trm, 0);
+		table_row_print_line("", cs, args.trm, 0);
 		table_flds_del_not_num(flds + fld_cnt, cs);
-		table_flds_print_term("", flds + fld_cnt, cs, trm, 0);
+		table_flds_print_term("", flds + fld_cnt, cs, args.trm, 0);
 	}
 
 	free(flds);
@@ -766,8 +668,8 @@ static int list_sessions_term(struct ibnbd_sess **sessions,
 	}
 
 	for (i = 0; sessions[i]; i++) {
-		table_row_stringify(sessions[i], flds + i * cs_cnt, cs, true,
-				    0);
+		table_row_stringify(sessions[i], flds + i * cs_cnt, cs,
+				    &args, true, 0);
 
 		total.act_path_cnt += sessions[i]->act_path_cnt;
 		total.path_cnt += sessions[i]->path_cnt;
@@ -779,15 +681,15 @@ static int list_sessions_term(struct ibnbd_sess **sessions,
 
 	if (!args.nototals_set) {
 		table_row_stringify(&total, flds + sess_num * cs_cnt,
-				    cs, true, 0);
+				    cs, &args, true, 0);
 	}
 
 	if (!args.noheaders_set)
-		table_header_print_term("", cs, trm);
+		table_header_print_term("", cs, args.trm);
 
 	for (i = 0; sessions[i]; i++) {
 		table_flds_print_term("", flds + i * cs_cnt,
-				      cs, trm, 0);
+				      cs, args.trm, 0);
 		if (!args.notree_set)
 			list_paths_term(sessions[i]->paths,
 					sessions[i]->path_cnt,
@@ -795,10 +697,10 @@ static int list_sessions_term(struct ibnbd_sess **sessions,
 	}
 
 	if (!args.nototals_set && table_has_num(cs)) {
-		table_row_print_line("", cs, trm, 0);
+		table_row_print_line("", cs, args.trm, 0);
 		table_flds_del_not_num(flds + sess_num * cs_cnt, cs);
 		table_flds_print_term("", flds + sess_num * cs_cnt,
-				      cs, trm, 0);
+				      cs, args.trm, 0);
 	}
 
 	free(flds);
@@ -815,7 +717,7 @@ static void list_sessions_csv(struct ibnbd_sess **sessions,
 		table_header_print_csv(cs);
 
 	for (i = 0; sessions[i]; i++)
-		table_row_print(sessions[i], FMT_CSV, "", cs, false, false, 0);
+		table_row_print(sessions[i], FMT_CSV, "", cs, false, &args, false, 0);
 }
 
 static void list_sessions_json(struct ibnbd_sess **sessions,
@@ -828,8 +730,8 @@ static void list_sessions_json(struct ibnbd_sess **sessions,
 	for (i = 0; sessions[i]; i++) {
 		if (i)
 			printf(",\n");
-		table_row_print(sessions[i], FMT_JSON, "\t\t", cs, false, false,
-				0);
+		table_row_print(sessions[i], FMT_JSON, "\t\t", cs,
+				false, &args, false, 0);
 	}
 
 	printf("\n\t]");
@@ -842,8 +744,8 @@ static void list_sessions_xml(struct ibnbd_sess **sessions,
 
 	for (i = 0; sessions[i]; i++) {
 		printf("\t<session>\n");
-		table_row_print(sessions[i], FMT_XML, "\t\t", cs, false, false,
-				0);
+		table_row_print(sessions[i], FMT_XML, "\t\t", cs,
+				false, &args, false, 0);
 		printf("\t</session>\n");
 	}
 }
@@ -909,13 +811,13 @@ static int list_sessions(struct ibnbd_sess **s_clt, int clt_s_num,
 	case FMT_TERM:
 	default:
 		if (clt_s_num && srv_s_num && !args.noheaders_set)
-			printf("%s%s%s\n", CLR(trm, CDIM, "Outgoing sessions"));
+			printf("%s%s%s\n", CLR(args.trm, CDIM, "Outgoing sessions"));
 
 		if (clt_s_num)
 			list_sessions_term(s_clt, args.clms_sessions_clt);
 
 		if (clt_s_num && srv_s_num && !args.noheaders_set)
-			printf("%s%s%s\n", CLR(trm, CDIM, "Incoming sessions"));
+			printf("%s%s%s\n", CLR(args.trm, CDIM, "Incoming sessions"));
 
 		if (srv_s_num)
 			list_sessions_term(s_srv, args.clms_sessions_srv);
@@ -934,7 +836,8 @@ static void list_paths_csv(struct ibnbd_path **paths,
 		table_header_print_csv(cs);
 
 	for (i = 0; paths[i]; i++)
-		table_row_print(paths[i], FMT_CSV, "", cs, false, false, 0);
+		table_row_print(paths[i], FMT_CSV, "", cs,
+				false, &args, false, 0);
 }
 
 static void list_paths_json(struct ibnbd_path **paths,
@@ -947,8 +850,8 @@ static void list_paths_json(struct ibnbd_path **paths,
 	for (i = 0; paths[i]; i++) {
 		if (i)
 			printf(",\n");
-		table_row_print(paths[i], FMT_JSON, "\t\t", cs, false, false,
-				0);
+		table_row_print(paths[i], FMT_JSON, "\t\t", cs,
+				false, &args, false, 0);
 	}
 
 	printf("\n\t]");
@@ -961,7 +864,8 @@ static void list_paths_xml(struct ibnbd_path **paths,
 
 	for (i = 0; paths[i]; i++) {
 		printf("\t<path>\n");
-		table_row_print(paths[i], FMT_XML, "\t\t", cs, false, false, 0);
+		table_row_print(paths[i], FMT_XML, "\t\t", cs,
+				false, &args, false, 0);
 		printf("\t</path>\n");
 	}
 }
@@ -1026,14 +930,14 @@ static int list_paths(struct ibnbd_path **p_clt, int clt_p_num,
 	case FMT_TERM:
 	default:
 		if (clt_p_num && srv_p_num && !args.noheaders_set)
-			printf("%s%s%s\n", CLR(trm, CDIM, "Outgoing paths"));
+			printf("%s%s%s\n", CLR(args.trm, CDIM, "Outgoing paths"));
 
 		if (clt_p_num)
 			list_paths_term(p_clt, clt_p_num,
 					args.clms_paths_clt, 0);
 
 		if (clt_p_num && srv_p_num && !args.noheaders_set)
-			printf("%s%s%s\n", CLR(trm, CDIM, "Incoming paths"));
+			printf("%s%s%s\n", CLR(args.trm, CDIM, "Incoming paths"));
 
 		if (srv_p_num)
 			list_paths_term(p_srv, srv_p_num,
@@ -1138,9 +1042,9 @@ static int show_device(struct ibnbd_sess_dev **clt, struct ibnbd_sess_dev **srv)
 		break;
 	case FMT_TERM:
 	default:
-		table_row_stringify(ds[0], flds, cs, true, 0);
+		table_row_stringify(ds[0], flds, cs, &args, true, 0);
 		table_entry_print_term("", flds, cs, table_get_max_h_width(cs),
-				       trm);
+				       args.trm);
 		break;
 	}
 
@@ -1293,9 +1197,9 @@ static int show_path(struct ibnbd_path **pp_clt, struct ibnbd_path **pp_srv)
 		break;
 	case FMT_TERM:
 	default:
-		table_row_stringify(pp[0], flds, cs, true, 0);
+		table_row_stringify(pp[0], flds, cs, &args, true, 0);
 		table_entry_print_term("", flds, cs,
-				       table_get_max_h_width(cs), trm);
+				       table_get_max_h_width(cs), args.trm);
 		break;
 	}
 
@@ -1331,12 +1235,12 @@ static int show_session(struct ibnbd_sess **ss_clt, struct ibnbd_sess **ss_srv)
 		break;
 	case FMT_TERM:
 	default:
-		table_row_stringify(ss[0], flds, cs, true, 0);
+		table_row_stringify(ss[0], flds, cs, &args, true, 0);
 		table_entry_print_term("", flds, cs,
-				       table_get_max_h_width(cs), trm);
-		printf("%s%s%s", CLR(trm, CBLD, ss[0]->sessname));
+				       table_get_max_h_width(cs), args.trm);
+		printf("%s%s%s", CLR(args.trm, CBLD, ss[0]->sessname));
 		if (ss[0]->side == IBNBD_CLT)
-			printf(" %s(%s)%s", CLR(trm, CBLD, ss[0]->mp_short));
+			printf(" %s(%s)%s", CLR(args.trm, CBLD, ss[0]->mp_short));
 		printf("\n");
 		list_paths_term(ss[0]->paths, ss[0]->path_cnt, ps, 1);
 
@@ -1449,15 +1353,15 @@ static void help_show(const struct cmd *cmd)
 	printf("\nOptions:\n");
 	help_fields();
 
-	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Device Fields"));
+	printf("%s%s%s%s\n", HPRE, CLR(args.trm, CDIM, "Device Fields"));
 	print_fields(def_clms_devices_clt, def_clms_devices_srv,
 		     all_clms_devices);
 
-	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Sessions Fields"));
+	printf("%s%s%s%s\n", HPRE, CLR(args.trm, CDIM, "Sessions Fields"));
 	print_fields(def_clms_sessions_clt, def_clms_sessions_srv,
 		     all_clms_sessions);
 
-	printf("%s%s%s%s\n", HPRE, CLR(trm, CDIM, "Paths Fields"));
+	printf("%s%s%s%s\n", HPRE, CLR(args.trm, CDIM, "Paths Fields"));
 	print_fields(def_clms_paths_clt, def_clms_paths_srv, all_clms_paths);
 
 	printf("%sProvide 'all' to print all available fields\n", HPRE);
@@ -2069,7 +1973,7 @@ int main(int argc, char **argv)
 	const struct sarg *sarg;
 	const struct cmd *cmd;
 
-	trm = (isatty(STDOUT_FILENO) == 1);
+	args.trm = (isatty(STDOUT_FILENO) == 1);
 
 	init_args();
 
@@ -2098,8 +2002,8 @@ int main(int argc, char **argv)
 	cmd = find_cmd(argv[i], cmds);
 	if (!cmd) {
 		printf("'%s' is not a valid command. Try '%s%s%s %s%s%s'\n",
-		       argv[i], CLR(trm, CBLD, argv[0]),
-		       CLR(trm, CBLD, "help"));
+		       argv[i], CLR(args.trm, CBLD, argv[0]),
+		       CLR(args.trm, CBLD, "help"));
 		handle_unknown_cmd(argv[i], cmds);
 		ret = -EINVAL;
 		goto out;
@@ -2144,9 +2048,9 @@ int main(int argc, char **argv)
 
 			printf("'%s' is not a valid argument. Try '", argv[i]);
 			printf("%s%s%s %s%s%s %s%s%s",
-			       CLR(trm, CBLD, args.pname),
-			       CLR(trm, CBLD, cmd->cmd),
-			       CLR(trm, CBLD, "help"));
+			       CLR(args.trm, CBLD, args.pname),
+			       CLR(args.trm, CBLD, cmd->cmd),
+			       CLR(args.trm, CBLD, "help"));
 			printf("'\n");
 
 			handle_unknown_sarg(argv[i], sargs);

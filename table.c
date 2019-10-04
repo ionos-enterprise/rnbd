@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "table.h"
+#include "misc.h"
 #include <ctype.h>	/* for isspace(); */
 #include <stdarg.h>
 #include <stdio.h>
@@ -32,8 +33,8 @@ static const char * const fld_fmt_str[] = {
 };
 
 int table_row_stringify(void *s, struct table_fld *flds,
-			struct table_column **cs, bool humanize,
-			int pre_len)
+			struct table_column **cs, const struct args *args,
+			bool humanize, int pre_len)
 {
 	struct table_column *c;
 	size_t len;
@@ -44,7 +45,7 @@ int table_row_stringify(void *s, struct table_fld *flds,
 		v = (void *)s + c->s_off + c->m_offset;
 
 		if (c->m_tostr) {
-			len = c->m_tostr(flds[clm].str, CLM_MAX_WIDTH,
+			len = c->m_tostr(flds[clm].str, CLM_MAX_WIDTH, args,
 					 &flds[clm].clr, v, humanize);
 		} else {
 			if (c->m_type == FLD_INT || c->m_type == FLD_VAL)
@@ -212,12 +213,13 @@ int table_flds_print(enum fmt_type fmt, const char *prefix,
 }
 
 int table_row_print(void *v, enum fmt_type fmt, const char *pre,
-		    struct table_column **cs, bool trm, bool humanize,
+		    struct table_column **cs, bool trm,
+		    const struct args *args, bool humanize,
 		    size_t pre_len)
 {
 	struct table_fld flds[CLM_MAX_CNT];
 
-	table_row_stringify(v, flds, cs, humanize, pre_len);
+	table_row_stringify(v, flds, cs, args, humanize, pre_len);
 	table_flds_print(fmt, pre, flds, cs, trm, pre_len);
 
 	return 0;
@@ -453,8 +455,8 @@ int table_extend_columns(const char *arg, const char *delim,
 	CLM(table_column, m_name, m_header, m_type, tostr, \
 	    align, h_clr, c_clr, m_descr, m_width, 0)
 
-static int pstr_to_str(char *str, size_t len, enum color *clr, void *v,
-		       bool humanize)
+static int pstr_to_str(char *str, size_t len, const struct args *args,
+		       enum color *clr, void *v, bool humanize)
 {
 	*clr = 0;
 	return snprintf(str, len, "%s", *(char **)v);
@@ -472,13 +474,13 @@ static struct table_column *l_clmns[] = {
 };
 
 int table_tbl_print_term(const char *prefix, struct table_column **clm,
-			 bool trm)
+			 bool trm, const struct args *args)
 {
 	int row = 0;
 
 	table_header_print_term(prefix, l_clmns, trm);
 	while (clm[row]) {
-		table_row_print(clm[row], FMT_TERM, prefix, l_clmns, trm, 1, 0);
+		table_row_print(clm[row], FMT_TERM, prefix, l_clmns, trm, args, 1, 0);
 		row++;
 	}
 
