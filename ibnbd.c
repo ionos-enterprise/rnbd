@@ -35,38 +35,41 @@ static struct ibnbd_ctx ctx;
 struct sarg {
 	const char *str;
 	const char *descr;
-	int (*parse)(int argc, char **argv, int i, const struct sarg *sarg);
-	void *f;
+	int (*parse)(int argc, const char *argv[], int i,
+		     const struct sarg *sarg, struct ibnbd_ctx *ctx);
+	size_t offset;
 	int dist;
 };
 
-static int parse_fmt(int argc, char **argv, int i, const struct sarg *sarg)
+static int parse_fmt(int argc, const char *argv[], int i, 
+		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
 	if (!strcasecmp(argv[i], "csv"))
-		ctx.fmt = FMT_CSV;
+		ctx->fmt = FMT_CSV;
 	else if (!strcasecmp(argv[i], "json"))
-		ctx.fmt = FMT_JSON;
+		ctx->fmt = FMT_JSON;
 	else if (!strcasecmp(argv[i], "xml"))
-		ctx.fmt = FMT_XML;
+		ctx->fmt = FMT_XML;
 	else if (!strcasecmp(argv[i], "term"))
-		ctx.fmt = FMT_TERM;
+		ctx->fmt = FMT_TERM;
 	else
 		return i;
 
-	ctx.fmt_set = true;
+	ctx->fmt_set = true;
 
 	return i + 1;
 }
 
-static int parse_io_mode(int argc, char **argv, int i, const struct sarg *sarg)
+static int parse_io_mode(int argc, const char *argv[], int i, 
+		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
 	if (strcasecmp(argv[i], "blockio") &&
 	    strcasecmp(argv[i], "fileio"))
 		return i;
 
-	strcpy(ctx.io_mode, argv[i]);
+	strcpy(ctx->io_mode, argv[i]);
 
-	ctx.io_mode_set = true;
+	ctx->io_mode_set = true;
 
 	return i + 1;
 }
@@ -77,24 +80,25 @@ enum lstmode {
 	LST_PATHS
 };
 
-static int parse_lst(int argc, char **argv, int i, const struct sarg *sarg)
+static int parse_lst(int argc, const char *argv[], int i, 
+		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
 	if (!strcasecmp(argv[i], "devices") ||
 	    !strcasecmp(argv[i], "device") ||
 	    !strcasecmp(argv[i], "devs") ||
 	    !strcasecmp(argv[i], "dev"))
-		ctx.lstmode = LST_DEVICES;
+		ctx->lstmode = LST_DEVICES;
 	else if (!strcasecmp(argv[i], "sessions") ||
 		 !strcasecmp(argv[i], "session") ||
 		 !strcasecmp(argv[i], "sess"))
-		ctx.lstmode = LST_SESSIONS;
+		ctx->lstmode = LST_SESSIONS;
 	else if (!strcasecmp(argv[i], "paths") ||
 		 !strcasecmp(argv[i], "path"))
-		ctx.lstmode = LST_PATHS;
+		ctx->lstmode = LST_PATHS;
 	else
 		return i;
 
-	ctx.lstmode_set = true;
+	ctx->lstmode_set = true;
 
 	return i + 1;
 }
@@ -106,46 +110,49 @@ enum ibnbdmode {
 	IBNBD_BOTH = IBNBD_CLIENT | IBNBD_SERVER,
 };
 
-static int parse_from(int argc, char **argv, int i, const struct sarg *sarg)
+static int parse_from(int argc, const char *argv[], int i, 
+		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
 	int j = i + 1;
 
 	if (j >= argc) {
-		ERR(ctx.trm, "Please specify the destionation to map from\n");
+		ERR(ctx->trm, "Please specify the destionation to map from\n");
 		return i;
 	}
 
-	ctx.from = argv[j];
-	ctx.from_set = 1;
+	ctx->from = argv[j];
+	ctx->from_set = 1;
 
 	return j + 1;
 }
 
-static int parse_mode(int argc, char **argv, int i, const struct sarg *sarg)
+static int parse_mode(int argc, const char *argv[], int i, 
+		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
 	if (!strcasecmp(argv[i], "client") || !strcasecmp(argv[i], "clt"))
-		ctx.ibnbdmode = IBNBD_CLIENT;
+		ctx->ibnbdmode = IBNBD_CLIENT;
 	else if (!strcasecmp(argv[i], "server") || !strcasecmp(argv[i], "srv"))
-		ctx.ibnbdmode = IBNBD_SERVER;
+		ctx->ibnbdmode = IBNBD_SERVER;
 	else if (!strcasecmp(argv[i], "both"))
-		ctx.ibnbdmode = IBNBD_BOTH;
+		ctx->ibnbdmode = IBNBD_BOTH;
 	else
 		return i;
 
-	ctx.ibnbdmode_set = true;
+	ctx->ibnbdmode_set = true;
 
 	return i + 1;
 }
 
-static int parse_rw(int argc, char **argv, int i, const struct sarg *sarg)
+static int parse_rw(int argc, const char *argv[], int i, 
+		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
 	if (strcasecmp(argv[i], "ro") &&
 	    strcasecmp(argv[i], "rw") &&
 	    strcasecmp(argv[i], "migration"))
 		return i;
 
-	ctx.access_mode = argv[i];
-	ctx.access_mode_set = true;
+	ctx->access_mode = argv[i];
+	ctx->access_mode_set = true;
 
 	return i + 1;
 }
@@ -163,11 +170,12 @@ static int clm_set_hdr_unit(struct table_column *clm, char const *unit)
 	return 0;
 }
 
-static int parse_unit(int argc, char **argv, int i, const struct sarg *sarg)
+static int parse_unit(int argc, const char *argv[], int i, 
+		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
 	int rc;
 
-	rc = get_unit_index(sarg->str, &ctx.unit_id);
+	rc = get_unit_index(sarg->str, &ctx->unit_id);
 	if (rc < 0)
 		return i;
 
@@ -178,82 +186,92 @@ static int parse_unit(int argc, char **argv, int i, const struct sarg *sarg)
 	clm_set_hdr_unit(&clm_ibnbd_path_rx_bytes, sarg->descr);
 	clm_set_hdr_unit(&clm_ibnbd_path_tx_bytes, sarg->descr);
 
-	ctx.unit_set = true;
+	ctx->unit_set = true;
 	return i + 1;
 }
 
-static int parse_all(int argc, char **argv, int i, const struct sarg *sarg)
+static int parse_all(int argc, const char *argv[], int i, 
+		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
-	memcpy(&ctx.clms_devices_clt, &all_clms_devices_clt,
+	memcpy(&ctx->clms_devices_clt, &all_clms_devices_clt,
 	       ARRSIZE(all_clms_devices_clt) * sizeof(all_clms_devices[0]));
-	memcpy(&ctx.clms_devices_srv, &all_clms_devices_srv,
+	memcpy(&ctx->clms_devices_srv, &all_clms_devices_srv,
 	       ARRSIZE(all_clms_devices_srv) * sizeof(all_clms_devices[0]));
-	memcpy(&ctx.clms_sessions_clt, &all_clms_sessions_clt,
+	memcpy(&ctx->clms_sessions_clt, &all_clms_sessions_clt,
 	       ARRSIZE(all_clms_sessions_clt) * sizeof(all_clms_sessions[0]));
-	memcpy(&ctx.clms_sessions_srv, &all_clms_sessions_srv,
+	memcpy(&ctx->clms_sessions_srv, &all_clms_sessions_srv,
 	       ARRSIZE(all_clms_sessions_srv) * sizeof(all_clms_sessions[0]));
-	memcpy(&ctx.clms_paths_clt, &all_clms_paths_clt,
+	memcpy(&ctx->clms_paths_clt, &all_clms_paths_clt,
 	       ARRSIZE(all_clms_paths_clt) * sizeof(all_clms_paths[0]));
-	memcpy(&ctx.clms_paths_srv, &all_clms_paths_srv,
+	memcpy(&ctx->clms_paths_srv, &all_clms_paths_srv,
 	       ARRSIZE(all_clms_paths_srv) * sizeof(all_clms_paths[0]));
 
 	return i + 1;
 }
 
-static int parse_flag(int argc, char **argv, int i, const struct sarg *sarg)
+static int parse_flag(int argc, const char *argv[], int i, 
+		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
-	*(short *)sarg->f = 1;
+	*(short *)(((char*)ctx)+(sarg->offset)) = 1;
 
 	return i + 1;
 }
 
 static struct sarg sargs[] = {
-	{"from", "Destination to map a device from", parse_from, NULL},
-	{"client", "Information for client", parse_mode, NULL},
-	{"clt", "Information for client", parse_mode, NULL},
-	{"server", "Information for server", parse_mode, NULL},
-	{"srv", "Information for server", parse_mode, NULL},
-	{"both", "Information for both", parse_mode, NULL},
-	{"devices", "List mapped devices", parse_lst, NULL},
-	{"device", "", parse_lst, NULL},
-	{"devs", "", parse_lst, NULL},
-	{"dev", "", parse_lst, NULL},
-	{"sessions", "List sessions", parse_lst, NULL},
-	{"session", "", parse_lst, NULL},
-	{"sess", "", parse_lst, NULL},
-	{"paths", "List paths", parse_lst, NULL},
-	{"path", "", parse_lst, NULL},
+	{"from", "Destination to map a device from", parse_from, 0},
+	{"client", "Information for client", parse_mode, 0},
+	{"clt", "Information for client", parse_mode, 0},
+	{"server", "Information for server", parse_mode, 0},
+	{"srv", "Information for server", parse_mode, 0},
+	{"both", "Information for both", parse_mode, 0},
+	{"devices", "List mapped devices", parse_lst, 0},
+	{"device", "", parse_lst, 0},
+	{"devs", "", parse_lst, 0},
+	{"dev", "", parse_lst, 0},
+	{"sessions", "List sessions", parse_lst, 0},
+	{"session", "", parse_lst, 0},
+	{"sess", "", parse_lst, 0},
+	{"paths", "List paths", parse_lst, 0},
+	{"path", "", parse_lst, 0},
 	{"notree", "Don't display paths for each sessions", parse_flag,
-		&ctx.notree_set},
-	{"xml", "Print in XML format", parse_fmt, NULL},
-	{"csv", "Print in CSV format", parse_fmt, NULL},
-	{"json", "Print in JSON format", parse_fmt, NULL},
-	{"term", "Print for terminal", parse_fmt, NULL},
-	{"ro", "Readonly", parse_rw, NULL},
-	{"rw", "Writable", parse_rw, NULL},
-	{"migration", "Writable (migration)", parse_rw, NULL},
-	{"blockio", "Block IO mode", parse_io_mode, NULL},
-	{"fileio", "File IO mode", parse_io_mode, NULL},
-	{"help", "Display help and exit", parse_flag, &ctx.help_set},
-	{"verbose", "Verbose output", parse_flag, &ctx.verbose_set},
-	{"-v", "Verbose output", parse_flag, &ctx.verbose_set},
-	{"B", "Byte", parse_unit, NULL},
-	{"K", "KiB", parse_unit, NULL},
-	{"M", "MiB", parse_unit, NULL},
-	{"G", "GiB", parse_unit, NULL},
-	{"T", "TiB", parse_unit, NULL},
-	{"P", "PiB", parse_unit, NULL},
-	{"E", "EiB", parse_unit, NULL},
-	{"noheaders", "Don't print headers", parse_flag, &ctx.noheaders_set},
-	{"nototals", "Don't print totals", parse_flag, &ctx.nototals_set},
-	{"force", "Force operation", parse_flag, &ctx.force_set},
-	{"noterm", "Non-interactive mode", parse_flag, &ctx.noterm_set},
-	{"-f", "", parse_flag, &ctx.force_set},
-	{"all", "Print all columns", parse_all, NULL},
+	 offsetof(struct ibnbd_ctx, notree_set)},
+	{"xml", "Print in XML format", parse_fmt, 0},
+	{"csv", "Print in CSV format", parse_fmt, 0},
+	{"json", "Print in JSON format", parse_fmt, 0},
+	{"term", "Print for terminal", parse_fmt, 0},
+	{"ro", "Readonly", parse_rw, 0},
+	{"rw", "Writable", parse_rw, 0},
+	{"migration", "Writable (migration)", parse_rw, 0},
+	{"blockio", "Block IO mode", parse_io_mode, 0},
+	{"fileio", "File IO mode", parse_io_mode, 0},
+	{"help", "Display help and exit", parse_flag,
+	 offsetof(struct ibnbd_ctx, help_set)},
+	{"verbose", "Verbose output", parse_flag,
+	 offsetof(struct ibnbd_ctx, verbose_set)},
+	{"-v", "Verbose output", parse_flag,
+	 offsetof(struct ibnbd_ctx, verbose_set)},
+	{"B", "Byte", parse_unit, 0},
+	{"K", "KiB", parse_unit, 0},
+	{"M", "MiB", parse_unit, 0},
+	{"G", "GiB", parse_unit, 0},
+	{"T", "TiB", parse_unit, 0},
+	{"P", "PiB", parse_unit, 0},
+	{"E", "EiB", parse_unit, 0},
+	{"noheaders", "Don't print headers", parse_flag,
+	 offsetof(struct ibnbd_ctx, noheaders_set)},
+	{"nototals", "Don't print totals", parse_flag,
+	 offsetof(struct ibnbd_ctx, nototals_set)},
+	{"force", "Force operation", parse_flag,
+	 offsetof(struct ibnbd_ctx, force_set)},
+	{"noterm", "Non-interactive mode", parse_flag,
+	 offsetof(struct ibnbd_ctx, noterm_set)},
+	{"-f", "", parse_flag,
+	 offsetof(struct ibnbd_ctx, force_set)},
+	{"all", "Print all columns", parse_all, 0},
 	{0}
 };
 
-static const struct sarg *find_sarg(char *str, const struct sarg *sargs)
+static const struct sarg *find_sarg(const char *str, const struct sarg *sargs)
 {
 	do {
 		if (!strcasecmp(str, (*sargs).str))
@@ -286,12 +304,13 @@ struct cmd {
 	const char *short_d;
 	const char *long_d;
 	int (*func)(void);
-	int (*parse_args)(int argc, char **args, int i);
+	int (*parse_args)(int argc, const char *argv[], int i,
+			  struct ibnbd_ctx *ctx);
 	void (*help)(const struct cmd *cmd);
 	int dist;
 };
 
-static const struct cmd *find_cmd(char *cmd, const struct cmd *cmds)
+static const struct cmd *find_cmd(const char *cmd, const struct cmd *cmds)
 {
 	do {
 		if (!strcmp(cmd, (*cmds).cmd))
@@ -1004,16 +1023,17 @@ out:
 	return ret;
 }
 
-static int parse_name(int argc, char **argv, int i)
+static int parse_name(int argc, const char *argv[], int i,
+		      struct ibnbd_ctx *ctx)
 {
 	int j = i + 1;
 
 	if (j >= argc) {
-		ERR(ctx.trm, "Please specify the <name> argument\n");
+		ERR(ctx->trm, "Please specify the <name> argument\n");
 		return i;
 	}
 
-	ctx.name = argv[j];
+	ctx->name = argv[j];
 
 	return j + 1;
 }
@@ -1479,7 +1499,7 @@ static int sarg_compare(const void *p1, const void *p2)
 	return levenstein_compare(c1->dist, c2->dist, c1->str, c2->str);
 }
 
-static void handle_unknown_cmd(char *cmd, struct cmd *cmds)
+static void handle_unknown_cmd(const char *cmd, struct cmd *cmds)
 {
 	struct cmd *cs;
 	size_t len = 0, cnt = 0;
@@ -1504,7 +1524,7 @@ static void handle_unknown_cmd(char *cmd, struct cmd *cmds)
 		printf("\t%s\n", cmds[len].cmd);
 }
 
-static void handle_unknown_sarg(char *sarg, struct sarg *sargs)
+static void handle_unknown_sarg(const char *sarg, struct sarg *sargs)
 {
 	struct sarg *cs;
 	size_t len = 0, cnt = 0, i;
@@ -1529,7 +1549,8 @@ static void handle_unknown_sarg(char *sarg, struct sarg *sargs)
 		printf("\t%s\n", sargs[i].str);
 }
 
-static int parse_precision(char *str)
+static int parse_precision(const char *str,
+			   struct ibnbd_ctx *ctx)
 {
 	unsigned int prec;
 	char e;
@@ -1540,47 +1561,48 @@ static int parse_precision(char *str)
 	if (sscanf(str + 4, "%u%c\n", &prec, &e) != 1)
 		return -EINVAL;
 
-	ctx.prec = prec;
-	ctx.prec_set = true;
+	ctx->prec = prec;
+	ctx->prec_set = true;
 
 	return 0;
 }
 
-static int parse_devices_clms(const char *arg)
+static const char *comma = ",";
+
+static inline int parse_clt_devices_clms(const char *arg, struct ibnbd_ctx *ctx)
 {
-	int rc_clt, rc_srv;
-
-	rc_clt = table_extend_columns(arg, ",", all_clms_devices_clt,
-				      ctx.clms_devices_clt, CLM_MAX_CNT);
-
-	rc_srv = table_extend_columns(arg, ",", all_clms_devices_srv,
-				      ctx.clms_devices_srv, CLM_MAX_CNT);
-
-	return rc_clt && rc_srv;
+	return table_extend_columns(arg, comma, all_clms_devices_clt,
+				    ctx->clms_devices_clt, CLM_MAX_CNT);
 }
 
-static int parse_sessions_clms(const char *arg)
+static inline int parse_srv_devices_clms(const char *arg, struct ibnbd_ctx *ctx)
 {
-	int rc_clt, rc_srv;
-
-	rc_clt = table_extend_columns(arg, ",", all_clms_sessions_clt,
-				      ctx.clms_sessions_clt, CLM_MAX_CNT);
-
-	rc_srv = table_extend_columns(arg, ",", all_clms_sessions_srv,
-				      ctx.clms_sessions_srv, CLM_MAX_CNT);
-	return rc_clt && rc_srv;
+	return table_extend_columns(arg, comma, all_clms_devices_srv,
+				    ctx->clms_devices_srv, CLM_MAX_CNT);
 }
 
-static int parse_paths_clms(const char *arg)
+static inline int parse_clt_sessions_clms(const char *arg, struct ibnbd_ctx *ctx)
 {
-	int rc_clt, rc_srv;
+	return table_extend_columns(arg, comma, all_clms_sessions_clt,
+				    ctx->clms_sessions_clt, CLM_MAX_CNT);
+}
 
-	rc_clt = table_extend_columns(arg, ",", all_clms_paths_clt,
-				      ctx.clms_paths_clt, CLM_MAX_CNT);
+static inline int parse_srv_sessions_clms(const char *arg, struct ibnbd_ctx *ctx)
+{
+	return table_extend_columns(arg, comma, all_clms_sessions_srv,
+				    ctx->clms_sessions_srv, CLM_MAX_CNT);
+}
 
-	rc_srv = table_extend_columns(arg, ",", all_clms_paths_srv,
-				      ctx.clms_paths_srv, CLM_MAX_CNT);
-	return rc_clt && rc_srv;
+static inline int parse_clt_paths_clms(const char *arg, struct ibnbd_ctx *ctx)
+{
+	return table_extend_columns(arg, comma, all_clms_paths_clt,
+				    ctx->clms_paths_clt, CLM_MAX_CNT);
+}
+
+static inline int parse_srv_paths_clms(const char *arg, struct ibnbd_ctx *ctx)
+{
+	return table_extend_columns(arg, comma, all_clms_paths_srv,
+				    ctx->clms_paths_srv, CLM_MAX_CNT);
 }
 
 static int parse_sign(char s)
@@ -1595,7 +1617,7 @@ static int parse_sign(char s)
 	return ctx.sign;
 }
 
-static int parse_size(char *str)
+static int parse_size(const char *str)
 {
 	uint64_t size;
 
@@ -1648,9 +1670,9 @@ static void ibnbd_ctx_default(struct ibnbd_ctx *ctx)
 	}
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char *argv[])
 {
-	int ret = 0, i, rcd, rcs, rcp;
+	int ret = 0, i, rc_cd, rc_cs, rc_cp, rc_sd, rc_ss, rc_sp;
 	const struct sarg *sarg;
 	const struct cmd *cmd;
 
@@ -1673,12 +1695,12 @@ int main(int argc, char **argv)
 	 * try finding sess/devs/paths preceding the command
 	 * (for those who is used to type ibnbd dev map or ibnbd session list)
 	 */
-	i = parse_lst(argc, argv, i, NULL);
+	i = parse_lst(argc, argv, i, NULL, &ctx);
 	/*
 	 * try finding clt/srv preceding the command
 	 * (for those who is used to type ibnbd clt list or ibnbd srv sess list)
 	 */
-	i = parse_mode(argc, argv, i, NULL);
+	i = parse_mode(argc, argv, i, NULL, &ctx);
 
 	cmd = find_cmd(argv[i], cmds);
 	if (!cmd) {
@@ -1701,7 +1723,7 @@ int main(int argc, char **argv)
 	}
 
 	if (cmd->parse_args) {
-		ret = cmd->parse_args(argc, argv, i);
+		ret = cmd->parse_args(argc, argv, i, &ctx);
 		if (ret == i) {
 			if (cmd->help)
 				cmd->help(cmd);
@@ -1716,11 +1738,14 @@ int main(int argc, char **argv)
 	while (i < argc) {
 		sarg = find_sarg(argv[i], sargs);
 		if (!sarg) {
-			rcd = parse_devices_clms(argv[i]);
-			rcs = parse_sessions_clms(argv[i]);
-			rcp = parse_paths_clms(argv[i]);
-			if (!parse_precision(argv[i]) ||
-			    !(rcd && rcs && rcp) ||
+			rc_cd = parse_clt_devices_clms(argv[i], &ctx);
+			rc_sd = parse_srv_devices_clms(argv[i], &ctx);
+			rc_cs = parse_clt_sessions_clms(argv[i], &ctx);
+			rc_ss = parse_srv_sessions_clms(argv[i], &ctx);
+			rc_cp = parse_clt_paths_clms(argv[i], &ctx);
+			rc_sp = parse_srv_paths_clms(argv[i], &ctx);
+			if (!parse_precision(argv[i], &ctx) ||
+			    !(rc_cd && rc_cs && rc_cp && rc_sd && rc_ss && rc_sp) ||
 			    !parse_path(argv[i]) ||
 			    !parse_size(argv[i])) {
 				i++;
@@ -1739,7 +1764,7 @@ int main(int argc, char **argv)
 			ret = -EINVAL;
 			goto out;
 		}
-		ret = sarg->parse(argc, argv, i, sarg);
+		ret = sarg->parse(argc, argv, i, sarg, &ctx);
 		if (i == ret) {
 			ret = -EINVAL;
 			goto out;

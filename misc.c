@@ -53,15 +53,17 @@ void trim(char *s)
 	*new = *s;
 }
 
-int str_to_size(char *str, uint64_t *size)
+int str_to_size(const char *str, uint64_t *size)
 {
+	char buff[NAME_MAX];
 	char *unit = NULL;
 	int index = 0;
 	uint64_t num;
 	int ret;
 
-	trim(str);
-	ret = sscanf(str, "%" SCNu64 "%ms", &num, &unit);
+	strncpy(buff, str, NAME_MAX);
+	trim(buff);
+	ret = sscanf(buff, "%" SCNu64 "%ms", &num, &unit);
 	if (ret < 1)
 		return -1;
 

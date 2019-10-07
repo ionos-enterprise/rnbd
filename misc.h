@@ -99,7 +99,7 @@ void trim(char *s);
  * Convert string [0-9][BKMGTPE] to uint64_t
  * return 0 on success, negative if conversion failed
  */
-int str_to_size(char *str, uint64_t *size);
+int str_to_size(const char *str, uint64_t *size);
 
 int i_to_byte_unit(char *str, size_t len, const struct ibnbd_ctx *ctx, uint64_t v, bool humanize);
 
