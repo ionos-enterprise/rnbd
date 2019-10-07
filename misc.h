@@ -152,4 +152,69 @@ int path_to_shortdesc(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
 		(type *)( (char *)__mptr - offsetof(type,member) );})
 
+enum ibnbd_token {
+
+	/* mode */
+	TOK_NONE      = 0,
+	TOK_CLIENT    = 1,
+	TOK_SERVER,
+	TOK_BOTH,
+
+	/* object */
+	TOK_DEVICES,
+	TOK_SESSIONS,
+	TOK_PATHS,
+
+	/* commands */
+	TOK_LIST,
+	TOK_SHOW,
+	TOK_MAP,
+	TOK_RESIZE,
+	TOK_UNMAP,
+	TOK_REMAP,
+	TOK_DISCONNECT,
+	TOK_RECONNECT,
+	TOK_ADD,
+	TOK_DELETE,
+
+	/* access permissions */
+	TOK_RO,
+	TOK_RW,
+	TOK_MIGRATION,
+
+	TOK_FROM,
+
+	/* output format */
+	TOK_XML,
+	TOK_CSV,
+	TOK_JSON,
+	TOK_TERM,
+
+	/* i/o mode */
+	TOK_BLOCKIO,
+	TOK_FILEIO,
+
+	/* output */
+	TOK_HELP,
+	TOK_VERBOSE,
+
+	/* units */
+	TOK_BYTE,
+	TOK_KIB,
+	TOK_MIB,
+	TOK_GIB,
+	TOK_TIB,
+	TOK_PIB,
+	TOK_EIB,
+
+	/*flags*/
+	TOK_NOTREE,
+	TOK_NOHEADERS,
+	TOK_NOTOTALS,
+	TOK_FORCE,
+	TOK_NOTERM,
+
+	TOK_ALL,
+};
+
 #endif /* __H_MISC */
