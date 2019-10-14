@@ -127,6 +127,21 @@ static int parse_from(int argc, const char *argv[], int i,
 	return j + 1;
 }
 
+static int parse_help(int argc, const char *argv[], int i,
+		      const struct sarg *sarg, struct ibnbd_ctx *ctx)
+{
+	int j = i + 1;
+
+	ctx->help_set = true;
+
+	if (j < argc) {
+		
+		ctx->help_arg = argv[j];
+		ctx->help_arg_set = 1;
+	}
+	return j + 1;
+}
+
 static int parse_argv0(const char *argv0, struct ibnbd_ctx *ctx)
 {
 	const char *prog_name = strrchr(argv0, '/');
@@ -297,7 +312,7 @@ static struct sarg _sargs_blockio =
 static struct sarg _sargs_fileio =
 	{TOK_FILEIO, "fileio", "File IO mode", parse_io_mode, 0};
 static struct sarg _sargs_help =
-	{TOK_HELP, "help", "Display help and exit", parse_flag,
+	{TOK_HELP, "help", "Display help and exit", parse_help,
 	 offsetof(struct ibnbd_ctx, help_set)};
 static struct sarg _sargs_verbose =
 	{TOK_VERBOSE, "verbose", "Verbose output", parse_flag,
@@ -566,7 +581,7 @@ static int cmd_help(void);
 static void cmd_print_usage(const struct cmd *cmd, const char *a,
 			    const struct ibnbd_ctx *ctx)
 {
-	printf("Usage: %s%s%s %s%s%s %s[OPTIONS]\n",
+	printf("Usage: %s%s%s %s%s%s %s [OPTIONS]\n",
 	       CLR(ctx->trm, CBLD, ctx->pname),
 	       CLR(ctx->trm, CBLD, cmd->cmd), a);
 	printf("\n%s\n", cmd->long_d);
@@ -594,13 +609,18 @@ static void help_fields(void)
 
 static void print_fields(struct table_column **def_clt,
 			 struct table_column **def_srv,
-			 struct table_column **all)
+			 struct table_column **all,
+			 enum ibnbdmode mode)
 {
 	table_tbl_print_term(HPRE, all, ctx.trm, &ctx);
-	printf("\n%sDefault client: ", HPRE);
-	print_clms_list(def_clt);
-	printf("%sDefault server: ", HPRE);
-	print_clms_list(def_srv);
+	if (mode != IBNBD_SERVER) {
+		printf("\n%sDefault%s: ", HPRE, mode == IBNBD_BOTH ? " client" : "");
+		print_clms_list(def_clt);
+	}
+	if (mode != IBNBD_CLIENT) {
+		printf("%sDefault%s: ", HPRE, mode == IBNBD_BOTH ? " server" : "");
+		print_clms_list(def_srv);
+	}
 	printf("\n");
 }
 
@@ -610,20 +630,20 @@ static void help_list(const struct cmd *cmd,
 	cmd_print_usage(cmd, "", ctx);
 
 	printf("\nOptions:\n");
-	print_opt("{mode}", "Information to print: devices|sessions|paths.");
-	print_opt("", "Default: devices.");
+	print_opt("{mode}", "Information to print: sessions.");
 	help_fields();
 
 	printf("%s%s%s%s\n", HPRE, CLR(ctx->trm, CDIM, "Device Fields"));
 	print_fields(def_clms_devices_clt, def_clms_devices_srv,
-		     all_clms_devices);
+		     all_clms_devices, IBNBD_BOTH);
 
 	printf("%s%s%s%s\n", HPRE, CLR(ctx->trm, CDIM, "Session Fields"));
 	print_fields(def_clms_sessions_clt, def_clms_sessions_srv,
-		     all_clms_sessions);
+		     all_clms_sessions, IBNBD_BOTH);
 
 	printf("%s%s%s%s\n", HPRE, CLR(ctx->trm, CDIM, "Path Fields"));
-	print_fields(def_clms_paths_clt, def_clms_paths_srv, all_clms_paths);
+	print_fields(def_clms_paths_clt, def_clms_paths_srv,
+		     all_clms_paths, IBNBD_BOTH);
 
 	printf("%sProvide 'all' to print all available fields\n", HPRE);
 
@@ -633,6 +653,113 @@ static void help_list(const struct cmd *cmd,
 	print_sarg_descr("noheaders");
 	print_sarg_descr("nototals");
 	print_sarg_descr("help");
+}
+
+static bool help_print_all(const struct ibnbd_ctx *ctx)
+{
+	if (ctx->help_arg_set && strncmp(ctx->help_arg, "all", 3)==0)
+		return true;
+	else
+		return false;
+}
+
+static bool help_print_fields(const struct ibnbd_ctx *ctx)
+{
+	if (ctx->help_arg_set && strncmp(ctx->help_arg, "fields", 4)==0)
+		return true;
+	else
+		return false;
+}
+
+static void help_list_devices(const struct cmd *cmd,
+			      const struct ibnbd_ctx *ctx)
+{
+	cmd_print_usage(cmd, "devices", ctx);
+
+	if (!help_print_fields(ctx)) {
+
+		printf("\nOptions:\n");
+	}
+	help_fields();
+
+	if (help_print_all(ctx) || help_print_fields(ctx)) {
+
+		print_fields(def_clms_devices_clt, def_clms_devices_srv,
+			     all_clms_devices, ctx->ibnbdmode);
+		
+
+		if (help_print_fields(ctx))
+			return;
+	}
+	printf("%sProvide 'all' to print all available fields\n", HPRE);
+
+	print_opt("{format}", "Output format: csv|json|xml");
+	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
+	print_sarg_descr("notree");
+	print_sarg_descr("noheaders");
+	print_sarg_descr("nototals");
+	print_opt("help", "Display help and exit. [fields|all]");
+}
+
+static void help_list_sessions(const struct cmd *cmd,
+			       const struct ibnbd_ctx *ctx)
+{
+	cmd_print_usage(cmd, "sessions", ctx);
+
+	if (!help_print_fields(ctx)) {
+
+		printf("\nOptions:\n");
+	}
+	help_fields();
+
+	if (help_print_all(ctx) || help_print_fields(ctx)) {
+
+		print_fields(def_clms_sessions_clt, def_clms_sessions_srv,
+			     all_clms_sessions, ctx->ibnbdmode);
+
+		if (help_print_fields(ctx))
+			return;
+	}
+
+	printf("%sProvide 'all' to print all available fields\n", HPRE);
+
+	print_opt("{format}", "Output format: csv|json|xml");
+	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
+	print_sarg_descr("notree");
+	print_sarg_descr("noheaders");
+	print_sarg_descr("nototals");
+	print_opt("help", "Display help and exit. [fields|all]");
+}
+
+static void help_list_paths(const struct cmd *cmd,
+			    const struct ibnbd_ctx *ctx)
+{
+	cmd_print_usage(cmd, "paths", ctx);
+
+	if (!help_print_fields(ctx)) {
+
+		printf("\nOptions:\n");
+	}
+	help_fields();
+
+	if (help_print_all(ctx) || help_print_fields(ctx)) {
+
+
+		print_fields(def_clms_paths_clt, def_clms_paths_srv,
+			     all_clms_paths, ctx->ibnbdmode);
+
+		if (help_print_fields(ctx))
+			return;
+	}
+
+	printf("%sProvide 'all' to print all available fields\n", HPRE);
+
+	print_opt("{format}", "Output format: csv|json|xml");
+	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
+	print_sarg_descr("notree");
+	print_sarg_descr("noheaders");
+	print_sarg_descr("nototals");
+	print_opt("help", "Display help and exit. [fields|all]");
 }
 
 static int list_devices(struct ibnbd_sess_dev **d_clt, int d_clt_cnt,
@@ -1390,6 +1517,8 @@ static int parse_name_help(int argc, const char *argv[], const char *what,
 		return -EINVAL;
 	}
 	if (!strcmp(*argv, "help")) {
+		parse_help(argc, argv, 0, NULL, ctx);
+
 		cmd->help(cmd, ctx);
 		return -EAGAIN;
 	}
@@ -1417,14 +1546,15 @@ static void help_show(const struct cmd *cmd,
 
 	printf("%s%s%s%s\n", HPRE, CLR(ctx->trm, CDIM, "Device Fields"));
 	print_fields(def_clms_devices_clt, def_clms_devices_srv,
-		     all_clms_devices);
+		     all_clms_devices, IBNBD_BOTH);
 
 	printf("%s%s%s%s\n", HPRE, CLR(ctx->trm, CDIM, "Sessions Fields"));
 	print_fields(def_clms_sessions_clt, def_clms_sessions_srv,
-		     all_clms_sessions);
+		     all_clms_sessions, IBNBD_BOTH);
 
 	printf("%s%s%s%s\n", HPRE, CLR(ctx->trm, CDIM, "Paths Fields"));
-	print_fields(def_clms_paths_clt, def_clms_paths_srv, all_clms_paths);
+	print_fields(def_clms_paths_clt, def_clms_paths_srv,
+		     all_clms_paths, IBNBD_BOTH);
 
 	printf("%sProvide 'all' to print all available fields\n", HPRE);
 
@@ -1434,6 +1564,106 @@ static void help_show(const struct cmd *cmd,
 		  "Information to print: device|session|path. Default: device.");
 
 	print_sarg_descr("help");
+}
+
+static void help_show_devices(const struct cmd *cmd,
+			      const struct ibnbd_ctx *ctx)
+{
+	cmd_print_usage(cmd, "devices", ctx);
+
+	if (!help_print_fields(ctx)) {
+
+		printf("\nArguments:\n");
+		print_opt("<name>",
+			  "Name of a local or a remote block device.");
+		print_opt("",
+			  "I.e. ibnbd0, /dev/ibnbd0, d12aef94-4110-4321-9373-3be8494a557b.");
+		
+		printf("\nOptions:\n");
+	}
+	help_fields();
+
+	if (help_print_all(ctx) || help_print_fields(ctx)) {
+
+		print_fields(def_clms_devices_clt, def_clms_devices_srv,
+			     all_clms_devices, ctx->ibnbdmode);
+		if (help_print_fields(ctx))
+			return;
+	}
+
+	printf("%sProvide 'all' to print all available fields\n", HPRE);
+
+	print_opt("{format}", "Output format: csv|json|xml");
+	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
+
+	print_opt("help", "Display help and exit. [fields|all]");
+}
+
+static void help_show_sessions(const struct cmd *cmd,
+			       const struct ibnbd_ctx *ctx)
+{
+	cmd_print_usage(cmd, "sessions", ctx);
+
+	if (!help_print_fields(ctx)) {
+
+		printf("\nArguments:\n");
+		print_opt("<name>",
+			  "Session name or remote hostname.");
+		print_opt("",
+			  "I.e. ps401a-1@st401b-2, st401b-2, <ip1>@<ip2>, etc.");
+		
+		printf("\nOptions:\n");
+	}
+	help_fields();
+
+	if (help_print_all(ctx) || help_print_fields(ctx)) {
+
+		print_fields(def_clms_sessions_clt, def_clms_sessions_srv,
+			     all_clms_sessions, ctx->ibnbdmode);
+		if (help_print_fields(ctx))
+			return;
+	}
+
+	printf("%sProvide 'all' to print all available fields\n", HPRE);
+
+	print_opt("{format}", "Output format: csv|json|xml");
+	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
+
+	print_opt("help", "Display help and exit. [fields|all]");
+}
+
+static void help_show_paths(const struct cmd *cmd,
+			    const struct ibnbd_ctx *ctx)
+{
+	cmd_print_usage(cmd, "paths", ctx);
+
+	if (!help_print_fields(ctx)) {
+
+		printf("\nArguments:\n");
+		print_opt("<name>",
+			  "In order to display path information, path name or identifier");
+		print_opt("", "has to be provided, i.e. st401b-2:1.");
+
+		printf("\nOptions:\n");
+	}
+
+	help_fields();
+
+	if (help_print_all(ctx) || help_print_fields(ctx)) {
+
+		print_fields(def_clms_paths_clt, def_clms_paths_srv,
+			     all_clms_paths, ctx->ibnbdmode);
+
+		if (help_print_fields(ctx))
+			return;
+	}
+
+	printf("%sProvide 'all' to print all available fields\n", HPRE);
+
+	print_opt("{format}", "Output format: csv|json|xml");
+	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
+
+	print_opt("help", "Display help and exit. [fields|all]");
 }
 
 static void help_map(const struct cmd *cmd,
@@ -1821,15 +2051,51 @@ static int cmd_delpath(void)
 static struct cmd _cmd_list =
 	{TOK_LIST, "list",
 		"List information on all",
-	 "s",
+		"s",
 		"List block device or transport related information: devices, sessions, paths, etc.",
 		cmd_list, NULL, help_list};
+static struct cmd _cmd_list_devices =
+	{TOK_LIST, "list",
+		"List information on all",
+		"s",
+		"List information on devices.",
+		cmd_list, NULL, help_list_devices};
+static struct cmd _cmd_list_sessions =
+	{TOK_LIST, "list",
+		"List information on all",
+		"s",
+		"List information on sessions.",
+		cmd_list, NULL, help_list_sessions};
+static struct cmd _cmd_list_paths =
+	{TOK_LIST, "list",
+		"List information on all",
+		"s",
+		"List information on paths.",
+		cmd_list, NULL, help_list_paths};
 static struct cmd _cmd_show =
 	{TOK_SHOW, "show",
 		"Show information about a",
 		"",
 		"Show information about an ibnbd block- or transport- item: device, session or path.",
 		cmd_show, parse_name, help_show};
+static struct cmd _cmd_show_devices =
+	{TOK_SHOW, "show",
+		"Show information about a",
+		"",
+		"Show information about an ibnbd block device.",
+		cmd_show, parse_name, help_show_devices};
+static struct cmd _cmd_show_sessions =
+	{TOK_SHOW, "show",
+		"Show information about a",
+		"",
+		"Show information about an ibnbd session.",
+		cmd_show, parse_name, help_show_sessions};
+static struct cmd _cmd_show_paths =
+	{TOK_SHOW, "show",
+		"Show information about a",
+		"",
+		"Show information about an ibnbd transport path.",
+		cmd_show, parse_name, help_show_paths};
 static struct cmd _cmd_map =
 	{TOK_MAP, "map",
 		"Map a",
@@ -1923,8 +2189,8 @@ static struct cmd *cmds[] = {
 };
 
 static struct cmd *cmds_client_sessions[] = {
-	&_cmd_list,
-	&_cmd_show,
+	&_cmd_list_sessions,
+	&_cmd_show_sessions,
 	&_cmd_reconnect,
 	&_cmd_remap_session,
 	&_cmd_help,
@@ -1932,8 +2198,8 @@ static struct cmd *cmds_client_sessions[] = {
 };
 
 static struct cmd *cmds_client_devices[] = {
-	&_cmd_list,
-	&_cmd_show,
+	&_cmd_list_devices,
+	&_cmd_show_devices,
 	&_cmd_map,
 	&_cmd_resize,
 	&_cmd_unmap,
@@ -1943,8 +2209,8 @@ static struct cmd *cmds_client_devices[] = {
 };
 
 static struct cmd *cmds_client_paths[] = {
-	&_cmd_list,
-	&_cmd_show,
+	&_cmd_list_paths,
+	&_cmd_show_paths,
 	&_cmd_disconnect,
 	&_cmd_reconnect,
 	&_cmd_add,
@@ -1954,23 +2220,23 @@ static struct cmd *cmds_client_paths[] = {
 };
 
 static struct cmd *cmds_server_sessions[] = {
-	&_cmd_list,
-	&_cmd_show,
+	&_cmd_list_sessions,
+	&_cmd_show_sessions,
 	&_cmd_disconnect,
 	&_cmd_help,
 	&_cmd_null
 };
 
 static struct cmd *cmds_server_devices[] = {
-	&_cmd_list,
-	&_cmd_show,
+	&_cmd_list_devices,
+	&_cmd_show_devices,
 	&_cmd_help,
 	&_cmd_null
 };
 
 static struct cmd *cmds_server_paths[] = {
-	&_cmd_list,
-	&_cmd_show,
+	&_cmd_list_paths,
+	&_cmd_show_paths,
 	&_cmd_disconnect,
 	&_cmd_help,
 	&_cmd_null
@@ -2663,11 +2929,11 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			err = list_paths(paths_clt, paths_clt_cnt - 1, NULL, 0, ctx);
 			break;
 		case TOK_SHOW:
-			err = parse_name(argc--, argv++, 0, ctx);
-			if (err == 0) {
-				err = -EINVAL;
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
 				break;
-			}
+
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_clt_paths_clms, cmd);
 			if (err < 0)
@@ -2893,10 +3159,10 @@ int cmd_server_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	}
 	if (err >= 0) {
 
+		argc--; argv++;
+
 		switch (cmd->tok) {
 		case TOK_LIST:
-			argc--; argv++;
-
 			err = parse_list_parameters(argc, argv, ctx,
 						parse_srv_devices_clms, cmd);
 			if (err < 0)
