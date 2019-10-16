@@ -573,7 +573,6 @@ static void print_help(const char *program_name, struct cmd * const cmds[],
 
 	printf("\nOptions:\n");
 	print_sarg_descr("verbose");
-	print_sarg_descr("help");
 }
 
 static int cmd_help(void);
@@ -1973,6 +1972,36 @@ static void help_reconnect(const struct cmd *cmd,
 	print_sarg_descr("help");
 }
 
+static void help_reconnect_session(const struct cmd *cmd,
+				   const struct ibnbd_ctx *ctx)
+{
+	cmd_print_usage(cmd, "<session> ", ctx);
+
+	printf("\nArguments:\n");
+	print_opt("<identifier>",
+		  "Name or identifier of a session:");
+	print_opt("", "[sessname]");
+
+	printf("\nOptions:\n");
+	print_sarg_descr("verbose");
+	print_sarg_descr("help");
+}
+
+static void help_reconnect_path(const struct cmd *cmd,
+				const struct ibnbd_ctx *ctx)
+{
+	cmd_print_usage(cmd, "<path> ", ctx);
+
+	printf("\nArguments:\n");
+	print_opt("<identifier>",
+		  "Name or identifier of a path:");
+	print_opt("", "[pathname], [sessname:port], etc.");
+
+	printf("\nOptions:\n");
+	print_sarg_descr("verbose");
+	print_sarg_descr("help");
+}
+
 static int cmd_reconnect(void)
 {
 	printf("TODO\n");
@@ -1988,6 +2017,34 @@ static void help_disconnect(const struct cmd *cmd,
 	print_opt("<identifier>",
 		  "Name or identifier of a session or of a path:");
 	print_opt("", "[sessname], [pathname], [sessname:port], etc.");
+
+	printf("\nOptions:\n");
+	print_sarg_descr("verbose");
+	print_sarg_descr("help");
+}
+
+static void help_disconnect_session(const struct cmd *cmd,
+				    const struct ibnbd_ctx *ctx)
+{
+	cmd_print_usage(cmd, "<session> ", ctx);
+
+	printf("\nArguments:\n");
+	print_opt("<identifier>", "Name or identifier of a session:");
+	print_opt("", "[sessname]");
+
+	printf("\nOptions:\n");
+	print_sarg_descr("verbose");
+	print_sarg_descr("help");
+}
+
+static void help_disconnect_path(const struct cmd *cmd,
+				 const struct ibnbd_ctx *ctx)
+{
+	cmd_print_usage(cmd, "<path> ", ctx);
+
+	printf("\nArguments:\n");
+	print_opt("<identifier>", "Name or identifier of of a path:");
+	print_opt("", "[pathname], [sessname:port], etc.");
 
 	printf("\nOptions:\n");
 	print_sarg_descr("verbose");
@@ -2132,12 +2189,36 @@ static struct cmd _cmd_disconnect =
 		"",
 		"Disconnect a path or all paths on a given session",
 		cmd_disconnect, parse_name, help_disconnect};
+static struct cmd _cmd_disconnect_session =
+	{TOK_DISCONNECT, "disconnect",
+		"Disconnect a",
+		"",
+		"Disconnect all paths on a given session",
+		cmd_disconnect, parse_name, help_disconnect_session};
+static struct cmd _cmd_disconnect_path =
+	{TOK_DISCONNECT, "disconnect",
+		"Disconnect a",
+		"",
+		"Disconnect a path a given session",
+		cmd_disconnect, parse_name, help_disconnect_path};
 static struct cmd _cmd_reconnect =
 	{TOK_RECONNECT, "reconnect",
 		"Reconnect a",
 		"",
 		"Disconnect and connect again a path or a whole session",
 		 cmd_reconnect, parse_name, help_reconnect};
+static struct cmd _cmd_reconnect_session =
+	{TOK_RECONNECT, "reconnect",
+		"Reconnect a",
+		"",
+		"Disconnect and connect again a whole session",
+		 cmd_reconnect, parse_name, help_reconnect_session};
+static struct cmd _cmd_reconnect_path =
+	{TOK_RECONNECT, "reconnect",
+		"Reconnect a",
+		"",
+		"Disconnect and connect again a single path of a session",
+		 cmd_reconnect, parse_name, help_reconnect_path};
 static struct cmd _cmd_addpath =
 	{TOK_ADD, "addpath",
 		"Add a path to an existing session",
@@ -2191,7 +2272,7 @@ static struct cmd *cmds[] = {
 static struct cmd *cmds_client_sessions[] = {
 	&_cmd_list_sessions,
 	&_cmd_show_sessions,
-	&_cmd_reconnect,
+	&_cmd_reconnect_session,
 	&_cmd_remap_session,
 	&_cmd_help,
 	&_cmd_null
@@ -2211,8 +2292,8 @@ static struct cmd *cmds_client_devices[] = {
 static struct cmd *cmds_client_paths[] = {
 	&_cmd_list_paths,
 	&_cmd_show_paths,
-	&_cmd_disconnect,
-	&_cmd_reconnect,
+	&_cmd_disconnect_path,
+	&_cmd_reconnect_path,
 	&_cmd_add,
 	&_cmd_delete,
 	&_cmd_help,
@@ -2222,7 +2303,7 @@ static struct cmd *cmds_client_paths[] = {
 static struct cmd *cmds_server_sessions[] = {
 	&_cmd_list_sessions,
 	&_cmd_show_sessions,
-	&_cmd_disconnect,
+	&_cmd_disconnect_session,
 	&_cmd_help,
 	&_cmd_null
 };
@@ -2237,7 +2318,7 @@ static struct cmd *cmds_server_devices[] = {
 static struct cmd *cmds_server_paths[] = {
 	&_cmd_list_paths,
 	&_cmd_show_paths,
-	&_cmd_disconnect,
+	&_cmd_disconnect_path,
 	&_cmd_help,
 	&_cmd_null
 };
@@ -2290,12 +2371,19 @@ static void handle_unknown_cmd(const char *cmd, struct cmd *cmds[])
 			cnt++;
 	}
 
-	if (!cnt)
-		return;
+	printf("Unknown: %s\n", cmd);
 
-	qsort(cmds, len, sizeof(*cmds), cmd_compare);
+	if (!cnt) {
 
-	printf("Did you mean:\n");
+		if (len > 7)
+			return;
+
+		cnt = len;
+	} else {
+
+		qsort(cmds, len, sizeof(*cmds), cmd_compare);
+		printf("Did you mean:\n");
+	}
 
 	for (len = 0; len < cnt; len++)
 		printf("\t%s\n", cmds[len]->cmd);
@@ -2315,15 +2403,17 @@ static void handle_unknown_sarg(const char *sarg, struct sarg *sargs[])
 			cnt++;
 	}
 
-	if (!cnt) {
-		printf("Unknown: %s\n", sarg);
-		return;
-	}
-
-	qsort(sargs, len, sizeof(*sargs), sarg_compare);
-
 	printf("Unknown: %s\n", sarg);
-	printf("Did you mean:\n");
+
+	if (!cnt) {
+
+		if (len > 7)
+			return;
+	} else {
+
+		qsort(sargs, len, sizeof(*sargs), sarg_compare);
+		printf("Did you mean:\n");
+	}
 
 	for (i = 0; i < cnt; i++)
 		printf("\t%s\n", sargs[i]->str);

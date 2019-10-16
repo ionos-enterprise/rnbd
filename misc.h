@@ -53,6 +53,9 @@ struct ibnbd_ctx {
 	const char *access_mode;
 	bool access_mode_set;
 
+	const char *help_arg;
+	bool help_arg_set;
+
 	struct table_column *clms_devices_clt[CLM_MAX_CNT];
 	struct table_column *clms_devices_srv[CLM_MAX_CNT];
 
