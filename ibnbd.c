@@ -482,7 +482,7 @@ static  void usage_sarg(const char *str, struct sarg *const sargs[],
 	while ((*++sargs)->str)
 		printf("|%s%s%s", CLR(ctx->trm, CBLD, (*sargs)->str));
 
-	printf(" ...\n");
+	printf(" ...\n\n");
 }
 
 #define HP "    "
@@ -552,7 +552,7 @@ static void print_usage(const char *sub_name, struct cmd * const cmds[],
 	while ((*++cmds)->cmd)
 		printf("|%s%s%s", CLR(ctx->trm, CBLD, (*cmds)->cmd));
 
-	printf("} [ARGUMENTS]\n");
+	printf("} [ARGUMENTS]\n\n");
 }
 
 static void print_help(const char *program_name, struct cmd * const cmds[],
@@ -1885,7 +1885,7 @@ static void help_resize(const struct cmd *cmd,
 	cmd_print_usage(cmd, "<device name or path or mapping path> ", ctx);
 
 	printf("\nArguments:\n");
-	print_opt("<device>", "Name of the device to be unmapped");
+	print_opt("<device>", "Name of the device to be resized");
 	print_opt("<size>", "New size of the device in bytes");
 
 	printf("\nOptions:\n");
@@ -1939,11 +1939,24 @@ static int cmd_unmap(void)
 static void help_remap(const struct cmd *cmd,
 		       const struct ibnbd_ctx *ctx)
 {
-	cmd_print_usage(cmd, "<devname|sessname> ", ctx);
+	cmd_print_usage(cmd, "<device name> ", ctx);
 
 	printf("\nArguments:\n");
-	print_opt("<identifier>",
-		  "Identifier of a device to be remapped. Or identifier of a session to remap all devices on.");
+	print_opt("<identifier>", "Identifier of a device to be remapped.");
+
+	printf("\nOptions:\n");
+	print_sarg_descr("force");
+	print_sarg_descr("verbose");
+	print_sarg_descr("help");
+}
+
+static void help_remap_session(const struct cmd *cmd,
+			       const struct ibnbd_ctx *ctx)
+{
+	cmd_print_usage(cmd, "<session name> ", ctx);
+
+	printf("\nArguments:\n");
+	print_opt("<identifier>", "Identifier of a session to remap all devices on.");
 
 	printf("\nOptions:\n");
 	print_sarg_descr("force");
@@ -2175,14 +2188,14 @@ static struct cmd _cmd_remap =
 	{TOK_REMAP, "remap",
 		"Remap a",
 		"",
-		"Unmap and map again an imported device or do this for all devices of a given session",
+		"Unmap and map again an imported device",
 		 cmd_remap, parse_name, help_remap};
 static struct cmd _cmd_remap_session =
 	{TOK_REMAP, "remap",
 		"Remap all devicess on a",
 		"",
-		"Unmap and map again an imported device or do this for all devices of a given session",
-		 cmd_remap, parse_name, help_remap};
+		"Unmap and map again all devices of a given session",
+		 cmd_remap, parse_name, help_remap_session};
 static struct cmd _cmd_disconnect =
 	{TOK_DISCONNECT, "disconnect",
 		"Disconnect a",
@@ -2342,10 +2355,10 @@ static int levenstein_compare(int d1, int d2, const char *s1, const char *s2)
 
 static int cmd_compare(const void *p1, const void *p2)
 {
-	const struct cmd *c1 = p1;
-	const struct cmd *c2 = p2;
+	const struct cmd *const*c1 = p1;
+	const struct cmd *const*c2 = p2;
 
-	return levenstein_compare(c1->dist, c2->dist, c1->cmd, c2->cmd);
+	return levenstein_compare((*c1)->dist, (*c2)->dist, (*c1)->cmd, (*c2)->cmd);
 }
 
 static int sarg_compare(const void *p1, const void *p2)
@@ -2362,18 +2375,18 @@ static void handle_unknown_cmd(const char *cmd, struct cmd *cmds[])
 	struct cmd **cs;
 	size_t len = 0, cnt = 0;
 
+	printf("Unknown: %s\n", cmd);
+
 	for (cs = cmds; (*cs)->cmd; cs++) {
-		(*cs)->dist = levenshtein((*cs)->cmd, cmd, 0, 2, 1, 3) + 1;
+		(*cs)->dist = levenshtein((*cs)->cmd, cmd, 1, 2, 1, 0) + 1;
 		if (strlen((*cs)->cmd) < 2)
 			(*cs)->dist += 3;
 		len++;
-		if ((*cs)->dist < 7)
+		if ((*cs)->dist < 4)
 			cnt++;
 	}
 
-	printf("Unknown: %s\n", cmd);
-
-	if (!cnt) {
+	if (!cnt || cnt == len) {
 
 		if (len > 7)
 			return;
@@ -2394,18 +2407,18 @@ static void handle_unknown_sarg(const char *sarg, struct sarg *sargs[])
 	struct sarg **cs;
 	size_t len = 0, cnt = 0, i;
 
+	printf("Unknown: %s\n", sarg);
+
 	for (cs = sargs; (*cs)->str; cs++) {
-		(*cs)->dist = levenshtein((*cs)->str, sarg, 0, 2, 1, 3) + 1;
+		(*cs)->dist = levenshtein((*cs)->str, sarg, 1, 2, 1, 0) + 1;
 		if (strlen((*cs)->str) < 2)
-			(*cs)->dist += 10;
+			(*cs)->dist += 3;
 		len++;
-		if ((*cs)->dist < 5)
+		if ((*cs)->dist < 4)
 			cnt++;
 	}
 
-	printf("Unknown: %s\n", sarg);
-
-	if (!cnt) {
+	if (!cnt || cnt == len) {
 
 		if (len > 7)
 			return;
@@ -2558,7 +2571,7 @@ int cmd_start(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	int err = 0;
 	const struct sarg *sarg;
 
-	if (argc < 3) {
+	if (argc < 1) {
 		ERR(ctx->trm, "mode not specified\n");
 		usage_sarg(ctx->pname, sargs_mode, ctx);
 		err = -EINVAL;
@@ -2566,6 +2579,7 @@ int cmd_start(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	if (err >= 0) {
 		sarg = find_sarg(*argv, sargs_mode);
 		if (!sarg) {
+			usage_sarg(ctx->pname, sargs_mode, ctx);
 			handle_unknown_sarg(*argv, sargs_mode);
 			err = -EINVAL;
 		} else {
@@ -2590,6 +2604,7 @@ int cmd_start(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			err = -EINVAL;
 			break;
 		default:
+			usage_sarg(ctx->pname, sargs_mode, ctx);
 			handle_unknown_sarg(*argv, sargs_mode);
 			err = -EINVAL;
 			break;
@@ -2612,6 +2627,7 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	if (err >= 0) {
 		sarg = find_sarg(*argv, sargs_object_type);
 		if (!sarg) {
+			usage_sarg("ibnbd client", sargs_object_type_help_client, ctx);
 			handle_unknown_sarg(*argv, sargs_object_type);
 			err = -EINVAL;
 		} else {
@@ -2656,6 +2672,7 @@ int cmd_server(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	if (err >= 0) {
 		sarg = find_sarg(*argv, sargs_object_type);
 		if (!sarg) {
+			usage_sarg("ibnbd server", sargs_object_type_help_server, ctx);
 			handle_unknown_sarg(*argv, sargs_object_type);
 			err = -EINVAL;
 		} else {
@@ -2770,12 +2787,11 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 	cmd = find_cmd(*argv, cmds_client_sessions);
 	if (!cmd) {
+		print_usage(_help_context, cmds_client_sessions, ctx);
+		err = -EINVAL;
+
 		if (argc) {
 			handle_unknown_cmd(*argv, cmds_client_sessions);
-			err = -EINVAL;
-		} else {
-			print_usage(_help_context, cmds_client_sessions, ctx);
-			err = -EINVAL;
 		}
 	}
 	if (err >= 0) {
@@ -2812,7 +2828,7 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = cmd_client_sessions(argc--, argv++, ctx);
+			ibnbd_TODO(cmd, ctx);
 			break;
 		case TOK_REMAP:
 			err = parse_name_help(argc--, argv++,
@@ -2827,6 +2843,7 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		default:
 			print_usage(_help_context, cmds_client_sessions, ctx);
+			handle_unknown_cmd(cmd->cmd, cmds_client_sessions);
 			err = -EINVAL;
 			break;
 		}
@@ -2843,12 +2860,11 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 	cmd = find_cmd(*argv, cmds_client_devices);
 	if (!cmd) {
+		print_usage(_help_context, cmds_client_devices, ctx);
+		err = -EINVAL;
+
 		if (argc) {
 			handle_unknown_cmd(*argv, cmds_client_devices);
-			err = -EINVAL;
-		} else {
-			print_usage(_help_context, cmds_client_devices, ctx);
-			err = -EINVAL;
 		}
 	}
 	if (err >= 0) {
@@ -2980,6 +2996,7 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		default:
 			print_usage(_help_context, cmds_client_devices, ctx);
+			handle_unknown_cmd(cmd->cmd, cmds_client_sessions);
 			err = -EINVAL;
 			break;
 		}
@@ -2996,12 +3013,11 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 	cmd = find_cmd(*argv, cmds_client_paths);
 	if (!cmd) {
+		print_usage(_help_context, cmds_client_paths, ctx);
+		err = -EINVAL;
+
 		if (argc) {
 			handle_unknown_cmd(*argv, cmds_client_paths);
-			err = -EINVAL;
-		} else {
-			print_usage(_help_context, cmds_client_paths, ctx);
-			err = -EINVAL;
 		}
 	}
 	if (err >= 0) {
@@ -3097,6 +3113,7 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		default:
 			print_usage(_help_context, cmds_client_paths, ctx);
+			handle_unknown_cmd(cmd->cmd, cmds_client_sessions);
 			err = -EINVAL;
 			break;
 		}
@@ -3113,12 +3130,11 @@ int cmd_server_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 	cmd = find_cmd(*argv, cmds_server_sessions);
 	if (!cmd) {
+		print_usage(_help_context, cmds_server_sessions, ctx);
+		err = -EINVAL;
+
 		if (argc) {
 			handle_unknown_cmd(*argv, cmds_server_sessions);
-			err = -EINVAL;
-		} else {
-			print_usage(_help_context, cmds_server_sessions, ctx);
-			err = -EINVAL;
 		}
 	}
 	if (err >= 0) {
@@ -3167,6 +3183,7 @@ int cmd_server_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		default:
 			print_usage(_help_context, cmds_server_sessions, ctx);
+			handle_unknown_cmd(cmd->cmd, cmds_client_sessions);
 			err = -EINVAL;
 			break;
 		}
@@ -3183,12 +3200,11 @@ int cmd_server_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 	cmd = find_cmd(*argv, cmds_server_devices);
 	if (!cmd) {
+		print_usage(_help_context, cmds_server_devices, ctx);
+		err = -EINVAL;
+
 		if (argc) {
 			handle_unknown_cmd(*argv, cmds_server_devices);
-			err = -EINVAL;
-		} else {
-			print_usage(_help_context, cmds_server_devices, ctx);
-			err = -EINVAL;
 		}
 	}
 	if (err >= 0) {
@@ -3223,6 +3239,7 @@ int cmd_server_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		default:
 			print_usage(_help_context, cmds_server_devices, ctx);
+			handle_unknown_cmd(cmd->cmd, cmds_client_sessions);
 			err = -EINVAL;
 			break;
 		}
@@ -3239,12 +3256,11 @@ int cmd_server_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 	cmd = find_cmd(*argv, cmds_server_paths);
 	if (!cmd) {
+		print_usage(_help_context, cmds_server_paths, ctx);
+		err = -EINVAL;
+
 		if (argc) {
 			handle_unknown_cmd(*argv, cmds_server_paths);
-			err = -EINVAL;
-		} else {
-			print_usage(_help_context, cmds_server_paths, ctx);
-			err = -EINVAL;
 		}
 	}
 	if (err >= 0) {
@@ -3292,6 +3308,7 @@ int cmd_server_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		default:
 			print_usage(_help_context, cmds_server_paths, ctx);
+			handle_unknown_cmd(cmd->cmd, cmds_client_sessions);
 			err = -EINVAL;
 			break;
 		}
@@ -3358,16 +3375,13 @@ int main(int argc, const char *argv[])
 		goto free;
 	}
 
+#if 0
 	if (argc < 2) {
 		ERR(ctx.trm, "no command specified\n");
 		print_help(argv[0], cmds, &ctx);
 		ret = -EINVAL;
 		goto out;
 	}
-
-	/*
-	ret = cmd_start(--argc, ++argv, &ctx);
-	*/
 
 	i = 1;
 
@@ -3452,6 +3466,8 @@ int main(int argc, const char *argv[])
 		i = ret;
 	}
 
+#endif
+
 	ret = ibnbd_sysfs_alloc_all(&sds_clt, &sds_srv,
 				    &sess_clt, &sess_srv,
 				    &paths_clt, &paths_srv,
@@ -3473,8 +3489,7 @@ int main(int argc, const char *argv[])
 
 	ibnbd_ctx_default(&ctx);
 
-	ret = 0;
-
+#if 0
 	if (ctx.help_set && cmd->help)
 		cmd->help(cmd, &ctx);
 	else if (cmd->func) {
@@ -3487,6 +3502,12 @@ int main(int argc, const char *argv[])
 		 */
 		ret = cmd->func();
 	}
+#else
+
+	ret = cmd_start(--argc, ++argv, &ctx);
+
+#endif
+
 free:
 	ibnbd_sysfs_free_all(sds_clt, sds_srv, sess_clt, sess_srv,
 			     paths_clt, paths_srv);
