@@ -49,6 +49,7 @@ struct ibnbd_ctx {
 
 	unsigned int ibnbdmode;
 	bool ibnbdmode_set;
+	bool pname_with_mode;
 
 	const char *access_mode;
 	bool access_mode_set;
