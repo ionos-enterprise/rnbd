@@ -481,6 +481,35 @@ static struct sarg *sargs_list_parameters[] = {
 	&_sargs_null
 };
 
+static struct sarg *sargs_map_from_parameters[] = {
+	&_sargs_from,
+	&_sargs_help,
+	&_sargs_verbose,
+	&_sargs_minus_v,
+	&_sargs_null
+};
+
+static struct sarg *sargs_map_parameters[] = {
+	&_sargs_from,
+	&_sargs_ro,
+	&_sargs_rw,
+	&_sargs_migration,
+	&_sargs_blockio,
+	&_sargs_fileio,
+	&_sargs_help,
+	&_sargs_verbose,
+	&_sargs_minus_v,
+	&_sargs_null
+};
+
+static struct sarg *sargs_unmap_parameters[] = {
+	&_sargs_help,
+	&_sargs_force,
+	&_sargs_verbose,
+	&_sargs_minus_v,
+	&_sargs_null
+};
+
 static const struct sarg *find_sarg(const char *str,
 				    struct sarg *const sargs[])
 {
@@ -721,7 +750,8 @@ static void help_list_devices(const char *program_name,
 		if (help_print_fields(ctx))
 			return;
 	}
-	printf("%sProvide 'all' to print all available fields\n", HPRE);
+	if (!help_print_all(ctx))
+		printf("%sProvide 'all' to print all available fields\n\n", HPRE);
 
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
@@ -754,7 +784,8 @@ static void help_list_sessions(const char *program_name,
 			return;
 	}
 
-	printf("%sProvide 'all' to print all available fields\n", HPRE);
+	if (!help_print_all(ctx))
+		printf("%sProvide 'all' to print all available fields\n\n", HPRE);
 
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
@@ -787,7 +818,8 @@ static void help_list_paths(const char *program_name,
 			return;
 	}
 
-	printf("%sProvide 'all' to print all available fields\n", HPRE);
+	if (!help_print_all(ctx))
+		printf("%sProvide 'all' to print all available fields\n\n", HPRE);
 
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
@@ -1634,7 +1666,8 @@ static void help_show_devices(const char *program_name,
 			return;
 	}
 
-	printf("%sProvide 'all' to print all available fields\n", HPRE);
+	if (!help_print_all(ctx))
+		printf("%sProvide 'all' to print all available fields\n\n", HPRE);
 
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
@@ -1671,7 +1704,8 @@ static void help_show_sessions(const char *program_name,
 			return;
 	}
 
-	printf("%sProvide 'all' to print all available fields\n", HPRE);
+	if (!help_print_all(ctx))
+		printf("%sProvide 'all' to print all available fields\n\n", HPRE);
 
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
@@ -1709,7 +1743,8 @@ static void help_show_paths(const char *program_name,
 			return;
 	}
 
-	printf("%sProvide 'all' to print all available fields\n", HPRE);
+	if (!help_print_all(ctx))
+		printf("%sProvide 'all' to print all available fields\n\n", HPRE);
 
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
@@ -2314,8 +2349,20 @@ static struct cmd _cmd_disconnect_session =
 		"",
 		"Disconnect all paths on a given session",
 		cmd_disconnect, parse_name, help_disconnect_session};
+static struct cmd _cmd_dis_session =
+	{TOK_DISCONNECT, "dis",
+		"Disconnect a",
+		"",
+		"Disconnect all paths on a given session",
+		cmd_disconnect, parse_name, help_disconnect_session};
 static struct cmd _cmd_disconnect_path =
 	{TOK_DISCONNECT, "disconnect",
+		"Disconnect a",
+		"",
+		"Disconnect a path a given session",
+		cmd_disconnect, parse_name, help_disconnect_path};
+static struct cmd _cmd_dis_path =
+	{TOK_DISCONNECT, "dis",
 		"Disconnect a",
 		"",
 		"Disconnect a path a given session",
@@ -2332,8 +2379,20 @@ static struct cmd _cmd_reconnect_session =
 		"",
 		"Disconnect and connect again a whole session",
 		 cmd_reconnect, parse_name, help_reconnect_session};
+static struct cmd _cmd_rec_session =
+	{TOK_RECONNECT, "rec",
+		"Reconnect a",
+		"",
+		"Disconnect and connect again a whole session",
+		 cmd_reconnect, parse_name, help_reconnect_session};
 static struct cmd _cmd_reconnect_path =
 	{TOK_RECONNECT, "reconnect",
+		"Reconnect a",
+		"",
+		"Disconnect and connect again a single path of a session",
+		 cmd_reconnect, parse_name, help_reconnect_path};
+static struct cmd _cmd_rec_path =
+	{TOK_RECONNECT, "rec",
 		"Reconnect a",
 		"",
 		"Disconnect and connect again a single path of a session",
@@ -2358,6 +2417,12 @@ static struct cmd _cmd_delpath =
 		 cmd_delpath, parse_name, help_delpath};
 static struct cmd _cmd_delete =
 	{TOK_DELETE, "delete",
+		"Delete a",
+		"",
+		"Delete a given path from the corresponding session",
+		 cmd_delpath, parse_name, help_delpath};
+static struct cmd _cmd_del =
+	{TOK_DELETE, "del",
 		"Delete a",
 		"",
 		"Delete a given path from the corresponding session",
@@ -2392,6 +2457,16 @@ static struct cmd *cmds_client_sessions[] = {
 	&_cmd_list_sessions,
 	&_cmd_show_sessions,
 	&_cmd_reconnect_session,
+	&_cmd_rec_session,
+	&_cmd_remap_session,
+	&_cmd_help,
+	&_cmd_null
+};
+
+static struct cmd *cmds_client_sessions_help[] = {
+	&_cmd_list_sessions,
+	&_cmd_show_sessions,
+	&_cmd_reconnect_session,
 	&_cmd_remap_session,
 	&_cmd_help,
 	&_cmd_null
@@ -2412,6 +2487,20 @@ static struct cmd *cmds_client_paths[] = {
 	&_cmd_list_paths,
 	&_cmd_show_paths,
 	&_cmd_disconnect_path,
+	&_cmd_dis_path,
+	&_cmd_reconnect_path,
+	&_cmd_rec_path,
+	&_cmd_add,
+	&_cmd_delete,
+	&_cmd_del,
+	&_cmd_help,
+	&_cmd_null
+};
+
+static struct cmd *cmds_client_paths_help[] = {
+	&_cmd_list_paths,
+	&_cmd_show_paths,
+	&_cmd_disconnect_path,
 	&_cmd_reconnect_path,
 	&_cmd_add,
 	&_cmd_delete,
@@ -2420,6 +2509,15 @@ static struct cmd *cmds_client_paths[] = {
 };
 
 static struct cmd *cmds_server_sessions[] = {
+	&_cmd_list_sessions,
+	&_cmd_show_sessions,
+	&_cmd_disconnect_session,
+	&_cmd_dis_session,
+	&_cmd_help,
+	&_cmd_null
+};
+
+static struct cmd *cmds_server_sessions_help[] = {
 	&_cmd_list_sessions,
 	&_cmd_show_sessions,
 	&_cmd_disconnect_session,
@@ -2435,6 +2533,15 @@ static struct cmd *cmds_server_devices[] = {
 };
 
 static struct cmd *cmds_server_paths[] = {
+	&_cmd_list_paths,
+	&_cmd_show_paths,
+	&_cmd_disconnect_path,
+	&_cmd_dis_path,
+	&_cmd_help,
+	&_cmd_null
+};
+
+static struct cmd *cmds_server_paths_help[] = {
 	&_cmd_list_paths,
 	&_cmd_show_paths,
 	&_cmd_disconnect_path,
@@ -2505,6 +2612,8 @@ static void handle_unknown_cmd(const char *cmd, struct cmd *cmds[])
 		qsort(cmds, len, sizeof(*cmds), cmd_compare);
 		printf("Did you mean:\n");
 	}
+	if (cnt > 3)
+		cnt = 3;
 
 	for (len = 0; len < cnt; len++)
 		printf("\t%s\n", cmds[len]->cmd);
@@ -2535,6 +2644,8 @@ static void handle_unknown_sarg(const char *sarg, struct sarg *sargs[])
 		qsort(sargs, len, sizeof(*sargs), sarg_compare);
 		printf("Did you mean:\n");
 	}
+	if (cnt > 3)
+		cnt = 3;
 
 	for (i = 0; i < cnt; i++)
 		printf("\t%s\n", sargs[i]->str);
@@ -2703,8 +2814,8 @@ int cmd_start(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	if (err >= 0) {
 		sarg = find_sarg(*argv, sargs_mode);
 		if (!sarg) {
-			usage_sarg(ctx->pname, sargs_mode_help, ctx);
 			handle_unknown_sarg(*argv, sargs_mode);
+			usage_sarg(ctx->pname, sargs_mode_help, ctx);
 			err = -EINVAL;
 		} else {
 			(void) sarg->parse(argc, argv, 0, sarg, ctx);
@@ -2731,8 +2842,8 @@ int cmd_start(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			}
 			break;
 		default:
-			usage_sarg(ctx->pname, sargs_mode_help, ctx);
 			handle_unknown_sarg(*argv, sargs_mode);
+			usage_sarg(ctx->pname, sargs_mode_help, ctx);
 			err = -EINVAL;
 			break;
 		}
@@ -2753,9 +2864,9 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	if (err >= 0) {
 		sarg = find_sarg(*argv, sargs_object_type);
 		if (!sarg) {
+			handle_unknown_sarg(*argv, sargs_object_type);
 			usage_sarg("ibnbd client",
 				   sargs_object_type_help_client, ctx);
-			handle_unknown_sarg(*argv, sargs_object_type);
 			err = -EINVAL;
 		} else {
 			(void) sarg->parse(argc, argv, 0, sarg, ctx);
@@ -2780,6 +2891,8 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		default:
 			handle_unknown_sarg(*argv, sargs_object_type);
+			usage_sarg("ibnbd client",
+				   sargs_object_type_help_client, ctx);
 			err = -EINVAL;
 			break;
 		}
@@ -2800,9 +2913,9 @@ int cmd_server(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	if (err >= 0) {
 		sarg = find_sarg(*argv, sargs_object_type);
 		if (!sarg) {
+			handle_unknown_sarg(*argv, sargs_object_type);
 			usage_sarg("ibnbd server",
 				   sargs_object_type_help_server, ctx);
-			handle_unknown_sarg(*argv, sargs_object_type);
 			err = -EINVAL;
 		} else {
 			(void) sarg->parse(argc, argv, 0, sarg, ctx);
@@ -2825,6 +2938,8 @@ int cmd_server(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		default:
 			handle_unknown_sarg(*argv, sargs_object_type);
+			usage_sarg("ibnbd server",
+				   sargs_object_type_help_server, ctx);
 			err = -EINVAL;
 			break;
 		}
@@ -2926,7 +3041,11 @@ int parse_list_parameters(int argc, const char *argv[], struct ibnbd_ctx *ctx,
 	return err < 0 ? err : start_argc - argc;
 }
 
-int parse_map_parameters(int argc, const char *argv[], struct ibnbd_ctx *ctx)
+/**
+ * Parse parameters for a command as described by sarg.
+ */
+int parse_cmd_parameters(int argc, const char *argv[],
+			 struct sarg *const sargs[], struct ibnbd_ctx *ctx)
 {
 	int err = 0; int start_argc = argc;
 	const struct sarg *sarg;
@@ -2943,11 +3062,6 @@ int parse_map_parameters(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	return err < 0 ? err : start_argc - argc;
 }
 
-int parse_unmap_parameters(int argc, const char *argv[], struct ibnbd_ctx *ctx)
-{
-	return parse_map_parameters(argc, argv, ctx);
-}
-
 int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 {
 	const char *_help_context = ctx->pname_with_mode
@@ -2958,7 +3072,7 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 	cmd = find_cmd(*argv, cmds_client_sessions);
 	if (!cmd) {
-		print_usage(_help_context, cmds_client_sessions, ctx);
+		print_usage(_help_context, cmds_client_sessions_help, ctx);
 		err = -EINVAL;
 
 		if (argc)
@@ -3010,12 +3124,12 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, -1, NULL, ctx);
-			print_help(_help_context, cmds_client_sessions, ctx);
+			print_help(_help_context, cmds_client_sessions_help, ctx);
 			if (help_print_all(ctx)) {
 			}
 			break;
 		default:
-			print_usage(_help_context, cmds_client_sessions, ctx);
+			print_usage(_help_context, cmds_client_sessions_help, ctx);
 			handle_unknown_cmd(cmd->cmd, cmds_client_sessions);
 			err = -EINVAL;
 			break;
@@ -3074,12 +3188,20 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = parse_from(argc--, argv++, 0, NULL, ctx);
+			err = parse_cmd_parameters(argc, argv,
+						   sargs_map_from_parameters, ctx);
+			if (err < 0)
+				break;
 			if (err == 0) {
+
+				ERR(ctx->trm, "Please specify the destination to map from\n");
 				err = -EINVAL;
 				break;
 			}
-			err = parse_map_parameters(argc, argv, ctx);
+			argc -= err; argv += err;
+
+			err = parse_cmd_parameters(argc, argv,
+						   sargs_map_parameters, ctx);
 			if (err < 0)
 				break;
 			if (argc > 0) {
@@ -3140,7 +3262,8 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = parse_unmap_parameters(argc, argv, ctx);
+			err = parse_cmd_parameters(argc, argv,
+						   sargs_unmap_parameters, ctx);
 			if (err < 0)
 				break;
 			if (argc > 0) {
@@ -3172,7 +3295,7 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		default:
 			print_usage(_help_context, cmds_client_devices, ctx);
-			handle_unknown_cmd(cmd->cmd, cmds_client_sessions);
+			handle_unknown_cmd(cmd->cmd, cmds_client_devices);
 			err = -EINVAL;
 			break;
 		}
@@ -3190,7 +3313,7 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 	cmd = find_cmd(*argv, cmds_client_paths);
 	if (!cmd) {
-		print_usage(_help_context, cmds_client_paths, ctx);
+		print_usage(_help_context, cmds_client_paths_help, ctx);
 		err = -EINVAL;
 
 		if (argc)
@@ -3287,10 +3410,10 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, -1, NULL, ctx);
-			print_help(_help_context, cmds_client_paths, ctx);
+			print_help(_help_context, cmds_client_paths_help, ctx);
 			break;
 		default:
-			print_usage(_help_context, cmds_client_paths, ctx);
+			print_usage(_help_context, cmds_client_paths_help, ctx);
 			handle_unknown_cmd(cmd->cmd, cmds_client_sessions);
 			err = -EINVAL;
 			break;
@@ -3309,7 +3432,7 @@ int cmd_server_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 	cmd = find_cmd(*argv, cmds_server_sessions);
 	if (!cmd) {
-		print_usage(_help_context, cmds_server_sessions, ctx);
+		print_usage(_help_context, cmds_server_sessions_help, ctx);
 		err = -EINVAL;
 
 		if (argc)
@@ -3359,11 +3482,11 @@ int cmd_server_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, -1, NULL, ctx);
-			print_help(_help_context, cmds_server_sessions, ctx);
+			print_help(_help_context, cmds_server_sessions_help, ctx);
 			break;
 		default:
-			print_usage(_help_context, cmds_server_sessions, ctx);
-			handle_unknown_cmd(cmd->cmd, cmds_client_sessions);
+			print_usage(_help_context, cmds_server_sessions_help, ctx);
+			handle_unknown_cmd(cmd->cmd, cmds_server_sessions);
 			err = -EINVAL;
 			break;
 		}
@@ -3439,7 +3562,7 @@ int cmd_server_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 	cmd = find_cmd(*argv, cmds_server_paths);
 	if (!cmd) {
-		print_usage(_help_context, cmds_server_paths, ctx);
+		print_usage(_help_context, cmds_server_paths_help, ctx);
 		err = -EINVAL;
 
 		if (argc)
@@ -3488,10 +3611,10 @@ int cmd_server_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, -1, NULL, ctx);
-			print_help(_help_context, cmds_server_paths, ctx);
+			print_help(_help_context, cmds_server_paths_help, ctx);
 			break;
 		default:
-			print_usage(_help_context, cmds_server_paths, ctx);
+			print_usage(_help_context, cmds_server_paths_help, ctx);
 			handle_unknown_cmd(cmd->cmd, cmds_client_sessions);
 			err = -EINVAL;
 			break;
