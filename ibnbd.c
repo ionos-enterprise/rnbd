@@ -30,14 +30,17 @@ static int sds_clt_cnt, sds_srv_cnt,
 	   sess_clt_cnt, sess_srv_cnt,
 	   paths_clt_cnt, paths_srv_cnt;
 
-static struct ibnbd_ctx ctx;
-
 struct sarg {
 	enum ibnbd_token tok;
-	const char *str;
+	const char *sarg_str;
+	const char *short_d;
+	const char *short_d2;
 	const char *descr;
 	int (*parse)(int argc, const char *argv[], int i,
 		     const struct sarg *sarg, struct ibnbd_ctx *ctx);
+	void (*help)(const char *program_name,
+		     const struct sarg *cmd,
+		     const struct ibnbd_ctx *ctx);
 	size_t offset;
 	int dist;
 };
@@ -217,7 +220,7 @@ static int parse_unit(int argc, const char *argv[], int i,
 {
 	int rc;
 
-	rc = get_unit_index(sarg->str, &ctx->unit_id);
+	rc = get_unit_index(sarg->sarg_str, &ctx->unit_id);
 	if (rc < 0)
 		return i;
 
@@ -260,147 +263,111 @@ static int parse_flag(int argc, const char *argv[], int i,
 }
 
 static struct sarg _sargs_from =
-	{TOK_FROM, "from", "Destination to map a device from", parse_from, 0};
+{TOK_FROM, "from", "", "", "Destination to map a device from", parse_from, 0};
 static struct sarg _sargs_client =
-	{TOK_CLIENT, "client", "Operations of client", parse_mode, 0};
+	{TOK_CLIENT, "client", "", "", "Operations of client", parse_mode, 0};
 static struct sarg _sargs_clt =
-	{TOK_CLIENT, "clt", "Operations of client", parse_mode, 0};
+	{TOK_CLIENT, "clt", "", "", "Operations of client", parse_mode, 0};
 static struct sarg _sargs_cli =
-	{TOK_CLIENT, "cli", "Operations of client", parse_mode, 0};
+	{TOK_CLIENT, "cli", "", "", "Operations of client", parse_mode, 0};
 static struct sarg _sargs_server =
-	{TOK_SERVER, "server", "Operations of server", parse_mode, 0};
+	{TOK_SERVER, "server", "", "", "Operations of server", parse_mode, 0};
 static struct sarg _sargs_serv =
-	{TOK_SERVER, "serv", "Operations of server", parse_mode, 0};
+	{TOK_SERVER, "serv", "", "", "Operations of server", parse_mode, 0};
 static struct sarg _sargs_srv =
-	{TOK_SERVER, "srv", "Operations of server", parse_mode, 0};
+	{TOK_SERVER, "srv", "", "", "Operations of server", parse_mode, 0};
 static struct sarg _sargs_both =
-	{TOK_BOTH, "both", "Operations of both client and server", parse_mode, 0};
+	{TOK_BOTH, "both", "", "", "Operations of both client and server", parse_mode, 0};
 static struct sarg _sargs_devices_client =
-	{TOK_DEVICES, "devices", "Map/unmapped/modify devices", parse_lst, 0};
+	{TOK_DEVICES, "devices", "", "", "Map/unmapped/modify devices", parse_lst, 0};
 static struct sarg _sargs_devices =
-	{TOK_DEVICES, "devices", "List devices", parse_lst, 0};
+	{TOK_DEVICES, "devices", "", "", "List devices", parse_lst, 0};
 static struct sarg _sargs_device =
-	{TOK_DEVICES, "device", "", parse_lst, 0};
+	{TOK_DEVICES, "device", "", "", "", parse_lst, 0};
 static struct sarg _sargs_devs =
-	{TOK_DEVICES, "devs", "", parse_lst, 0};
+	{TOK_DEVICES, "devs", "", "", "", parse_lst, 0};
 static struct sarg _sargs_dev =
-	{TOK_DEVICES, "dev", "", parse_lst, 0};
+	{TOK_DEVICES, "dev", "", "", "", parse_lst, 0};
 static struct sarg _sargs_sessions =
-	{TOK_SESSIONS, "sessions", "Operate on sessions", parse_lst, 0};
+	{TOK_SESSIONS, "sessions", "", "", "Operate on sessions", parse_lst, 0};
 static struct sarg _sargs_session =
-	{TOK_SESSIONS, "session", "", parse_lst, 0};
+	{TOK_SESSIONS, "session", "", "", "", parse_lst, 0};
 static struct sarg _sargs_sess =
-	{TOK_SESSIONS, "sess", "", parse_lst, 0};
+	{TOK_SESSIONS, "sess", "", "", "", parse_lst, 0};
 static struct sarg _sargs_paths =
-	{TOK_PATHS, "paths", "Handle paths", parse_lst, 0};
+	{TOK_PATHS, "paths", "", "", "Handle paths", parse_lst, 0};
 static struct sarg _sargs_path =
-	{TOK_PATHS, "path", "", parse_lst, 0};
+	{TOK_PATHS, "path", "", "", "", parse_lst, 0};
 static struct sarg _sargs_notree =
-	{TOK_NOTREE, "notree", "Don't display paths for each sessions",
-	 parse_flag, offsetof(struct ibnbd_ctx, notree_set)};
+	{TOK_NOTREE, "notree", "", "", "Don't display paths for each sessions",
+	 parse_flag, NULL, offsetof(struct ibnbd_ctx, notree_set)};
 static struct sarg _sargs_xml =
-	{TOK_XML, "xml", "Print in XML format", parse_fmt, 0};
+	{TOK_XML, "xml", "", "", "Print in XML format", parse_fmt, 0};
 static struct sarg _sargs_cvs =
-	{TOK_CSV, "csv", "Print in CSV format", parse_fmt, 0};
+	{TOK_CSV, "csv", "", "", "Print in CSV format", parse_fmt, 0};
 static struct sarg _sargs_json =
-	{TOK_JSON, "json", "Print in JSON format", parse_fmt, 0};
+	{TOK_JSON, "json", "", "", "Print in JSON format", parse_fmt, 0};
 static struct sarg _sargs_term =
-	{TOK_TERM, "term", "Print for terminal", parse_fmt, 0};
+	{TOK_TERM, "term", "", "", "Print for terminal", parse_fmt, 0};
 static struct sarg _sargs_ro =
-	{TOK_RO, "ro", "Readonly", parse_rw, 0};
+	{TOK_RO, "ro", "", "", "Readonly", parse_rw, 0};
 static struct sarg _sargs_rw =
-	{TOK_RW, "rw", "Writable", parse_rw, 0};
+	{TOK_RW, "rw", "", "", "Writable", parse_rw, 0};
 static struct sarg _sargs_migration =
-	{TOK_MIGRATION, "migration", "Writable (migration)", parse_rw, 0};
+	{TOK_MIGRATION, "migration", "", "", "Writable (migration)", parse_rw, 0};
 static struct sarg _sargs_blockio =
-	{TOK_BLOCKIO, "blockio", "Block IO mode", parse_io_mode, 0};
+	{TOK_BLOCKIO, "blockio", "", "", "Block IO mode", parse_io_mode, 0};
 static struct sarg _sargs_fileio =
-	{TOK_FILEIO, "fileio", "File IO mode", parse_io_mode, 0};
+	{TOK_FILEIO, "fileio", "", "", "File IO mode", parse_io_mode, 0};
 static struct sarg _sargs_help =
-	{TOK_HELP, "help", "Display help and exit", parse_help,
-	 offsetof(struct ibnbd_ctx, help_set)};
+	{TOK_HELP, "help", "", "", "Display help and exit", parse_help,
+	 NULL, offsetof(struct ibnbd_ctx, help_set)};
 static struct sarg _sargs_verbose =
-	{TOK_VERBOSE, "verbose", "Verbose output", parse_flag,
-	 offsetof(struct ibnbd_ctx, verbose_set)};
+	{TOK_VERBOSE, "verbose", "", "", "Verbose output", parse_flag,
+	 NULL, offsetof(struct ibnbd_ctx, verbose_set)};
 static struct sarg _sargs_minus_v =
-	{TOK_VERBOSE, "-v", "Verbose output", parse_flag,
-	 offsetof(struct ibnbd_ctx, verbose_set)};
+	{TOK_VERBOSE, "-v", "", "", "Verbose output", parse_flag,
+	 NULL, offsetof(struct ibnbd_ctx, verbose_set)};
 static struct sarg _sargs_byte =
-	{TOK_BYTE, "B", "Byte", parse_unit, 0};
+	{TOK_BYTE, "B", "", "", "Byte", parse_unit, 0};
 static struct sarg _sargs_kib =
-	{TOK_KIB, "K", "KiB", parse_unit, 0};
+	{TOK_KIB, "K", "", "", "KiB", parse_unit, 0};
 static struct sarg _sargs_mib =
-	{TOK_MIB, "M", "MiB", parse_unit, 0};
+	{TOK_MIB, "M", "", "", "MiB", parse_unit, 0};
 static struct sarg _sargs_gib =
-	{TOK_GIB, "G", "GiB", parse_unit, 0};
+	{TOK_GIB, "G", "", "", "GiB", parse_unit, 0};
 static struct sarg _sargs_tib =
-	{TOK_TIB, "T", "TiB", parse_unit, 0};
+	{TOK_TIB, "T", "", "", "TiB", parse_unit, 0};
 static struct sarg _sargs_pib =
-	{TOK_PIB, "P", "PiB", parse_unit, 0};
+	{TOK_PIB, "P", "", "", "PiB", parse_unit, 0};
 static struct sarg _sargs_eib =
-	{TOK_EIB, "E", "EiB", parse_unit, 0};
+	{TOK_EIB, "E", "", "", "EiB", parse_unit, 0};
 static struct sarg _sargs_noheaders =
-	{TOK_NOHEADERS, "noheaders", "Don't print headers", parse_flag,
-	 offsetof(struct ibnbd_ctx, noheaders_set)};
+	{TOK_NOHEADERS, "noheaders", "", "", "Don't print headers", parse_flag,
+	 NULL, offsetof(struct ibnbd_ctx, noheaders_set)};
 static struct sarg _sargs_nototals =
-	{TOK_NOTOTALS, "nototals", "Don't print totals", parse_flag,
-	 offsetof(struct ibnbd_ctx, nototals_set)};
+	{TOK_NOTOTALS, "nototals", "", "", "Don't print totals", parse_flag,
+	 NULL, offsetof(struct ibnbd_ctx, nototals_set)};
 static struct sarg _sargs_force =
-	{TOK_FORCE, "force", "Force operation", parse_flag,
-	 offsetof(struct ibnbd_ctx, force_set)};
+	{TOK_FORCE, "force", "", "", "Force operation", parse_flag,
+	 NULL, offsetof(struct ibnbd_ctx, force_set)};
 static struct sarg _sargs_noterm =
-	{TOK_NOTERM, "noterm", "Non-interactive mode", parse_flag,
-	 offsetof(struct ibnbd_ctx, noterm_set)};
+	{TOK_NOTERM, "noterm", "", "", "Non-interactive mode", parse_flag,
+	 NULL, offsetof(struct ibnbd_ctx, noterm_set)};
+#if 0
 static struct sarg _sargs_minus_f =
-	{TOK_FORCE, "-f", "", parse_flag,
-	 offsetof(struct ibnbd_ctx, force_set)};
+	{TOK_FORCE, "-f", "", "", "", parse_flag,
+	 NULL, offsetof(struct ibnbd_ctx, force_set)};
+#endif
 static struct sarg _sargs_all =
-	{TOK_ALL, "all", "Print all columns", parse_all, 0};
+	{TOK_ALL, "all", "", "", "Print all columns", parse_all, 0};
 static struct sarg _sargs_null =
 	{TOK_NONE, 0};
 
-static struct sarg *sargs[] = {
-	&_sargs_from,
-	&_sargs_client,
-	&_sargs_clt,
-	&_sargs_server,
-	&_sargs_srv,
-	&_sargs_both,
-	&_sargs_devices,
-	&_sargs_device,
-	&_sargs_devs,
-	&_sargs_dev,
-	&_sargs_sessions,
-	&_sargs_session,
-	&_sargs_sess,
-	&_sargs_paths,
-	&_sargs_path,
-	&_sargs_notree,
-	&_sargs_xml,
-	&_sargs_cvs,
-	&_sargs_json,
-	&_sargs_term,
-	&_sargs_ro,
-	&_sargs_rw,
-	&_sargs_migration,
-	&_sargs_blockio,
-	&_sargs_fileio,
+static struct sarg *default_sargs[] = {
 	&_sargs_help,
 	&_sargs_verbose,
 	&_sargs_minus_v,
-	&_sargs_byte,
-	&_sargs_kib,
-	&_sargs_mib,
-	&_sargs_gib,
-	&_sargs_tib,
-	&_sargs_pib,
-	&_sargs_eib,
-	&_sargs_noheaders,
-	&_sargs_nototals,
-	&_sargs_force,
-	&_sargs_noterm,
-	&_sargs_minus_f,
-	&_sargs_all,
 	&_sargs_null
 };
 
@@ -513,11 +480,12 @@ static struct sarg *sargs_unmap_parameters[] = {
 static const struct sarg *find_sarg(const char *str,
 				    struct sarg *const sargs[])
 {
-	do {
-		if (!strcasecmp(str, (*sargs)->str))
-			return *sargs;
-	} while ((*++sargs)->str);
-
+	if (str) {
+		do {
+			if (!strcasecmp(str, (*sargs)->sarg_str))
+				return *sargs;
+		} while ((*++sargs)->sarg_str);
+	}
 	return NULL;
 }
 
@@ -526,10 +494,10 @@ static  void usage_sarg(const char *str, struct sarg *const sargs[],
 {
 	printf("Usage: %s%s%s ", CLR(ctx->trm, CBLD, str));
 
-	clr_print(ctx->trm, CBLD, "%s", (*sargs)->str);
+	clr_print(ctx->trm, CBLD, "%s", (*sargs)->sarg_str);
 
-	while ((*++sargs)->str)
-		printf("|%s%s%s", CLR(ctx->trm, CBLD, (*sargs)->str));
+	while ((*++sargs)->sarg_str)
+		printf("|%s%s%s", CLR(ctx->trm, CBLD, (*sargs)->sarg_str));
 
 	printf(" ...\n\n");
 }
@@ -547,9 +515,9 @@ static void print_sarg_descr(char *str)
 {
 	const struct sarg *s;
 
-	s = find_sarg(str, sargs);
+	s = find_sarg(str, default_sargs);
 	if (s)
-		print_opt(s->str, s->descr);
+		print_opt(s->sarg_str, s->descr);
 }
 
 static  void help_sarg(const char *str, struct sarg *const sargs[],
@@ -558,37 +526,11 @@ static  void help_sarg(const char *str, struct sarg *const sargs[],
 	usage_sarg(str, sargs, ctx);
 
 	do {
-		print_opt((*sargs)->str, (*sargs)->descr);
-	} while ((*++sargs)->str);
+		print_opt((*sargs)->sarg_str, (*sargs)->descr);
+	} while ((*++sargs)->sarg_str);
 }
 
-struct cmd {
-	enum ibnbd_token tok;
-	const char *cmd;
-	const char *short_d;
-	const char *short_d2;
-	const char *long_d;
-	int (*func)(void);
-	int (*parse_args)(int argc, const char *argv[], int i,
-			  struct ibnbd_ctx *ctx);
-	void (*help)(const char *program_name,
-		     const struct cmd *cmd,
-		     const struct ibnbd_ctx *ctx);
-	int dist;
-};
-
-static const struct cmd *find_cmd(const char *cmd, struct cmd * const cmds[])
-{
-	if (cmd) {
-		do {
-			if (!strcmp(cmd, (*cmds)->cmd))
-				return *cmds;
-		} while ((*++cmds)->cmd);
-	}
-	return NULL;
-}
-
-static void print_usage(const char *sub_name, struct cmd * const cmds[],
+static void print_usage(const char *sub_name, struct sarg * const cmds[],
 			const struct ibnbd_ctx *ctx)
 {
 	if (sub_name)
@@ -597,10 +539,10 @@ static void print_usage(const char *sub_name, struct cmd * const cmds[],
 	else
 		printf("Usage: %s%s%s {", CLR(ctx->trm, CBLD, ctx->pname));
 
-	clr_print(ctx->trm, CBLD, "%s", (*cmds)->cmd);
+	clr_print(ctx->trm, CBLD, "%s", (*cmds)->sarg_str);
 
-	while ((*++cmds)->cmd)
-		printf("|%s%s%s", CLR(ctx->trm, CBLD, (*cmds)->cmd));
+	while ((*++cmds)->sarg_str)
+		printf("|%s%s%s", CLR(ctx->trm, CBLD, (*cmds)->sarg_str));
 
 	printf("} [ARGUMENTS]\n\n");
 }
@@ -621,7 +563,7 @@ static bool help_print_fields(const struct ibnbd_ctx *ctx)
 		return false;
 }
 
-static void print_help(const char *program_name, struct cmd * const cmds[],
+static void print_help(const char *program_name, struct sarg * const cmds[],
 		       const struct ibnbd_ctx *ctx)
 {
 	print_usage(program_name, cmds, ctx);
@@ -634,27 +576,25 @@ static void print_help(const char *program_name, struct cmd * const cmds[],
 		} else {
 			if (program_name)
 				printf("     %-*s%s %s%s\n", 20,
-				       (*cmds)->cmd, (*cmds)->short_d,
+				       (*cmds)->sarg_str, (*cmds)->short_d,
 				       program_name, (*cmds)->short_d2);
 			else
-				printf("     %-*s%s\n", 20, (*cmds)->cmd,
+				printf("     %-*s%s\n", 20, (*cmds)->sarg_str,
 				       (*cmds)->short_d);
 		}
-	} while ((*++cmds)->cmd);
+	} while ((*++cmds)->sarg_str);
 
 	printf("\nOptions:\n");
 	print_sarg_descr("verbose");
 }
 
-static int cmd_help(void);
-
-static void cmd_print_usage(const struct cmd *cmd, const char *a,
+static void cmd_print_usage(const struct sarg *cmd, const char *a,
 			    const struct ibnbd_ctx *ctx)
 {
 	printf("Usage: %s%s%s %s%s%s %s [OPTIONS]\n",
 	       CLR(ctx->trm, CBLD, ctx->pname),
-	       CLR(ctx->trm, CBLD, a), cmd->cmd);
-	printf("\n%s\n", cmd->long_d);
+	       CLR(ctx->trm, CBLD, a), cmd->sarg_str);
+	printf("\n%s\n", cmd->descr);
 }
 
 static void print_clms_list(struct table_column **clms)
@@ -677,12 +617,13 @@ static void help_fields(void)
 	print_opt("", "default selection.\n");
 }
 
-static void print_fields(struct table_column **def_clt,
+static void print_fields(const struct ibnbd_ctx *ctx,
+			 struct table_column **def_clt,
 			 struct table_column **def_srv,
 			 struct table_column **all,
 			 enum ibnbdmode mode)
 {
-	table_tbl_print_term(HPRE, all, ctx.trm, &ctx);
+	table_tbl_print_term(HPRE, all, ctx->trm, ctx);
 	if (mode != IBNBD_SERVER) {
 		printf("\n%sDefault%s: ",
 		       HPRE, mode == IBNBD_BOTH ? " client" : "");
@@ -696,8 +637,9 @@ static void print_fields(struct table_column **def_clt,
 	printf("\n");
 }
 
+#if 0
 static void help_list(const char *program_name,
-		      const struct cmd *cmd,
+		      const struct sarg *cmd,
 		      const struct ibnbd_ctx *ctx)
 {
 	cmd_print_usage(cmd, program_name, ctx);
@@ -707,15 +649,15 @@ static void help_list(const char *program_name,
 	help_fields();
 
 	printf("%s%s%s%s\n", HPRE, CLR(ctx->trm, CDIM, "Device Fields"));
-	print_fields(def_clms_devices_clt, def_clms_devices_srv,
+	print_fields(ctx, def_clms_devices_clt, def_clms_devices_srv,
 		     all_clms_devices, IBNBD_BOTH);
 
 	printf("%s%s%s%s\n", HPRE, CLR(ctx->trm, CDIM, "Session Fields"));
-	print_fields(def_clms_sessions_clt, def_clms_sessions_srv,
+	print_fields(ctx, def_clms_sessions_clt, def_clms_sessions_srv,
 		     all_clms_sessions, IBNBD_BOTH);
 
 	printf("%s%s%s%s\n", HPRE, CLR(ctx->trm, CDIM, "Path Fields"));
-	print_fields(def_clms_paths_clt, def_clms_paths_srv,
+	print_fields(ctx, def_clms_paths_clt, def_clms_paths_srv,
 		     all_clms_paths, IBNBD_BOTH);
 
 	printf("%sProvide 'all' to print all available fields\n", HPRE);
@@ -727,9 +669,10 @@ static void help_list(const char *program_name,
 	print_sarg_descr("nototals");
 	print_sarg_descr("help");
 }
+#endif
 
 static void help_list_devices(const char *program_name,
-			      const struct cmd *cmd,
+			      const struct sarg *cmd,
 			      const struct ibnbd_ctx *ctx)
 {
 	if (!program_name)
@@ -744,7 +687,7 @@ static void help_list_devices(const char *program_name,
 
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
-		print_fields(def_clms_devices_clt, def_clms_devices_srv,
+		print_fields(ctx, def_clms_devices_clt, def_clms_devices_srv,
 			     all_clms_devices, ctx->ibnbdmode);
 
 		if (help_print_fields(ctx))
@@ -762,7 +705,7 @@ static void help_list_devices(const char *program_name,
 }
 
 static void help_list_sessions(const char *program_name,
-			       const struct cmd *cmd,
+			       const struct sarg *cmd,
 			       const struct ibnbd_ctx *ctx)
 {
 	if (!program_name)
@@ -777,7 +720,7 @@ static void help_list_sessions(const char *program_name,
 
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
-		print_fields(def_clms_sessions_clt, def_clms_sessions_srv,
+		print_fields(ctx, def_clms_sessions_clt, def_clms_sessions_srv,
 			     all_clms_sessions, ctx->ibnbdmode);
 
 		if (help_print_fields(ctx))
@@ -796,7 +739,7 @@ static void help_list_sessions(const char *program_name,
 }
 
 static void help_list_paths(const char *program_name,
-			    const struct cmd *cmd,
+			    const struct sarg *cmd,
 			    const struct ibnbd_ctx *ctx)
 {
 	if (!program_name)
@@ -811,7 +754,7 @@ static void help_list_paths(const char *program_name,
 
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
-		print_fields(def_clms_paths_clt, def_clms_paths_srv,
+		print_fields(ctx, def_clms_paths_clt, def_clms_paths_srv,
 			     all_clms_paths, ctx->ibnbdmode);
 
 		if (help_print_fields(ctx))
@@ -1069,6 +1012,7 @@ static int list_paths(struct ibnbd_path **p_clt, int clt_p_num,
 	return 0;
 }
 
+#if 0
 static int cmd_list(void)
 {
 	int rc;
@@ -1091,6 +1035,7 @@ static int cmd_list(void)
 
 	return rc;
 }
+#endif
 
 static bool match_device(struct ibnbd_sess_dev *d, const char *name)
 {
@@ -1119,15 +1064,16 @@ static int find_devices(const char *name, struct ibnbd_sess_dev **devs,
 /*
  * Find all ibnbd devices by device name, path or mapping path
  */
-static int find_devs_all(const char *name, struct ibnbd_sess_dev **ds_imp,
-			    int *ds_imp_cnt, struct ibnbd_sess_dev **ds_exp,
-			    int *ds_exp_cnt)
+static int find_devs_all(const char *name, enum ibnbdmode ibnbdmode,
+			 struct ibnbd_sess_dev **ds_imp,
+			 int *ds_imp_cnt, struct ibnbd_sess_dev **ds_exp,
+			 int *ds_exp_cnt)
 {
 	int cnt_imp = 0, cnt_exp = 0;
 
-	if (ctx.ibnbdmode & IBNBD_CLIENT)
+	if (ibnbdmode & IBNBD_CLIENT)
 		cnt_imp = find_devices(name, sds_clt, ds_imp);
-	if (ctx.ibnbdmode & IBNBD_SERVER)
+	if (ibnbdmode & IBNBD_SERVER)
 		cnt_exp = find_devices(name, sds_srv, ds_exp);
 
 	*ds_imp_cnt = cnt_imp;
@@ -1213,15 +1159,16 @@ static int find_sessions_match(const char *name, struct ibnbd_sess **ss,
 	return cnt;
 }
 
-static int find_sess_all(const char *name, struct ibnbd_sess **ss_clt,
-			     int *ss_clt_cnt, struct ibnbd_sess **ss_srv,
-			     int *ss_srv_cnt)
+static int find_sess_all(const char *name, enum ibnbdmode ibnbdmode,
+			 struct ibnbd_sess **ss_clt,
+			 int *ss_clt_cnt, struct ibnbd_sess **ss_srv,
+			 int *ss_srv_cnt)
 {
 	int cnt_srv = 0, cnt_clt = 0;
 
-	if (ctx.ibnbdmode & IBNBD_CLIENT)
+	if (ibnbdmode & IBNBD_CLIENT)
 		cnt_clt = find_sessions_match(name, sess_clt, ss_clt);
-	if (ctx.ibnbdmode & IBNBD_SERVER)
+	if (ibnbdmode & IBNBD_SERVER)
 		cnt_srv = find_sessions_match(name, sess_srv, ss_srv);
 
 	*ss_clt_cnt = cnt_clt;
@@ -1275,15 +1222,16 @@ static int find_paths(const char *name, struct ibnbd_path **pp,
 	return cnt;
 }
 
-static int find_paths_all(const char *name, struct ibnbd_path **pp_clt,
+static int find_paths_all(const char *name, enum ibnbdmode ibnbdmode,
+			  struct ibnbd_path **pp_clt,
 			  int *pp_clt_cnt, struct ibnbd_path **pp_srv,
 			  int *pp_srv_cnt)
 {
 	int cnt_clt = 0, cnt_srv = 0;
 
-	if (ctx.ibnbdmode & IBNBD_CLIENT)
+	if (ibnbdmode & IBNBD_CLIENT)
 		cnt_clt = find_paths(name, paths_clt, pp_clt);
-	if (ctx.ibnbdmode & IBNBD_SERVER)
+	if (ibnbdmode & IBNBD_SERVER)
 		cnt_srv = find_paths(name, paths_srv, pp_srv);
 
 	*pp_clt_cnt = cnt_clt;
@@ -1375,6 +1323,7 @@ static int show_session(struct ibnbd_sess **ss_clt, struct ibnbd_sess **ss_srv,
 	return 0;
 }
 
+#if 0
 static int cmd_show(void)
 {
 	struct ibnbd_sess_dev **ds_clt, **ds_srv;
@@ -1405,10 +1354,10 @@ static int cmd_show(void)
 		c_pp = find_paths_all(ctx.name, pp_clt, &c_pp_clt, pp_srv,
 				      &c_pp_srv);
 	if (!ctx.lstmode_set || ctx.lstmode == LST_SESSIONS)
-		c_ss = find_sess_all(ctx.name, ss_clt, &c_ss_clt, ss_srv,
+		c_ss = find_sess_all(ctx.name, ctx->ibnbdmode, ss_clt, &c_ss_clt, ss_srv,
 				     &c_ss_srv);
 	if (!ctx.lstmode_set || ctx.lstmode == LST_DEVICES)
-		c_ds = find_devs_all(ctx.name, ds_clt, &c_ds_clt, ds_srv,
+		c_ds = find_devs_all(ctx.name, ctx->ibnbdmode, ds_clt, &c_ds_clt, ds_srv,
 				     &c_ds_srv);
 	if (c_pp + c_ss + c_ds > 1) {
 		ERR(ctx.trm, "Multiple entries match '%s'\n", ctx.name);
@@ -1447,6 +1396,7 @@ out:
 	free(ss_srv);
 	return ret;
 }
+#endif
 
 static int show_devices(const char *name, struct ibnbd_ctx *ctx)
 {
@@ -1462,7 +1412,7 @@ static int show_devices(const char *name, struct ibnbd_ctx *ctx)
 		ret = -ENOMEM;
 		goto out;
 	}
-	c_ds = find_devs_all(name, ds_clt, &c_ds_clt, ds_srv, &c_ds_srv);
+	c_ds = find_devs_all(name, ctx->ibnbdmode, ds_clt, &c_ds_clt, ds_srv, &c_ds_srv);
 	if (c_ds > 1) {
 		ERR(ctx->trm, "Multiple devices match '%s'\n", name);
 
@@ -1499,7 +1449,7 @@ static int show_sessions(const char *name, struct ibnbd_ctx *ctx)
 		ret = -ENOMEM;
 		goto out;
 	}
-	c_ss = find_sess_all(name, ss_clt, &c_ss_clt, ss_srv, &c_ss_srv);
+	c_ss = find_sess_all(name, ctx->ibnbdmode, ss_clt, &c_ss_clt, ss_srv, &c_ss_srv);
 
 	if (c_ss > 1) {
 		ERR(ctx->trm, "Multiple sessions match '%s'\n", name);
@@ -1537,7 +1487,7 @@ static int show_paths(const char *name, struct ibnbd_ctx *ctx)
 		ret = -ENOMEM;
 		goto out;
 	}
-	c_pp = find_paths_all(name, pp_clt, &c_pp_clt, pp_srv, &c_pp_srv);
+	c_pp = find_paths_all(name, ctx->ibnbdmode, pp_clt, &c_pp_clt, pp_srv, &c_pp_srv);
 
 	if (c_pp > 1) {
 		ERR(ctx->trm, "Multiple paths match '%s'\n", name);
@@ -1577,7 +1527,7 @@ static int parse_name(int argc, const char *argv[], int i,
 }
 
 static int parse_name_help(int argc, const char *argv[], const char *what,
-			   const struct cmd *cmd, struct ibnbd_ctx *ctx)
+			   const struct sarg *cmd, struct ibnbd_ctx *ctx)
 {
 	if (argc <= 0) {
 		ERR(ctx->trm, "Please specify the %s argument\n", what);
@@ -1594,51 +1544,8 @@ static int parse_name_help(int argc, const char *argv[], const char *what,
 	return 0;
 }
 
-static void help_show(const char *program_name,
-		      const struct cmd *cmd,
-		      const struct ibnbd_ctx *ctx)
-{
-	if (!program_name)
-		program_name = "<name> [path] ";
-
-	cmd_print_usage(cmd, program_name, ctx);
-
-	printf("\nArguments:\n");
-	print_opt("<name>",
-		  "Name of a local or a remote block device, session name, path name or remote hostname.");
-	print_opt("",
-		  "I.e. ibnbd0, /dev/ibnbd0, d12aef94-4110-4321-9373-3be8494a557b, ps401a-1@st401b-2, st401b-2, <ip1>@<ip2>, etc.");
-	print_opt("",
-		  "In order to display path information, path name or identifier");
-	print_opt("", "has to be provided, i.e. st401b-2:1.");
-
-	printf("\nOptions:\n");
-	help_fields();
-
-	printf("%s%s%s%s\n", HPRE, CLR(ctx->trm, CDIM, "Device Fields"));
-	print_fields(def_clms_devices_clt, def_clms_devices_srv,
-		     all_clms_devices, IBNBD_BOTH);
-
-	printf("%s%s%s%s\n", HPRE, CLR(ctx->trm, CDIM, "Sessions Fields"));
-	print_fields(def_clms_sessions_clt, def_clms_sessions_srv,
-		     all_clms_sessions, IBNBD_BOTH);
-
-	printf("%s%s%s%s\n", HPRE, CLR(ctx->trm, CDIM, "Paths Fields"));
-	print_fields(def_clms_paths_clt, def_clms_paths_srv,
-		     all_clms_paths, IBNBD_BOTH);
-
-	printf("%sProvide 'all' to print all available fields\n", HPRE);
-
-	print_opt("{format}", "Output format: csv|json|xml");
-	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
-	print_opt("{mode}",
-		  "Information to print: device|session|path. Default: device.");
-
-	print_sarg_descr("help");
-}
-
 static void help_show_devices(const char *program_name,
-			      const struct cmd *cmd,
+			      const struct sarg *cmd,
 			      const struct ibnbd_ctx *ctx)
 {
 	if (!program_name)
@@ -1660,7 +1567,7 @@ static void help_show_devices(const char *program_name,
 
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
-		print_fields(def_clms_devices_clt, def_clms_devices_srv,
+		print_fields(ctx, def_clms_devices_clt, def_clms_devices_srv,
 			     all_clms_devices, ctx->ibnbdmode);
 		if (help_print_fields(ctx))
 			return;
@@ -1676,7 +1583,7 @@ static void help_show_devices(const char *program_name,
 }
 
 static void help_show_sessions(const char *program_name,
-			       const struct cmd *cmd,
+			       const struct sarg *cmd,
 			       const struct ibnbd_ctx *ctx)
 {
 	if (!program_name)
@@ -1698,7 +1605,7 @@ static void help_show_sessions(const char *program_name,
 
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
-		print_fields(def_clms_sessions_clt, def_clms_sessions_srv,
+		print_fields(ctx, def_clms_sessions_clt, def_clms_sessions_srv,
 			     all_clms_sessions, ctx->ibnbdmode);
 		if (help_print_fields(ctx))
 			return;
@@ -1714,7 +1621,7 @@ static void help_show_sessions(const char *program_name,
 }
 
 static void help_show_paths(const char *program_name,
-			    const struct cmd *cmd,
+			    const struct sarg *cmd,
 			    const struct ibnbd_ctx *ctx)
 {
 	if (!program_name)
@@ -1736,7 +1643,7 @@ static void help_show_paths(const char *program_name,
 
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
-		print_fields(def_clms_paths_clt, def_clms_paths_srv,
+		print_fields(ctx, def_clms_paths_clt, def_clms_paths_srv,
 			     all_clms_paths, ctx->ibnbdmode);
 
 		if (help_print_fields(ctx))
@@ -1753,7 +1660,7 @@ static void help_show_paths(const char *program_name,
 }
 
 static void help_map(const char *program_name,
-		     const struct cmd *cmd,
+		     const struct sarg *cmd,
 		     const struct ibnbd_ctx *ctx)
 {
 	if (!program_name)
@@ -1796,7 +1703,8 @@ static bool is_gid(const char *arg)
 	return is_ip6(arg);
 }
 
-static int parse_path(const char *arg)
+static int parse_path(const char *arg,
+		      struct ibnbd_ctx *ctx)
 {
 	const char *src, *dst;
 	char *d;
@@ -1816,31 +1724,31 @@ static int parse_path(const char *arg)
 	if (!is_ip4(dst) && !is_ip6(dst) && !is_gid(dst))
 		return -EINVAL;
 
-	ctx.paths[ctx.path_cnt].src = src;
-	ctx.paths[ctx.path_cnt].dst = dst;
+	ctx->paths[ctx->path_cnt].src = src;
+	ctx->paths[ctx->path_cnt].dst = dst;
 
-	ctx.path_cnt++;
+	ctx->path_cnt++;
 
 	return 0;
 }
 
-static void ibnbd_TODO(const struct cmd *cmd, const struct ibnbd_ctx *ctx)
+static void ibnbd_TODO(const struct sarg *cmd, const struct ibnbd_ctx *ctx)
 {
 	if (ctx->trm)
 		printf("%s%s", colors[CMAG], colors[CBLD]);
-	printf("Command %s is not implemented yet.\n", cmd->cmd);
+	printf("Command %s is not implemented yet.\n", cmd->sarg_str);
 	if (ctx->trm)
 		printf("%s", colors[CNRM]);
 }
 
 static int client_devices_map(const char *from_session, const char *device_name,
-			      const struct ibnbd_ctx *ctx)
+			      struct ibnbd_ctx *ctx)
 {
 	char cmd[4096], sessname[NAME_MAX];
 	struct ibnbd_sess *sess;
 	int i, cnt = 0, ret;
 
-	if (!parse_path(ctx->from)) {
+	if (!parse_path(ctx->from, ctx)) {
 		/* user provided only paths to establish
 		 * -> generate sessname
 		 */
@@ -1893,40 +1801,35 @@ static int client_devices_map(const char *from_session, const char *device_name,
 	return ret;
 }
 
-static int cmd_map(void)
-{
-	return client_devices_map(ctx.from, ctx.name, &ctx);
-}
-
-static struct ibnbd_sess_dev *find_single_device(const char *name,
+static struct ibnbd_sess_dev *find_single_device(const char *name, struct ibnbd_ctx *ctx,
 						 struct ibnbd_sess_dev **devs)
 {
 	struct ibnbd_sess_dev *ds = NULL, **res;
 	int cnt;
 
 	if (!sds_clt_cnt) {
-		ERR(ctx.trm,
+		ERR(ctx->trm,
 		    "Device '%s' not found: no devices mapped\n", name);
 		return NULL;
 	}
 
 	res = calloc(sds_clt_cnt, sizeof(*res));
 	if (!res) {
-		ERR(ctx.trm, "Failed to allocate memory\n");
+		ERR(ctx->trm, "Failed to allocate memory\n");
 		return NULL;
 	}
 
 	cnt = find_devices(name, devs, res);
 	if (!cnt) {
-		ERR(ctx.trm, "Device '%s' not found\n", name);
+		ERR(ctx->trm, "Device '%s' not found\n", name);
 		goto free;
 	}
 
 	if (cnt > 1) {
-		ERR(ctx.trm,
+		ERR(ctx->trm,
 		"Please specify an exact path. There are multiple devices matching '%s':\n",
 		name);
-		list_devices(devs, cnt, &ds, 0, &ctx);
+		list_devices(devs, cnt, &ds, 0, ctx);
 		goto free;
 	}
 
@@ -1938,13 +1841,13 @@ free:
 }
 
 static int client_devices_resize(const char *device_name, uint64_t size_sect,
-				 const struct ibnbd_ctx *ctx)
+				 struct ibnbd_ctx *ctx)
 {
 	struct ibnbd_sess_dev *ds;
 	char tmp[PATH_MAX];
 	int ret;
 
-	ds = find_single_device(device_name, sds_clt);
+	ds = find_single_device(device_name, ctx, sds_clt);
 	if (!ds) {
 		ERR(ctx->trm, "Device %s does not exist\n", device_name);
 		return -EINVAL;
@@ -1960,18 +1863,8 @@ static int client_devices_resize(const char *device_name, uint64_t size_sect,
 	return ret;
 }
 
-static int cmd_resize(void)
-{
-	if (!ctx.size_set) {
-		ERR(ctx.trm,
-		    "Please provide the size of the device to be configured\n");
-		return -EINVAL;
-	}
-	return client_devices_resize(ctx.name, ctx.size_sect, &ctx);
-}
-
 static void help_resize(const char *program_name,
-			const struct cmd *cmd,
+			const struct sarg *cmd,
 			const struct ibnbd_ctx *ctx)
 {
 	if (!program_name)
@@ -1989,7 +1882,7 @@ static void help_resize(const char *program_name,
 }
 
 static void help_unmap(const char *program_name,
-		       const struct cmd *cmd,
+		       const struct sarg *cmd,
 		       const struct ibnbd_ctx *ctx)
 {
 	if (!program_name)
@@ -2007,13 +1900,13 @@ static void help_unmap(const char *program_name,
 }
 
 static int client_devices_unmap(const char *device_name, bool force,
-				const struct ibnbd_ctx *ctx)
+				struct ibnbd_ctx *ctx)
 {
 	struct ibnbd_sess_dev *ds;
 	char tmp[PATH_MAX];
 	int ret;
 
-	ds = find_single_device(device_name, sds_clt);
+	ds = find_single_device(device_name, ctx, sds_clt);
 	if (!ds)
 		return -EINVAL;
 
@@ -2030,13 +1923,8 @@ static int client_devices_unmap(const char *device_name, bool force,
 	return ret;
 }
 
-static int cmd_unmap(void)
-{
-	return client_devices_unmap(ctx.name, ctx.force_set, &ctx);
-}
-
 static void help_remap(const char *program_name,
-		       const struct cmd *cmd,
+		       const struct sarg *cmd,
 		       const struct ibnbd_ctx *ctx)
 {
 	if (!program_name)
@@ -2054,7 +1942,7 @@ static void help_remap(const char *program_name,
 }
 
 static void help_remap_session(const char *program_name,
-			       const struct cmd *cmd,
+			       const struct sarg *cmd,
 			       const struct ibnbd_ctx *ctx)
 {
 	if (!program_name)
@@ -2072,33 +1960,8 @@ static void help_remap_session(const char *program_name,
 	print_sarg_descr("help");
 }
 
-static int cmd_remap(void)
-{
-	printf("TODO\n");
-	return 0;
-}
-
-static void help_reconnect(const char *program_name,
-			   const struct cmd *cmd,
-			   const struct ibnbd_ctx *ctx)
-{
-	if (!program_name)
-		program_name = "<path or session> ";
-
-	cmd_print_usage(cmd, program_name, ctx);
-
-	printf("\nArguments:\n");
-	print_opt("<identifier>",
-		  "Name or identifier of a session or of a path:");
-	print_opt("", "[sessname], [pathname], [sessname:port], etc.");
-
-	printf("\nOptions:\n");
-	print_sarg_descr("verbose");
-	print_sarg_descr("help");
-}
-
 static void help_reconnect_session(const char *program_name,
-				   const struct cmd *cmd,
+				   const struct sarg *cmd,
 				   const struct ibnbd_ctx *ctx)
 {
 	if (!program_name)
@@ -2117,7 +1980,7 @@ static void help_reconnect_session(const char *program_name,
 }
 
 static void help_reconnect_path(const char *program_name,
-				const struct cmd *cmd,
+				const struct sarg *cmd,
 				const struct ibnbd_ctx *ctx)
 {
 	if (!program_name)
@@ -2135,33 +1998,8 @@ static void help_reconnect_path(const char *program_name,
 	print_sarg_descr("help");
 }
 
-static int cmd_reconnect(void)
-{
-	printf("TODO\n");
-	return 0;
-}
-
-static void help_disconnect(const char *program_name,
-			    const struct cmd *cmd,
-			    const struct ibnbd_ctx *ctx)
-{
-	if (!program_name)
-		program_name = "<path or session> ";
-
-	cmd_print_usage(cmd, program_name, ctx);
-
-	printf("\nArguments:\n");
-	print_opt("<identifier>",
-		  "Name or identifier of a session or of a path:");
-	print_opt("", "[sessname], [pathname], [sessname:port], etc.");
-
-	printf("\nOptions:\n");
-	print_sarg_descr("verbose");
-	print_sarg_descr("help");
-}
-
 static void help_disconnect_session(const char *program_name,
-				    const struct cmd *cmd,
+				    const struct sarg *cmd,
 				    const struct ibnbd_ctx *ctx)
 {
 	if (!program_name)
@@ -2179,7 +2017,7 @@ static void help_disconnect_session(const char *program_name,
 }
 
 static void help_disconnect_path(const char *program_name,
-				 const struct cmd *cmd,
+				 const struct sarg *cmd,
 				 const struct ibnbd_ctx *ctx)
 {
 	if (!program_name)
@@ -2196,14 +2034,8 @@ static void help_disconnect_path(const char *program_name,
 	print_sarg_descr("help");
 }
 
-static int cmd_disconnect(void)
-{
-	printf("TODO\n");
-	return 0;
-}
-
 static void help_addpath(const char *program_name,
-			 const struct cmd *cmd,
+			 const struct sarg *cmd,
 			 const struct ibnbd_ctx *ctx)
 {
 	if (!program_name)
@@ -2224,18 +2056,8 @@ static void help_addpath(const char *program_name,
 	print_sarg_descr("help");
 }
 
-static int cmd_addpath(void)
-{
-	printf("TODO\n");
-	return 0;
-}
-
-static void help_help(const char *program_name,
-		      const struct cmd *cmd,
-		      const struct ibnbd_ctx *ctx);
-
 static void help_delpath(const char *program_name,
-			 const struct cmd *cmd,
+			 const struct sarg *cmd,
 			 const struct ibnbd_ctx *ctx)
 {
 	if (!program_name)
@@ -2253,207 +2075,148 @@ static void help_delpath(const char *program_name,
 	print_sarg_descr("help");
 }
 
-static int cmd_delpath(void)
-{
-	printf("TODO\n");
-	return 0;
-}
-
-static struct cmd _cmd_list =
-	{TOK_LIST, "list",
-		"List information on all",
-		"s",
-		"List block device or transport related information: devices, sessions, paths, etc.",
-		cmd_list, NULL, help_list};
-static struct cmd _cmd_list_devices =
+static struct sarg _cmd_list_devices =
 	{TOK_LIST, "list",
 		"List information on all",
 		"s",
 		"List information on devices.",
-		cmd_list, NULL, help_list_devices};
-static struct cmd _cmd_list_sessions =
+		NULL, help_list_devices};
+static struct sarg _cmd_list_sessions =
 	{TOK_LIST, "list",
 		"List information on all",
 		"s",
 		"List information on sessions.",
-		cmd_list, NULL, help_list_sessions};
-static struct cmd _cmd_list_paths =
+		NULL, help_list_sessions};
+static struct sarg _cmd_list_paths =
 	{TOK_LIST, "list",
 		"List information on all",
 		"s",
 		"List information on paths.",
-		cmd_list, NULL, help_list_paths};
-static struct cmd _cmd_show =
-	{TOK_SHOW, "show",
-		"Show information about a",
-		"",
-		"Show information about an ibnbd block- or transport- item: device, session or path.",
-		cmd_show, parse_name, help_show};
-static struct cmd _cmd_show_devices =
+		NULL, help_list_paths};
+static struct sarg _cmd_show_devices =
 	{TOK_SHOW, "show",
 		"Show information about a",
 		"",
 		"Show information about an ibnbd block device.",
-		cmd_show, parse_name, help_show_devices};
-static struct cmd _cmd_show_sessions =
+		NULL, help_show_devices};
+static struct sarg _cmd_show_sessions =
 	{TOK_SHOW, "show",
 		"Show information about a",
 		"",
 		"Show information about an ibnbd session.",
-		cmd_show, parse_name, help_show_sessions};
-static struct cmd _cmd_show_paths =
+		NULL, help_show_sessions};
+static struct sarg _cmd_show_paths =
 	{TOK_SHOW, "show",
 		"Show information about a",
 		"",
 		"Show information about an ibnbd transport path.",
-		cmd_show, parse_name, help_show_paths};
-static struct cmd _cmd_map =
+		NULL, help_show_paths};
+static struct sarg _cmd_map =
 	{TOK_MAP, "map",
 		"Map a",
 		" from a given server",
 		"Map a device from a given server",
-		 cmd_map, parse_name, help_map};
-static struct cmd _cmd_resize =
+		 NULL, help_map};
+static struct sarg _cmd_resize =
 	{TOK_RESIZE, "resize",
 		"Resize a mapped",
 		"",
 		"Change size of a mapped device",
-		 cmd_resize, parse_name, help_resize};
-static struct cmd _cmd_unmap =
+		 NULL, help_resize};
+static struct sarg _cmd_unmap =
 	{TOK_UNMAP, "unmap",
 		"Unmap an imported",
 		"",
 		"Umap a given imported device",
-		cmd_unmap, parse_name, help_unmap};
-static struct cmd _cmd_remap =
+		NULL, help_unmap};
+static struct sarg _cmd_remap =
 	{TOK_REMAP, "remap",
 		"Remap a",
 		"",
 		"Unmap and map again an imported device",
-		 cmd_remap, parse_name, help_remap};
-static struct cmd _cmd_remap_session =
+		 NULL, help_remap};
+static struct sarg _cmd_remap_session =
 	{TOK_REMAP, "remap",
 		"Remap all devicess on a",
 		"",
 		"Unmap and map again all devices of a given session",
-		 cmd_remap, parse_name, help_remap_session};
-static struct cmd _cmd_disconnect =
-	{TOK_DISCONNECT, "disconnect",
-		"Disconnect a",
-		"",
-		"Disconnect a path or all paths on a given session",
-		cmd_disconnect, parse_name, help_disconnect};
-static struct cmd _cmd_disconnect_session =
+		 NULL, help_remap_session};
+static struct sarg _cmd_disconnect_session =
 	{TOK_DISCONNECT, "disconnect",
 		"Disconnect a",
 		"",
 		"Disconnect all paths on a given session",
-		cmd_disconnect, parse_name, help_disconnect_session};
-static struct cmd _cmd_dis_session =
+		NULL, help_disconnect_session};
+static struct sarg _cmd_dis_session =
 	{TOK_DISCONNECT, "dis",
 		"Disconnect a",
 		"",
 		"Disconnect all paths on a given session",
-		cmd_disconnect, parse_name, help_disconnect_session};
-static struct cmd _cmd_disconnect_path =
+		NULL, help_disconnect_session};
+static struct sarg _cmd_disconnect_path =
 	{TOK_DISCONNECT, "disconnect",
 		"Disconnect a",
 		"",
 		"Disconnect a path a given session",
-		cmd_disconnect, parse_name, help_disconnect_path};
-static struct cmd _cmd_dis_path =
+		NULL, help_disconnect_path};
+static struct sarg _cmd_dis_path =
 	{TOK_DISCONNECT, "dis",
 		"Disconnect a",
 		"",
 		"Disconnect a path a given session",
-		cmd_disconnect, parse_name, help_disconnect_path};
-static struct cmd _cmd_reconnect =
-	{TOK_RECONNECT, "reconnect",
-		"Reconnect a",
-		"",
-		"Disconnect and connect again a path or a whole session",
-		 cmd_reconnect, parse_name, help_reconnect};
-static struct cmd _cmd_reconnect_session =
+		NULL, help_disconnect_path};
+static struct sarg _cmd_reconnect_session =
 	{TOK_RECONNECT, "reconnect",
 		"Reconnect a",
 		"",
 		"Disconnect and connect again a whole session",
-		 cmd_reconnect, parse_name, help_reconnect_session};
-static struct cmd _cmd_rec_session =
+		 NULL, help_reconnect_session};
+static struct sarg _cmd_rec_session =
 	{TOK_RECONNECT, "rec",
 		"Reconnect a",
 		"",
 		"Disconnect and connect again a whole session",
-		 cmd_reconnect, parse_name, help_reconnect_session};
-static struct cmd _cmd_reconnect_path =
+		 NULL, help_reconnect_session};
+static struct sarg _cmd_reconnect_path =
 	{TOK_RECONNECT, "reconnect",
 		"Reconnect a",
 		"",
 		"Disconnect and connect again a single path of a session",
-		 cmd_reconnect, parse_name, help_reconnect_path};
-static struct cmd _cmd_rec_path =
+		 NULL, help_reconnect_path};
+static struct sarg _cmd_rec_path =
 	{TOK_RECONNECT, "rec",
 		"Reconnect a",
 		"",
 		"Disconnect and connect again a single path of a session",
-		 cmd_reconnect, parse_name, help_reconnect_path};
-static struct cmd _cmd_addpath =
-	{TOK_ADD, "addpath",
-		"Add a path to an existing session",
-		"",
-		"Add a new path to an existing session",
-		 cmd_addpath, parse_name, help_addpath};
-static struct cmd _cmd_add =
+		 NULL, help_reconnect_path};
+static struct sarg _cmd_add =
 	{TOK_ADD, "add",
 		"Add a",
 		" to an existing session",
 		"Add a new path to an existing session",
-		 cmd_addpath, parse_name, help_addpath};
-static struct cmd _cmd_delpath =
-	{TOK_DELETE, "delpath",
-		"Delete a path",
-		"",
-		"Delete a given path from the corresponding session",
-		 cmd_delpath, parse_name, help_delpath};
-static struct cmd _cmd_delete =
+		 NULL, help_addpath};
+static struct sarg _cmd_delete =
 	{TOK_DELETE, "delete",
 		"Delete a",
 		"",
 		"Delete a given path from the corresponding session",
-		 cmd_delpath, parse_name, help_delpath};
-static struct cmd _cmd_del =
+		 NULL, help_delpath};
+static struct sarg _cmd_del =
 	{TOK_DELETE, "del",
 		"Delete a",
 		"",
 		"Delete a given path from the corresponding session",
-		 cmd_delpath, parse_name, help_delpath};
-static struct cmd _cmd_help =
+		 NULL, help_delpath};
+static struct sarg _cmd_help =
 	{TOK_HELP, "help",
 		"Display help on",
 		"s",
 		"Display help message and exit.",
-		cmd_help, NULL, help_help};
-static struct cmd _cmd_null =
+		NULL, NULL};
+static struct sarg _cmd_null =
 		{ 0 };
 
-static struct cmd *cmds[] = {
-	&_cmd_list,
-	&_cmd_show,
-	&_cmd_map,
-	&_cmd_resize,
-	&_cmd_unmap,
-	&_cmd_remap,
-	&_cmd_disconnect,
-	&_cmd_reconnect,
-	&_cmd_addpath,
-	&_cmd_add,
-	&_cmd_delpath,
-	&_cmd_delete,
-	&_cmd_help,
-	&_cmd_null
-};
-
-static struct cmd *cmds_client_sessions[] = {
+static struct sarg *cmds_client_sessions[] = {
 	&_cmd_list_sessions,
 	&_cmd_show_sessions,
 	&_cmd_reconnect_session,
@@ -2463,7 +2226,7 @@ static struct cmd *cmds_client_sessions[] = {
 	&_cmd_null
 };
 
-static struct cmd *cmds_client_sessions_help[] = {
+static struct sarg *cmds_client_sessions_help[] = {
 	&_cmd_list_sessions,
 	&_cmd_show_sessions,
 	&_cmd_reconnect_session,
@@ -2472,7 +2235,7 @@ static struct cmd *cmds_client_sessions_help[] = {
 	&_cmd_null
 };
 
-static struct cmd *cmds_client_devices[] = {
+static struct sarg *cmds_client_devices[] = {
 	&_cmd_list_devices,
 	&_cmd_show_devices,
 	&_cmd_map,
@@ -2483,7 +2246,7 @@ static struct cmd *cmds_client_devices[] = {
 	&_cmd_null
 };
 
-static struct cmd *cmds_client_paths[] = {
+static struct sarg *cmds_client_paths[] = {
 	&_cmd_list_paths,
 	&_cmd_show_paths,
 	&_cmd_disconnect_path,
@@ -2497,7 +2260,7 @@ static struct cmd *cmds_client_paths[] = {
 	&_cmd_null
 };
 
-static struct cmd *cmds_client_paths_help[] = {
+static struct sarg *cmds_client_paths_help[] = {
 	&_cmd_list_paths,
 	&_cmd_show_paths,
 	&_cmd_disconnect_path,
@@ -2508,7 +2271,7 @@ static struct cmd *cmds_client_paths_help[] = {
 	&_cmd_null
 };
 
-static struct cmd *cmds_server_sessions[] = {
+static struct sarg *cmds_server_sessions[] = {
 	&_cmd_list_sessions,
 	&_cmd_show_sessions,
 	&_cmd_disconnect_session,
@@ -2517,7 +2280,7 @@ static struct cmd *cmds_server_sessions[] = {
 	&_cmd_null
 };
 
-static struct cmd *cmds_server_sessions_help[] = {
+static struct sarg *cmds_server_sessions_help[] = {
 	&_cmd_list_sessions,
 	&_cmd_show_sessions,
 	&_cmd_disconnect_session,
@@ -2525,14 +2288,14 @@ static struct cmd *cmds_server_sessions_help[] = {
 	&_cmd_null
 };
 
-static struct cmd *cmds_server_devices[] = {
+static struct sarg *cmds_server_devices[] = {
 	&_cmd_list_devices,
 	&_cmd_show_devices,
 	&_cmd_help,
 	&_cmd_null
 };
 
-static struct cmd *cmds_server_paths[] = {
+static struct sarg *cmds_server_paths[] = {
 	&_cmd_list_paths,
 	&_cmd_show_paths,
 	&_cmd_disconnect_path,
@@ -2541,7 +2304,7 @@ static struct cmd *cmds_server_paths[] = {
 	&_cmd_null
 };
 
-static struct cmd *cmds_server_paths_help[] = {
+static struct sarg *cmds_server_paths_help[] = {
 	&_cmd_list_paths,
 	&_cmd_show_paths,
 	&_cmd_disconnect_path,
@@ -2549,31 +2312,9 @@ static struct cmd *cmds_server_paths_help[] = {
 	&_cmd_null
 };
 
-static void help_help(const char *program_name,
-		      const struct cmd *cmd,
-		      const struct ibnbd_ctx *ctx)
-{
-	print_help(ctx->pname, cmds, ctx);
-}
-
-static int cmd_help(void)
-{
-	print_help(ctx.pname, cmds, &ctx);
-	return 0;
-}
-
 static int levenstein_compare(int d1, int d2, const char *s1, const char *s2)
 {
 	return d1 != d2 ? d1 - d2 : strcmp(s1, s2);
-}
-
-static int cmd_compare(const void *p1, const void *p2)
-{
-	const struct cmd *const*c1 = p1;
-	const struct cmd *const*c2 = p2;
-
-	return levenstein_compare((*c1)->dist, (*c2)->dist,
-				  (*c1)->cmd, (*c2)->cmd);
 }
 
 static int sarg_compare(const void *p1, const void *p2)
@@ -2582,19 +2323,19 @@ static int sarg_compare(const void *p1, const void *p2)
 	const struct sarg *const*c2 = p2;
 
 	return levenstein_compare((*c1)->dist, (*c2)->dist,
-				  (*c1)->str, (*c2)->str);
+				  (*c1)->sarg_str, (*c2)->sarg_str);
 }
 
-static void handle_unknown_cmd(const char *cmd, struct cmd *cmds[])
+static void handle_unknown_sarg(const char *sarg, struct sarg *sargs[])
 {
-	struct cmd **cs;
-	size_t len = 0, cnt = 0;
+	struct sarg **cs;
+	size_t len = 0, cnt = 0, i;
 
-	printf("Unknown: %s\n", cmd);
+	printf("Unknown: %s\n", sarg);
 
-	for (cs = cmds; (*cs)->cmd; cs++) {
-		(*cs)->dist = levenshtein((*cs)->cmd, cmd, 1, 2, 1, 0) + 1;
-		if (strlen((*cs)->cmd) < 2)
+	for (cs = sargs; (*cs)->sarg_str; cs++) {
+		(*cs)->dist = levenshtein((*cs)->sarg_str, sarg, 1, 2, 1, 0) + 1;
+		if (strlen((*cs)->sarg_str) < 2)
 			(*cs)->dist += 3;
 		len++;
 		if ((*cs)->dist < 4)
@@ -2609,38 +2350,6 @@ static void handle_unknown_cmd(const char *cmd, struct cmd *cmds[])
 		cnt = len;
 	} else {
 
-		qsort(cmds, len, sizeof(*cmds), cmd_compare);
-		printf("Did you mean:\n");
-	}
-	if (cnt > 3)
-		cnt = 3;
-
-	for (len = 0; len < cnt; len++)
-		printf("\t%s\n", cmds[len]->cmd);
-}
-
-static void handle_unknown_sarg(const char *sarg, struct sarg *sargs[])
-{
-	struct sarg **cs;
-	size_t len = 0, cnt = 0, i;
-
-	printf("Unknown: %s\n", sarg);
-
-	for (cs = sargs; (*cs)->str; cs++) {
-		(*cs)->dist = levenshtein((*cs)->str, sarg, 1, 2, 1, 0) + 1;
-		if (strlen((*cs)->str) < 2)
-			(*cs)->dist += 3;
-		len++;
-		if ((*cs)->dist < 4)
-			cnt++;
-	}
-
-	if (!cnt || cnt == len) {
-
-		if (len > 7)
-			return;
-	} else {
-
 		qsort(sargs, len, sizeof(*sargs), sarg_compare);
 		printf("Did you mean:\n");
 	}
@@ -2648,7 +2357,7 @@ static void handle_unknown_sarg(const char *sarg, struct sarg *sargs[])
 		cnt = 3;
 
 	for (i = 0; i < cnt; i++)
-		printf("\t%s\n", sargs[i]->str);
+		printf("\t%s\n", sargs[i]->sarg_str);
 }
 
 static int parse_precision(const char *str,
@@ -2711,36 +2420,40 @@ static int parse_srv_paths_clms(const char *arg, struct ibnbd_ctx *ctx)
 				    ctx->clms_paths_srv, CLM_MAX_CNT);
 }
 
-static int parse_sign(char s)
+static int parse_sign(char s,
+		      struct ibnbd_ctx *ctx)
 {
 	if (s == '+')
-		ctx.sign = 1;
+		ctx->sign = 1;
 	else if (s == '-')
-		ctx.sign = -1;
+		ctx->sign = -1;
 	else
-		ctx.sign = 0;
+		ctx->sign = 0;
 
-	return ctx.sign;
+	return ctx->sign;
 }
 
-static int parse_size(const char *str)
+static int parse_size(const char *str,
+		      struct ibnbd_ctx *ctx)
 {
 	uint64_t size;
 
-	if (parse_sign(*str))
+	if (parse_sign(*str, ctx))
 		str++;
 
 	if (str_to_size(str, &size))
 		return -EINVAL;
 
-	ctx.size_sect = size >> 9;
-	ctx.size_set = 1;
+	ctx->size_sect = size >> 9;
+	ctx->size_set = 1;
 
 	return 0;
 }
 
 static void init_ibnbd_ctx(struct ibnbd_ctx *ctx)
 {
+	memset(ctx, 0, sizeof(struct ibnbd_ctx));
+	
 	memcpy(&(ctx->clms_devices_clt), &def_clms_devices_clt,
 	       ARRSIZE(def_clms_devices_clt) * sizeof(all_clms_devices[0]));
 	memcpy(&(ctx->clms_devices_srv), &def_clms_devices_srv,
@@ -2755,6 +2468,9 @@ static void init_ibnbd_ctx(struct ibnbd_ctx *ctx)
 	       ARRSIZE(def_clms_paths_clt) * sizeof(all_clms_paths[0]));
 	memcpy(&(ctx->clms_paths_srv), &def_clms_paths_srv,
 	       ARRSIZE(def_clms_paths_srv) * sizeof(all_clms_paths[0]));
+
+	ctx->trm = (isatty(STDOUT_FILENO) == 1);
+
 }
 
 static void ibnbd_ctx_default(struct ibnbd_ctx *ctx)
@@ -2776,16 +2492,6 @@ static void ibnbd_ctx_default(struct ibnbd_ctx *ctx)
 	}
 }
 
-int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx);
-int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx);
-int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx);
-int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx);
-int cmd_server_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx);
-int cmd_server_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx);
-int cmd_server_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx);
-int cmd_server(int argc, const char *argv[], struct ibnbd_ctx *ctx);
-int cmd_both(int argc, const char *argv[], struct ibnbd_ctx *ctx);
-
 static void help_mode(const char *mode, struct sarg *const sargs[],
 		      const struct ibnbd_ctx *ctx)
 {
@@ -2801,49 +2507,635 @@ static void help_mode(const char *mode, struct sarg *const sargs[],
 	}
 }
 
-int cmd_start(int argc, const char *argv[], struct ibnbd_ctx *ctx)
+/**
+ * Parse all the possible parameters to list or show commands.
+ * The results are collected in the ibnbd_ctx struct
+ *
+ *  Assumtions:
+ * * all types  accept the same parameters (except for collums)
+ * * it is always the end of a command line, so a left over argument
+ *   that can not be interpreded is an error
+ *
+ * Returns:
+ * > 0 number of arguments accepted
+ * < 0 error code
+ * == 0 there are no arguments to the list command
+ */
+int parse_list_parameters(int argc, const char *argv[], struct ibnbd_ctx *ctx,
+		int (*parse_clms)(const char *arg, struct ibnbd_ctx *ctx),
+		const struct sarg *cmd)
 {
-	int err = 0;
+	int err = 0; int start_argc = argc;
 	const struct sarg *sarg;
 
-	if (argc < 1) {
-		ERR(ctx->trm, "mode not specified\n");
-		usage_sarg(ctx->pname, sargs_mode_help, ctx);
-		err = -EINVAL;
-	}
-	if (err >= 0) {
-		sarg = find_sarg(*argv, sargs_mode);
-		if (!sarg) {
-			handle_unknown_sarg(*argv, sargs_mode);
-			usage_sarg(ctx->pname, sargs_mode_help, ctx);
-			err = -EINVAL;
-		} else {
-			(void) sarg->parse(argc, argv, 0, sarg, ctx);
+	while (argc && err >= 0) {
+		/* parse the list flags */
+		sarg = find_sarg(*argv, sargs_list_parameters);
+		if (sarg) {
+			err = sarg->parse(argc, argv, 0, sarg, ctx);
+			if (err > 0) {
+				argc -= err; argv += err;
+				continue;
+			}
+		}
+		/* parse collumn parameters */
+		err = (*parse_clms)(*argv, ctx);
+		if (err == 0) {
+
+			argc--; argv++;
+			continue;
+		} else if (err == -EINVAL) {
+
+			err = parse_precision(*argv, ctx);
+			if (err == 0) {
+				argc--; argv++;
+			}
 		}
 	}
+	if (ctx->help_set) {
+		cmd->help(NULL, cmd, ctx);
+		err = -EAGAIN;
+	} else if (err < 0) {
+		handle_unknown_sarg(*argv, sargs_list_parameters);
+	}
+	return err < 0 ? err : start_argc - argc;
+}
 
+/**
+ * Parse parameters for a command as described by sarg.
+ */
+int parse_cmd_parameters(int argc, const char *argv[],
+			 struct sarg *const sargs[], struct ibnbd_ctx *ctx)
+{
+	int err = 0; int start_argc = argc;
+	const struct sarg *sarg;
+
+	while (argc && err >= 0) {
+		sarg = find_sarg(*argv, sargs);
+		if (sarg)
+			err = sarg->parse(argc, argv, 0, sarg, ctx);
+		if (err == 0)
+			break;
+
+		argc--; argv++;
+	}
+	return err < 0 ? err : start_argc - argc;
+}
+
+int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
+{
+	const char *_help_context = ctx->pname_with_mode
+		? "session" : "client session";
+
+	int err = 0;
+	const struct sarg *cmd;
+
+	cmd = find_sarg(*argv, cmds_client_sessions);
+	if (!cmd) {
+		print_usage(_help_context, cmds_client_sessions_help, ctx);
+		err = -EINVAL;
+
+		if (argc)
+			handle_unknown_sarg(*argv, cmds_client_sessions);
+	}
 	if (err >= 0) {
-		switch (sarg->tok) {
-		case TOK_CLIENT:
-			err = cmd_client(--argc, ++argv, ctx);
+
+		argc--; argv++;
+
+		switch (cmd->tok) {
+		case TOK_LIST:
+
+			err = parse_list_parameters(argc, argv, ctx,
+					parse_clt_sessions_clms, cmd);
+			if (err < 0)
+				break;
+
+			err = list_sessions(sess_clt, sess_clt_cnt - 1,
+					    NULL, 0, ctx);
 			break;
-		case TOK_SERVER:
-			err = cmd_server(--argc, ++argv, ctx);
+		case TOK_SHOW:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			err = parse_list_parameters(argc, argv, ctx,
+					parse_clt_sessions_clms, cmd);
+			if (err < 0)
+				break;
+
+			err = show_sessions(ctx->name, ctx);
 			break;
-		case TOK_BOTH:
-			err = cmd_both(--argc, ++argv, ctx);
+		case TOK_RECONNECT:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			ibnbd_TODO(cmd, ctx);
+			break;
+		case TOK_REMAP:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			ibnbd_TODO(cmd, ctx);
 			break;
 		case TOK_HELP:
-			help_sarg(ctx->pname, sargs_mode_help, ctx);
+			parse_help(argc, argv, -1, NULL, ctx);
+			print_help(_help_context, cmds_client_sessions_help, ctx);
 			if (help_print_all(ctx)) {
-
-				help_mode("client", sargs_object_type_help_client, ctx);
-				help_mode("server", sargs_object_type_help_server, ctx);
 			}
 			break;
 		default:
-			handle_unknown_sarg(*argv, sargs_mode);
-			usage_sarg(ctx->pname, sargs_mode_help, ctx);
+			print_usage(_help_context, cmds_client_sessions_help, ctx);
+			handle_unknown_sarg(cmd->sarg_str, cmds_client_sessions);
+			err = -EINVAL;
+			break;
+		}
+	}
+	return err;
+}
+
+int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
+{
+	const char *_help_context = ctx->pname_with_mode
+		? "device" : "client device";
+
+	int err = 0;
+	const struct sarg *cmd;
+
+	cmd = find_sarg(*argv, cmds_client_devices);
+	if (!cmd) {
+		print_usage(_help_context, cmds_client_devices, ctx);
+		err = -EINVAL;
+
+		if (argc)
+			handle_unknown_sarg(*argv, cmds_client_devices);
+	}
+	if (err >= 0) {
+
+		argc--; argv++;
+
+		switch (cmd->tok) {
+		case TOK_LIST:
+
+			err = parse_list_parameters(argc, argv, ctx,
+						parse_clt_devices_clms, cmd);
+			if (err < 0)
+				break;
+
+			err = list_devices(sds_clt, sds_clt_cnt - 1,
+					   NULL, 0, ctx);
+			break;
+		case TOK_SHOW:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			err = parse_list_parameters(argc, argv, ctx,
+						parse_clt_devices_clms, cmd);
+			if (err < 0)
+				break;
+
+			err = show_devices(ctx->name, ctx);
+			break;
+		case TOK_MAP:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			err = parse_cmd_parameters(argc, argv,
+						   sargs_map_from_parameters, ctx);
+			if (err < 0)
+				break;
+			if (err == 0) {
+
+				ERR(ctx->trm, "Please specify the destination to map from\n");
+				err = -EINVAL;
+				break;
+			}
+			argc -= err; argv += err;
+
+			err = parse_cmd_parameters(argc, argv,
+						   sargs_map_parameters, ctx);
+			if (err < 0)
+				break;
+			if (argc > 0) {
+
+				handle_unknown_sarg(*argv, sargs_map_parameters);
+				err = -EINVAL;
+				break;
+			}
+			err = client_devices_map(ctx->from, ctx->name, ctx);
+			break;
+		/* map-by-host ?
+		case TOK_MAP_BY_HOST:
+			err = parse_name_help(argc--, argv++,
+					_help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			if (argc > 0) {
+
+				handle_unknown_sarg(*argv, sargs);
+				err = -EINVAL;
+				break;
+			}
+			err = cmd_client_devices(argc--, argv++, ctx);
+			break;
+		*/
+		case TOK_RESIZE:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			if (argc > 0)
+				err = parse_size(*argv, ctx);
+			else
+				err = -EINVAL;
+			if (err < 0) {
+				ERR(ctx->trm,
+				    "Please provide the size of device to be configured\n");
+				break;
+			}
+			argc--; argv++;
+
+			/* TODO allow a unit here and take it into account */
+			/* for the amount to be resized to */
+			if (argc > 0) {
+
+				handle_unknown_sarg(*argv, default_sargs);
+				err = -EINVAL;
+				break;
+			}
+			err = client_devices_resize(ctx->name,
+						    ctx->size_sect, ctx);
+			break;
+		case TOK_UNMAP:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			err = parse_cmd_parameters(argc, argv,
+						   sargs_unmap_parameters, ctx);
+			if (err < 0)
+				break;
+			if (argc > 0) {
+
+				handle_unknown_sarg(*argv, default_sargs);
+				err = -EINVAL;
+				break;
+			}
+			err = client_devices_unmap(ctx->name,
+						   ctx->force_set, ctx);
+			break;
+		case TOK_REMAP:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			if (argc > 0) {
+
+				handle_unknown_sarg(*argv, default_sargs);
+				err = -EINVAL;
+				break;
+			}
+			ibnbd_TODO(cmd, ctx);
+			break;
+		case TOK_HELP:
+			parse_help(argc, argv, -1, NULL, ctx);
+			print_help(_help_context, cmds_client_devices, ctx);
+			break;
+		default:
+			print_usage(_help_context, cmds_client_devices, ctx);
+			handle_unknown_sarg(cmd->sarg_str, cmds_client_devices);
+			err = -EINVAL;
+			break;
+		}
+	}
+	return err;
+}
+
+int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
+{
+	const char *_help_context = ctx->pname_with_mode
+		? "path" : "client path";
+
+	int err = 0;
+	const struct sarg *cmd;
+
+	cmd = find_sarg(*argv, cmds_client_paths);
+	if (!cmd) {
+		print_usage(_help_context, cmds_client_paths_help, ctx);
+		err = -EINVAL;
+
+		if (argc)
+			handle_unknown_sarg(*argv, cmds_client_paths);
+	}
+	if (err >= 0) {
+
+		argc--; argv++;
+
+		switch (cmd->tok) {
+		case TOK_LIST:
+
+			err = parse_list_parameters(argc, argv, ctx,
+						    parse_clt_paths_clms, cmd);
+			if (err < 0)
+				break;
+
+			err = list_paths(paths_clt, paths_clt_cnt - 1,
+					 NULL, 0, ctx);
+			break;
+		case TOK_SHOW:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			err = parse_list_parameters(argc, argv, ctx,
+						    parse_clt_paths_clms, cmd);
+			if (err < 0)
+				break;
+
+			err = show_paths(ctx->name, ctx);
+			break;
+		case TOK_DISCONNECT:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			err = parse_name(argc--, argv++, 0, ctx);
+			if (err == 0) {
+				err = -EINVAL;
+				break;
+			}
+			if (argc > 0) {
+
+				handle_unknown_sarg(*argv, default_sargs);
+				err = -EINVAL;
+				break;
+			}
+			ibnbd_TODO(cmd, ctx);
+			break;
+		case TOK_RECONNECT:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			if (argc > 0) {
+
+				handle_unknown_sarg(*argv, default_sargs);
+				err = -EINVAL;
+				break;
+			}
+			ibnbd_TODO(cmd, ctx);
+			break;
+		case TOK_ADD:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			if (argc > 0) {
+
+				handle_unknown_sarg(*argv, default_sargs);
+				err = -EINVAL;
+				break;
+			}
+			ibnbd_TODO(cmd, ctx);
+			break;
+		case TOK_DELETE:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			if (argc > 0) {
+
+				handle_unknown_sarg(*argv, default_sargs);
+				err = -EINVAL;
+				break;
+			}
+			ibnbd_TODO(cmd, ctx);
+			break;
+		case TOK_HELP:
+			parse_help(argc, argv, -1, NULL, ctx);
+			print_help(_help_context, cmds_client_paths_help, ctx);
+			break;
+		default:
+			print_usage(_help_context, cmds_client_paths_help, ctx);
+			handle_unknown_sarg(cmd->sarg_str, cmds_client_sessions);
+			err = -EINVAL;
+			break;
+		}
+	}
+	return err;
+}
+
+int cmd_server_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
+{
+	const char *_help_context = ctx->pname_with_mode
+		? "session" : "server session";
+
+	int err = 0;
+	const struct sarg *cmd;
+
+	cmd = find_sarg(*argv, cmds_server_sessions);
+	if (!cmd) {
+		print_usage(_help_context, cmds_server_sessions_help, ctx);
+		err = -EINVAL;
+
+		if (argc)
+			handle_unknown_sarg(*argv, cmds_server_sessions);
+	}
+	if (err >= 0) {
+
+		argc--; argv++;
+
+		switch (cmd->tok) {
+		case TOK_LIST:
+
+			err = parse_list_parameters(argc, argv, ctx,
+						parse_srv_sessions_clms, cmd);
+			if (err < 0)
+				break;
+
+			err = list_sessions(NULL, 0, sess_srv,
+					    sess_srv_cnt - 1, ctx);
+			break;
+		case TOK_SHOW:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			err = parse_list_parameters(argc, argv, ctx,
+						parse_srv_sessions_clms, cmd);
+			if (err < 0)
+				break;
+
+			err = show_sessions(ctx->name, ctx);
+			break;
+		case TOK_DISCONNECT:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			if (argc > 0) {
+
+				handle_unknown_sarg(*argv, default_sargs);
+				err = -EINVAL;
+				break;
+			}
+			ibnbd_TODO(cmd, ctx);
+			break;
+		case TOK_HELP:
+			parse_help(argc, argv, -1, NULL, ctx);
+			print_help(_help_context, cmds_server_sessions_help, ctx);
+			break;
+		default:
+			print_usage(_help_context, cmds_server_sessions_help, ctx);
+			handle_unknown_sarg(cmd->sarg_str, cmds_server_sessions);
+			err = -EINVAL;
+			break;
+		}
+	}
+	return err;
+}
+
+int cmd_server_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
+{
+	const char *_help_context = ctx->pname_with_mode
+		? "device" : "server device";
+
+	int err = 0;
+	const struct sarg *cmd;
+
+	cmd = find_sarg(*argv, cmds_server_devices);
+	if (!cmd) {
+		print_usage(_help_context, cmds_server_devices, ctx);
+		err = -EINVAL;
+
+		if (argc)
+			handle_unknown_sarg(*argv, cmds_server_devices);
+	}
+	if (err >= 0) {
+
+		argc--; argv++;
+
+		switch (cmd->tok) {
+		case TOK_LIST:
+
+			err = parse_list_parameters(argc, argv, ctx,
+						parse_srv_devices_clms, cmd);
+			if (err < 0)
+				break;
+
+			err = list_devices(NULL, 0, sds_srv,
+					   sds_srv_cnt - 1, ctx);
+			break;
+		case TOK_SHOW:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			err = parse_list_parameters(argc, argv, ctx,
+						parse_srv_devices_clms, cmd);
+			if (err < 0)
+				break;
+
+			err = show_devices(ctx->name, ctx);
+			break;
+		case TOK_HELP:
+			parse_help(argc, argv, -1, NULL, ctx);
+			print_help(_help_context, cmds_server_devices, ctx);
+			break;
+		default:
+			print_usage(_help_context, cmds_server_devices, ctx);
+			handle_unknown_sarg(cmd->sarg_str, cmds_client_sessions);
+			err = -EINVAL;
+			break;
+		}
+	}
+	return err;
+}
+
+int cmd_server_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
+{
+	const char *_help_context = ctx->pname_with_mode
+		? "path" : "server path";
+
+	int err = 0;
+	const struct sarg *cmd;
+
+	cmd = find_sarg(*argv, cmds_server_paths);
+	if (!cmd) {
+		print_usage(_help_context, cmds_server_paths_help, ctx);
+		err = -EINVAL;
+
+		if (argc)
+			handle_unknown_sarg(*argv, cmds_server_paths);
+	}
+	if (err >= 0) {
+
+		argc--; argv++;
+
+		switch (cmd->tok) {
+		case TOK_LIST:
+			err = parse_list_parameters(argc, argv, ctx,
+						parse_srv_paths_clms, cmd);
+			if (err < 0)
+				break;
+
+			err = list_paths(NULL, 0, paths_srv,
+					 paths_srv_cnt - 1, ctx);
+			break;
+		case TOK_SHOW:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			err = parse_list_parameters(argc, argv, ctx,
+						parse_srv_devices_clms, cmd);
+			if (err < 0)
+				break;
+
+			err = cmd_server_paths(argc--, argv++, ctx);
+			break;
+		case TOK_DISCONNECT:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			if (argc > 0) {
+
+				handle_unknown_sarg(*argv, default_sargs);
+				err = -EINVAL;
+				break;
+			}
+			ibnbd_TODO(cmd, ctx);
+			break;
+		case TOK_HELP:
+			parse_help(argc, argv, -1, NULL, ctx);
+			print_help(_help_context, cmds_server_paths_help, ctx);
+			break;
+		default:
+			print_usage(_help_context, cmds_server_paths_help, ctx);
+			handle_unknown_sarg(cmd->sarg_str, cmds_client_sessions);
 			err = -EINVAL;
 			break;
 		}
@@ -2988,634 +3280,49 @@ int cmd_both(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	return err;
 }
 
-/**
- * Parse all the possible parameters to list or show commands.
- * The results are collected in the ibnbd_ctx struct
- *
- *  Assumtions:
- * * all types  accept the same parameters (except for collums)
- * * it is always the end of a command line, so a left over argument
- *   that can not be interpreded is an error
- *
- * Returns:
- * > 0 number of arguments accepted
- * < 0 error code
- * == 0 there are no arguments to the list command
- */
-int parse_list_parameters(int argc, const char *argv[], struct ibnbd_ctx *ctx,
-		int (*parse_clms)(const char *arg, struct ibnbd_ctx *ctx),
-		const struct cmd *cmd)
+int cmd_start(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 {
-	int err = 0; int start_argc = argc;
-	const struct sarg *sarg;
-
-	while (argc && err >= 0) {
-		/* parse the list flags */
-		sarg = find_sarg(*argv, sargs_list_parameters);
-		if (sarg) {
-			err = sarg->parse(argc, argv, 0, sarg, ctx);
-			if (err > 0) {
-				argc -= err; argv += err;
-				continue;
-			}
-		}
-		/* parse collumn parameters */
-		err = (*parse_clms)(*argv, ctx);
-		if (err == 0) {
-
-			argc--; argv++;
-			continue;
-		} else if (err == -EINVAL) {
-
-			err = parse_precision(*argv, ctx);
-			if (err == 0) {
-				argc--; argv++;
-			}
-		}
-	}
-	if (ctx->help_set)
-		cmd->help(NULL, cmd, ctx);
-	else if (err < 0)
-		handle_unknown_sarg(*argv, sargs_list_parameters);
-
-	return err < 0 ? err : start_argc - argc;
-}
-
-/**
- * Parse parameters for a command as described by sarg.
- */
-int parse_cmd_parameters(int argc, const char *argv[],
-			 struct sarg *const sargs[], struct ibnbd_ctx *ctx)
-{
-	int err = 0; int start_argc = argc;
-	const struct sarg *sarg;
-
-	while (argc && err >= 0) {
-		sarg = find_sarg(*argv, sargs);
-		if (sarg)
-			err = sarg->parse(argc, argv, 0, sarg, ctx);
-		if (err == 0)
-			break;
-
-		argc--; argv++;
-	}
-	return err < 0 ? err : start_argc - argc;
-}
-
-int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
-{
-	const char *_help_context = ctx->pname_with_mode
-		? "session" : "client session";
-
 	int err = 0;
-	const struct cmd *cmd;
+	const struct sarg *sarg;
 
-	cmd = find_cmd(*argv, cmds_client_sessions);
-	if (!cmd) {
-		print_usage(_help_context, cmds_client_sessions_help, ctx);
+	if (argc < 1) {
+		ERR(ctx->trm, "mode not specified\n");
+		usage_sarg(ctx->pname, sargs_mode_help, ctx);
 		err = -EINVAL;
-
-		if (argc)
-			handle_unknown_cmd(*argv, cmds_client_sessions);
 	}
 	if (err >= 0) {
+		sarg = find_sarg(*argv, sargs_mode);
+		if (!sarg) {
+			handle_unknown_sarg(*argv, sargs_mode);
+			usage_sarg(ctx->pname, sargs_mode_help, ctx);
+			err = -EINVAL;
+		} else {
+			(void) sarg->parse(argc, argv, 0, sarg, ctx);
+		}
+	}
 
-		argc--; argv++;
-
-		switch (cmd->tok) {
-		case TOK_LIST:
-
-			err = parse_list_parameters(argc, argv, ctx,
-					parse_clt_sessions_clms, cmd);
-			if (err < 0)
-				break;
-
-			err = list_sessions(sess_clt, sess_clt_cnt - 1,
-					    NULL, 0, ctx);
+	if (err >= 0) {
+		switch (sarg->tok) {
+		case TOK_CLIENT:
+			err = cmd_client(--argc, ++argv, ctx);
 			break;
-		case TOK_SHOW:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_list_parameters(argc, argv, ctx,
-					parse_clt_sessions_clms, cmd);
-			if (err < 0)
-				break;
-
-			err = show_sessions(ctx->name, ctx);
+		case TOK_SERVER:
+			err = cmd_server(--argc, ++argv, ctx);
 			break;
-		case TOK_RECONNECT:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			ibnbd_TODO(cmd, ctx);
-			break;
-		case TOK_REMAP:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			ibnbd_TODO(cmd, ctx);
+		case TOK_BOTH:
+			err = cmd_both(--argc, ++argv, ctx);
 			break;
 		case TOK_HELP:
-			parse_help(argc, argv, -1, NULL, ctx);
-			print_help(_help_context, cmds_client_sessions_help, ctx);
+			help_sarg(ctx->pname, sargs_mode_help, ctx);
 			if (help_print_all(ctx)) {
+
+				help_mode("client", sargs_object_type_help_client, ctx);
+				help_mode("server", sargs_object_type_help_server, ctx);
 			}
 			break;
 		default:
-			print_usage(_help_context, cmds_client_sessions_help, ctx);
-			handle_unknown_cmd(cmd->cmd, cmds_client_sessions);
-			err = -EINVAL;
-			break;
-		}
-	}
-	return err;
-}
-
-int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
-{
-	const char *_help_context = ctx->pname_with_mode
-		? "device" : "client device";
-
-	int err = 0;
-	const struct cmd *cmd;
-
-	cmd = find_cmd(*argv, cmds_client_devices);
-	if (!cmd) {
-		print_usage(_help_context, cmds_client_devices, ctx);
-		err = -EINVAL;
-
-		if (argc)
-			handle_unknown_cmd(*argv, cmds_client_devices);
-	}
-	if (err >= 0) {
-
-		argc--; argv++;
-
-		switch (cmd->tok) {
-		case TOK_LIST:
-
-			err = parse_list_parameters(argc, argv, ctx,
-						parse_clt_devices_clms, cmd);
-			if (err < 0)
-				break;
-
-			err = list_devices(sds_clt, sds_clt_cnt - 1,
-					   NULL, 0, ctx);
-			break;
-		case TOK_SHOW:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_list_parameters(argc, argv, ctx,
-						parse_clt_devices_clms, cmd);
-			if (err < 0)
-				break;
-
-			err = show_devices(ctx->name, ctx);
-			break;
-		case TOK_MAP:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_cmd_parameters(argc, argv,
-						   sargs_map_from_parameters, ctx);
-			if (err < 0)
-				break;
-			if (err == 0) {
-
-				ERR(ctx->trm, "Please specify the destination to map from\n");
-				err = -EINVAL;
-				break;
-			}
-			argc -= err; argv += err;
-
-			err = parse_cmd_parameters(argc, argv,
-						   sargs_map_parameters, ctx);
-			if (err < 0)
-				break;
-			if (argc > 0) {
-
-				handle_unknown_sarg(*argv, sargs);
-				err = -EINVAL;
-				break;
-			}
-			err = client_devices_map(ctx->from, ctx->name, ctx);
-			break;
-		/* map-by-host ?
-		case TOK_MAP_BY_HOST:
-			err = parse_name_help(argc--, argv++,
-					_help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			if (argc > 0) {
-
-				handle_unknown_sarg(*argv, sargs);
-				err = -EINVAL;
-				break;
-			}
-			err = cmd_client_devices(argc--, argv++, ctx);
-			break;
-		*/
-		case TOK_RESIZE:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			if (argc > 0)
-				err = parse_size(*argv);
-			else
-				err = -EINVAL;
-			if (err < 0) {
-				ERR(ctx->trm,
-				    "Please provide the size of device to be configured\n");
-				break;
-			}
-			argc--; argv++;
-
-			/* TODO allow a unit here and take it into account */
-			/* for the amount to be resized to */
-			if (argc > 0) {
-
-				handle_unknown_sarg(*argv, sargs);
-				err = -EINVAL;
-				break;
-			}
-			err = client_devices_resize(ctx->name,
-						    ctx->size_sect, ctx);
-			break;
-		case TOK_UNMAP:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_cmd_parameters(argc, argv,
-						   sargs_unmap_parameters, ctx);
-			if (err < 0)
-				break;
-			if (argc > 0) {
-
-				handle_unknown_sarg(*argv, sargs);
-				err = -EINVAL;
-				break;
-			}
-			err = client_devices_unmap(ctx->name,
-						   ctx->force_set, ctx);
-			break;
-		case TOK_REMAP:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			if (argc > 0) {
-
-				handle_unknown_sarg(*argv, sargs);
-				err = -EINVAL;
-				break;
-			}
-			ibnbd_TODO(cmd, ctx);
-			break;
-		case TOK_HELP:
-			parse_help(argc, argv, -1, NULL, ctx);
-			print_help(_help_context, cmds_client_devices, ctx);
-			break;
-		default:
-			print_usage(_help_context, cmds_client_devices, ctx);
-			handle_unknown_cmd(cmd->cmd, cmds_client_devices);
-			err = -EINVAL;
-			break;
-		}
-	}
-	return err;
-}
-
-int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
-{
-	const char *_help_context = ctx->pname_with_mode
-		? "path" : "client path";
-
-	int err = 0;
-	const struct cmd *cmd;
-
-	cmd = find_cmd(*argv, cmds_client_paths);
-	if (!cmd) {
-		print_usage(_help_context, cmds_client_paths_help, ctx);
-		err = -EINVAL;
-
-		if (argc)
-			handle_unknown_cmd(*argv, cmds_client_paths);
-	}
-	if (err >= 0) {
-
-		argc--; argv++;
-
-		switch (cmd->tok) {
-		case TOK_LIST:
-
-			err = parse_list_parameters(argc, argv, ctx,
-						    parse_clt_paths_clms, cmd);
-			if (err < 0)
-				break;
-
-			err = list_paths(paths_clt, paths_clt_cnt - 1,
-					 NULL, 0, ctx);
-			break;
-		case TOK_SHOW:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_list_parameters(argc, argv, ctx,
-						    parse_clt_paths_clms, cmd);
-			if (err < 0)
-				break;
-
-			err = show_paths(ctx->name, ctx);
-			break;
-		case TOK_DISCONNECT:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_name(argc--, argv++, 0, ctx);
-			if (err == 0) {
-				err = -EINVAL;
-				break;
-			}
-			if (argc > 0) {
-
-				handle_unknown_sarg(*argv, sargs);
-				err = -EINVAL;
-				break;
-			}
-			ibnbd_TODO(cmd, ctx);
-			break;
-		case TOK_RECONNECT:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			if (argc > 0) {
-
-				handle_unknown_sarg(*argv, sargs);
-				err = -EINVAL;
-				break;
-			}
-			ibnbd_TODO(cmd, ctx);
-			break;
-		case TOK_ADD:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			if (argc > 0) {
-
-				handle_unknown_sarg(*argv, sargs);
-				err = -EINVAL;
-				break;
-			}
-			ibnbd_TODO(cmd, ctx);
-			break;
-		case TOK_DELETE:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			if (argc > 0) {
-
-				handle_unknown_sarg(*argv, sargs);
-				err = -EINVAL;
-				break;
-			}
-			ibnbd_TODO(cmd, ctx);
-			break;
-		case TOK_HELP:
-			parse_help(argc, argv, -1, NULL, ctx);
-			print_help(_help_context, cmds_client_paths_help, ctx);
-			break;
-		default:
-			print_usage(_help_context, cmds_client_paths_help, ctx);
-			handle_unknown_cmd(cmd->cmd, cmds_client_sessions);
-			err = -EINVAL;
-			break;
-		}
-	}
-	return err;
-}
-
-int cmd_server_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
-{
-	const char *_help_context = ctx->pname_with_mode
-		? "session" : "server session";
-
-	int err = 0;
-	const struct cmd *cmd;
-
-	cmd = find_cmd(*argv, cmds_server_sessions);
-	if (!cmd) {
-		print_usage(_help_context, cmds_server_sessions_help, ctx);
-		err = -EINVAL;
-
-		if (argc)
-			handle_unknown_cmd(*argv, cmds_server_sessions);
-	}
-	if (err >= 0) {
-
-		argc--; argv++;
-
-		switch (cmd->tok) {
-		case TOK_LIST:
-
-			err = parse_list_parameters(argc, argv, ctx,
-						parse_srv_sessions_clms, cmd);
-			if (err < 0)
-				break;
-
-			err = list_sessions(NULL, 0, sess_srv,
-					    sess_srv_cnt - 1, ctx);
-			break;
-		case TOK_SHOW:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_list_parameters(argc, argv, ctx,
-						parse_srv_sessions_clms, cmd);
-			if (err < 0)
-				break;
-
-			err = show_sessions(ctx->name, ctx);
-			break;
-		case TOK_DISCONNECT:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			if (argc > 0) {
-
-				handle_unknown_sarg(*argv, sargs);
-				err = -EINVAL;
-				break;
-			}
-			ibnbd_TODO(cmd, ctx);
-			break;
-		case TOK_HELP:
-			parse_help(argc, argv, -1, NULL, ctx);
-			print_help(_help_context, cmds_server_sessions_help, ctx);
-			break;
-		default:
-			print_usage(_help_context, cmds_server_sessions_help, ctx);
-			handle_unknown_cmd(cmd->cmd, cmds_server_sessions);
-			err = -EINVAL;
-			break;
-		}
-	}
-	return err;
-}
-
-int cmd_server_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
-{
-	const char *_help_context = ctx->pname_with_mode
-		? "device" : "server device";
-
-	int err = 0;
-	const struct cmd *cmd;
-
-	cmd = find_cmd(*argv, cmds_server_devices);
-	if (!cmd) {
-		print_usage(_help_context, cmds_server_devices, ctx);
-		err = -EINVAL;
-
-		if (argc)
-			handle_unknown_cmd(*argv, cmds_server_devices);
-	}
-	if (err >= 0) {
-
-		argc--; argv++;
-
-		switch (cmd->tok) {
-		case TOK_LIST:
-
-			err = parse_list_parameters(argc, argv, ctx,
-						parse_srv_devices_clms, cmd);
-			if (err < 0)
-				break;
-
-			err = list_devices(NULL, 0, sds_srv,
-					   sds_srv_cnt - 1, ctx);
-			break;
-		case TOK_SHOW:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_list_parameters(argc, argv, ctx,
-						parse_srv_devices_clms, cmd);
-			if (err < 0)
-				break;
-
-			err = show_devices(ctx->name, ctx);
-			break;
-		case TOK_HELP:
-			parse_help(argc, argv, -1, NULL, ctx);
-			print_help(_help_context, cmds_server_devices, ctx);
-			break;
-		default:
-			print_usage(_help_context, cmds_server_devices, ctx);
-			handle_unknown_cmd(cmd->cmd, cmds_client_sessions);
-			err = -EINVAL;
-			break;
-		}
-	}
-	return err;
-}
-
-int cmd_server_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
-{
-	const char *_help_context = ctx->pname_with_mode
-		? "path" : "server path";
-
-	int err = 0;
-	const struct cmd *cmd;
-
-	cmd = find_cmd(*argv, cmds_server_paths);
-	if (!cmd) {
-		print_usage(_help_context, cmds_server_paths_help, ctx);
-		err = -EINVAL;
-
-		if (argc)
-			handle_unknown_cmd(*argv, cmds_server_paths);
-	}
-	if (err >= 0) {
-
-		argc--; argv++;
-
-		switch (cmd->tok) {
-		case TOK_LIST:
-			err = parse_list_parameters(argc, argv, ctx,
-						parse_srv_paths_clms, cmd);
-			if (err < 0)
-				break;
-
-			err = list_paths(NULL, 0, paths_srv,
-					 paths_srv_cnt - 1, ctx);
-			break;
-		case TOK_SHOW:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_list_parameters(argc, argv, ctx,
-						parse_srv_devices_clms, cmd);
-			if (err < 0)
-				break;
-
-			err = cmd_server_paths(argc--, argv++, ctx);
-			break;
-		case TOK_DISCONNECT:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			if (argc > 0) {
-
-				handle_unknown_sarg(*argv, sargs);
-				err = -EINVAL;
-				break;
-			}
-			ibnbd_TODO(cmd, ctx);
-			break;
-		case TOK_HELP:
-			parse_help(argc, argv, -1, NULL, ctx);
-			print_help(_help_context, cmds_server_paths_help, ctx);
-			break;
-		default:
-			print_usage(_help_context, cmds_server_paths_help, ctx);
-			handle_unknown_cmd(cmd->cmd, cmds_client_sessions);
+			handle_unknown_sarg(*argv, sargs_mode);
+			usage_sarg(ctx->pname, sargs_mode_help, ctx);
 			err = -EINVAL;
 			break;
 		}
@@ -3626,13 +3333,8 @@ int cmd_server_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 int main(int argc, const char *argv[])
 {
 	int ret = 0;
-#if 0
-	int i, rc_cd, rc_cs, rc_cp, rc_sd, rc_ss, rc_sp;
-	const struct sarg *sarg;
-	const struct cmd *cmd;
-#endif
 
-	ctx.trm = (isatty(STDOUT_FILENO) == 1);
+	struct ibnbd_ctx ctx;
 
 	init_ibnbd_ctx(&ctx);
 
@@ -3678,105 +3380,12 @@ int main(int argc, const char *argv[])
 		default:
 			ERR(ctx.trm,
 			    "either client or server mode have to be specified\n");
-			print_usage(NULL, cmds, &ctx);
+			print_usage(NULL, sargs_mode_help, &ctx);
 			ret = -EINVAL;
 			break;
 		}
 		goto free;
 	}
-
-#if 0
-	if (argc < 2) {
-		ERR(ctx.trm, "no command specified\n");
-		print_help(argv[0], cmds, &ctx);
-		ret = -EINVAL;
-		goto out;
-	}
-
-	i = 1;
-
-	/*
-	 * try finding sess/devs/paths preceding the command
-	 * (for those who is used to type ibnbd dev map or ibnbd session list)
-	 */
-	i = parse_lst(argc, argv, i, NULL, &ctx);
-	/*
-	 * try finding clt/srv preceding the command
-	 * (for those who is used to type ibnbd clt list or ibnbd srv sess list)
-	 */
-	i = parse_mode(argc, argv, i, NULL, &ctx);
-
-	cmd = find_cmd(argv[i], cmds);
-	if (!cmd) {
-		printf("'%s' is not a valid command. Try '%s%s%s %s%s%s'\n",
-		       argv[i], CLR(ctx.trm, CBLD, argv[0]),
-		       CLR(ctx.trm, CBLD, "help"));
-		handle_unknown_cmd(argv[i], cmds);
-		ret = -EINVAL;
-		goto out;
-	}
-	if (cmd == find_cmd("help", cmds))
-		ctx.help_set = true;
-
-	if (i + 1 < argc && cmd->help &&
-	    (!strcmp(argv[i + 1], "help") ||
-	     !strcmp(argv[i + 1], "--help") ||
-	     !strcmp(argv[i + 1], "-h"))) {
-		cmd->help(NULL, cmd, &ctx);
-		goto out;
-	}
-
-	if (cmd->parse_args) {
-		ret = cmd->parse_args(argc, argv, i, &ctx);
-		if (ret == i) {
-			if (cmd->help)
-				cmd->help(NULL, cmd, &ctx);
-			ret = -EINVAL;
-			goto out;
-		}
-		i = ret;
-	} else {
-		i++;
-	}
-
-	while (i < argc) {
-		sarg = find_sarg(argv[i], sargs);
-		if (!sarg) {
-			rc_cd = parse_clt_devices_clms(argv[i], &ctx);
-			rc_sd = parse_srv_devices_clms(argv[i], &ctx);
-			rc_cs = parse_clt_sessions_clms(argv[i], &ctx);
-			rc_ss = parse_srv_sessions_clms(argv[i], &ctx);
-			rc_cp = parse_clt_paths_clms(argv[i], &ctx);
-			rc_sp = parse_srv_paths_clms(argv[i], &ctx);
-			if (!parse_precision(argv[i], &ctx) ||
-			    !(rc_cd && rc_cs && rc_cp && rc_sd && rc_ss && rc_sp) ||
-			    !parse_path(argv[i]) ||
-			    !parse_size(argv[i])) {
-				i++;
-				continue;
-			}
-
-			printf("'%s' is not a valid argument. Try '", argv[i]);
-			printf("%s%s%s %s%s%s %s%s%s",
-			       CLR(ctx.trm, CBLD, ctx.pname),
-			       CLR(ctx.trm, CBLD, cmd->cmd),
-			       CLR(ctx.trm, CBLD, "help"));
-			printf("'\n");
-
-			handle_unknown_sarg(argv[i], sargs);
-
-			ret = -EINVAL;
-			goto out;
-		}
-		ret = sarg->parse(argc, argv, i, sarg, &ctx);
-		if (i == ret) {
-			ret = -EINVAL;
-			goto out;
-		}
-		i = ret;
-	}
-
-#endif
 
 	ret = ibnbd_sysfs_alloc_all(&sds_clt, &sds_srv,
 				    &sess_clt, &sess_srv,
@@ -3799,28 +3408,15 @@ int main(int argc, const char *argv[])
 
 	ibnbd_ctx_default(&ctx);
 
-#if 0
-	if (ctx.help_set && cmd->help)
-		cmd->help(NULL, cmd, &ctx);
-	else if (cmd->func) {
-		/*
-		 * if (args.ibnbdmode == IBNBD_NONE) {
-		 *	ERR("ibnbd modules not loaded\n");
-		 *	ret = -ENOENT;
-		 *	goto free;
-		 * }
-		 */
-		ret = cmd->func();
-	}
-#else
-
 	ret = cmd_start(--argc, ++argv, &ctx);
-
-#endif
 
 free:
 	ibnbd_sysfs_free_all(sds_clt, sds_srv, sess_clt, sess_srv,
 			     paths_clt, paths_srv);
 out:
+	if (ret == -EAGAIN)
+		/* help message was printed */
+		ret = 0;
+
 	return ret;
 }
