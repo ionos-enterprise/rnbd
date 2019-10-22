@@ -1,44 +1,47 @@
-.TH IBNBD "8" "September 2019" "ibnbd 0.1.0" "System Administration Utilities"
+.TH IBNBD "8" "Oktober 2019" "ibnbd 0.1.0" "System Administration Utilities"
 .SH NAME
 ibnbd - Configuration tool for IBNBD driver and IBTRS library.
 .SH SYNOPSIS
-ibnbd {list|show|map|resize|unmap|remap|disconnect|reconnect|addpath|delpath|help} [ARGUMENTS]
+ibnbd client|server|both|help ...
 .SH DESCRIPTION
-Usage: ibnbd {list|show|map|resize|unmap|remap|disconnect|reconnect|addpath|delpath|help} [ARGUMENTS]
 
-IBNBD command line utility.
+    client          Operations of client
+    server          Operations of server
+    both            Operations of both client and server
+    help            Display help and exit
 
-Subcommands:
-     list                List block device or transport related information
-     show                Show information about a device, a session or a path
-     map                 Map a device from a given server
-     resize              Resize a mapped device
-     unmap               Unmap an imported device
-     remap               Remap a device or all devices on a session
-     disconnect          Disconnect a path or a session
-     reconnect           Reconnect a path or a session
-     addpath             Add a path to an existing session
-     delpath             Delete a path
-     help                Display help
 
-Options:
-    verbose         Verbose output
+ibnbd client devices|sessions|paths|help ...
+
+    devices         Map/unmapped/modify devices
+    sessions        Operate on sessions
+    paths           Handle paths
+    help            Display help and exit
+
+
+ibnbd server devices|sessions|paths|help ...
+
+    devices         List devices
+    sessions        Operate on sessions
+    paths           Handle paths
+    help            Display help and exit
+
+
+ibnbd both help ...
+
     help            Display help and exit
 .SH SUBCOMMANDS
-.B list
+.B
 
-Usage: ibnbd list [OPTIONS]
+ibnbd client device list [OPTIONS]
 
-List block device or transport related information: devices, sessions, paths, etc.
+List information on devices.
 
 Options:
-    {mode}          Information to print: devices|sessions|paths.
-                    Default: devices.
     {fields}        Comma separated list of fields to be printed. The list can be
                     prefixed with '+' or '-' to add or remove fields from the
                     default selection.
 
-                    Device Fields
                     Field           Header         Description
                     sessname        Session        Name of the IBTRS session of the device
                     mapping_path    Mapping Path   Mapping name of the remote device
@@ -51,73 +54,31 @@ Options:
                     tx_sect         TX             Amount of data written to the device
                     direction       Direction      Direction of data transfer: imported or exported
 
-                    Default client: sessname,mapping_path,devname,state,access_mode,io_mode
-                    Default server: sessname,mapping_path,devname,access_mode,io_mode
+                    Default: sessname,mapping_path,devname,state,access_mode,io_mode
 
-                    Session Fields
-                    Field           Header         Description
-                    sessname        Session name   Name of the session
-                    path_cnt        Path cnt       Number of paths
-                    act_path_cnt    Act path cnt   Number of active paths
-                    state           State          State of the session.
-                    path_uu         PS             Up (U) or down (_) state of every path
-                    mp              MP Policy      Multipath policy
-                    mp_short        MP             Multipath policy (short)
-                    rx_bytes        RX             Bytes received
-                    tx_bytes        TX             Bytes send
-                    inflights       Inflights      Inflights
-                    reconnects      Reconnects     Reconnects
-                    side            Direction      Direction of the session: incoming or outgoing
-
-                    Default client: sessname,state,path_uu,mp_short,tx_bytes,rx_bytes,inflights,reconnects
-                    Default server: sessname,path_cnt,tx_bytes,rx_bytes,inflights
-
-                    Path Fields
-                    Field           Header         Description
-                    sessname        Sessname       Name of the session.
-                    pathname        Path name      Path name
-                    src_addr        Client Addr    Client address of the path
-                    dst_addr        Server Addr    Server address of the path
-                    hca_name        HCA            HCA name
-                    hca_port        Port           HCA port
-                    state           State          Name of the path
-                    rx_bytes        RX             Bytes received
-                    tx_bytes        TX             Bytes send
-                    inflights       Inflights      Inflights
-                    reconnects      Reconnects     Reconnects
-                    direction       Direction      Direction of the path: incoming or outgoing
-
-                    Default client: sessname,hca_name,hca_port,dst_addr,state,tx_bytes,rx_bytes,inflights,reconnects
-                    Default server: sessname,hca_name,hca_port,src_addr,tx_bytes,rx_bytes,inflights
-
-
-                    Provide 'all' to print all available fields
     {format}        Output format: csv|json|xml
     {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
     notree          Don't display paths for each sessions
     noheaders       Don't print headers
     nototals        Don't print totals
-    help            Display help and exit
+    help            Display help and exit. [fields|all]
 
 
-.B show
+.B
 
-Usage: ibnbd show <name> [path] [OPTIONS]
+ibnbd client device show [OPTIONS]
 
-Show information about an ibnbd block- or transport- item: device, session or path.
+Show information about an ibnbd block device.
 
 Arguments:
-    <name>          Name of a local or a remote block device, session name, path name or remote hostname.
-                    I.e. ibnbd0, /dev/ibnbd0, d12aef94-4110-4321-9373-3be8494a557b, ps401a-1@st401b-2, st401b-2, <ip1>@<ip2>, etc.
-                    In order to display path information, path name or identifier
-                    has to be provided, i.e. st401b-2:1.
+    <name>          Name of a local or a remote block device.
+                    I.e. ibnbd0, /dev/ibnbd0, d12aef94-4110-4321-9373-3be8494a557b.
 
 Options:
     {fields}        Comma separated list of fields to be printed. The list can be
                     prefixed with '+' or '-' to add or remove fields from the
                     default selection.
 
-                    Device Fields
                     Field           Header         Description
                     sessname        Session        Name of the IBTRS session of the device
                     mapping_path    Mapping Path   Mapping name of the remote device
@@ -130,56 +91,16 @@ Options:
                     tx_sect         TX             Amount of data written to the device
                     direction       Direction      Direction of data transfer: imported or exported
 
-                    Default client: sessname,mapping_path,devname,state,access_mode,io_mode
-                    Default server: sessname,mapping_path,devname,access_mode,io_mode
+                    Default: sessname,mapping_path,devname,state,access_mode,io_mode
 
-                    Sessions Fields
-                    Field           Header         Description
-                    sessname        Session name   Name of the session
-                    path_cnt        Path cnt       Number of paths
-                    act_path_cnt    Act path cnt   Number of active paths
-                    state           State          State of the session.
-                    path_uu         PS             Up (U) or down (_) state of every path
-                    mp              MP Policy      Multipath policy
-                    mp_short        MP             Multipath policy (short)
-                    rx_bytes        RX             Bytes received
-                    tx_bytes        TX             Bytes send
-                    inflights       Inflights      Inflights
-                    reconnects      Reconnects     Reconnects
-                    side            Direction      Direction of the session: incoming or outgoing
-
-                    Default client: sessname,state,path_uu,mp_short,tx_bytes,rx_bytes,inflights,reconnects
-                    Default server: sessname,path_cnt,tx_bytes,rx_bytes,inflights
-
-                    Paths Fields
-                    Field           Header         Description
-                    sessname        Sessname       Name of the session.
-                    pathname        Path name      Path name
-                    src_addr        Client Addr    Client address of the path
-                    dst_addr        Server Addr    Server address of the path
-                    hca_name        HCA            HCA name
-                    hca_port        Port           HCA port
-                    state           State          Name of the path
-                    rx_bytes        RX             Bytes received
-                    tx_bytes        TX             Bytes send
-                    inflights       Inflights      Inflights
-                    reconnects      Reconnects     Reconnects
-                    direction       Direction      Direction of the path: incoming or outgoing
-
-                    Default client: sessname,hca_name,hca_port,dst_addr,state,tx_bytes,rx_bytes,inflights,reconnects
-                    Default server: sessname,hca_name,hca_port,src_addr,tx_bytes,rx_bytes,inflights
-
-
-                    Provide 'all' to print all available fields
     {format}        Output format: csv|json|xml
     {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
-    {mode}          Information to print: device|session|path. Default: device.
-    help            Display help and exit
+    help            Display help and exit. [fields|all]
 
 
-.B map
+.B
 
-Usage: ibnbd map <path> from <server> [OPTIONS]
+ibnbd client device map [OPTIONS]
 
 Map a device from a given server
 
@@ -196,14 +117,14 @@ Options:
     help            Display help and exit
 
 
-.B resize
+.B
 
-Usage: ibnbd resize <device name or path or mapping path> [OPTIONS]
+ibnbd client device resize [OPTIONS]
 
 Change size of a mapped device
 
 Arguments:
-    <device>        Name of the device to be unmapped
+    <device>        Name of the device to be resized
     <size>          New size of the device in bytes
 
 Options:
@@ -211,9 +132,9 @@ Options:
     help            Display help and exit
 
 
-.B unmap
+.B
 
-Usage: ibnbd unmap <device name or path or mapping path> [OPTIONS]
+ibnbd client device unmap [OPTIONS]
 
 Umap a given imported device
 
@@ -226,14 +147,14 @@ Options:
     help            Display help and exit
 
 
-.B remap
+.B
 
-Usage: ibnbd remap <devname|sessname> [OPTIONS]
+ibnbd client device remap [OPTIONS]
 
-Unmap and map again an imported device or do this for all devices of a given session
+Unmap and map again an imported device
 
 Arguments:
-    <identifier>    Identifier of a device to be remapped. Or identifier of a session to remap all devices on.
+    <identifier>    Identifier of a device to be remapped.
 
 Options:
     force           Force operation
@@ -241,60 +162,434 @@ Options:
     help            Display help and exit
 
 
-.B disconnect
+.B
 
-Usage: ibnbd disconnect <path or session> [OPTIONS]
+ibnbd client session list [OPTIONS]
 
-Disconnect a path or all paths on a given session
+List information on sessions.
+
+Options:
+    {fields}        Comma separated list of fields to be printed. The list can be
+                    prefixed with '+' or '-' to add or remove fields from the
+                    default selection.
+
+                    Field           Header         Description
+                    sessname        Session name   Name of the session
+                    path_cnt        Path cnt       Number of paths
+                    act_path_cnt    Act path cnt   Number of active paths
+                    state           State          State of the session.
+                    path_uu         PS             Up (U) or down (_) state of every path
+                    mp              MP Policy      Multipath policy
+                    mp_short        MP             Multipath policy (short)
+                    rx_bytes        RX             Bytes received
+                    tx_bytes        TX             Bytes send
+                    inflights       Inflights      Inflights
+                    reconnects      Reconnects     Reconnects
+                    side            Direction      Direction of the session: incoming or outgoing
+
+                    Default: sessname,state,path_uu,mp_short,tx_bytes,rx_bytes,inflights,reconnects
+
+    {format}        Output format: csv|json|xml
+    {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
+    notree          Don't display paths for each sessions
+    noheaders       Don't print headers
+    nototals        Don't print totals
+    help            Display help and exit. [fields|all]
+
+
+.B
+
+ibnbd client session show [OPTIONS]
+
+Show information about an ibnbd session.
 
 Arguments:
-    <identifier>    Name or identifier of a session or of a path:
-                    [sessname], [pathname], [sessname:port], etc.
+    <name>          Session name or remote hostname.
+                    I.e. ps401a-1@st401b-2, st401b-2, <ip1>@<ip2>, etc.
+
+Options:
+    {fields}        Comma separated list of fields to be printed. The list can be
+                    prefixed with '+' or '-' to add or remove fields from the
+                    default selection.
+
+                    Field           Header         Description
+                    sessname        Session name   Name of the session
+                    path_cnt        Path cnt       Number of paths
+                    act_path_cnt    Act path cnt   Number of active paths
+                    state           State          State of the session.
+                    path_uu         PS             Up (U) or down (_) state of every path
+                    mp              MP Policy      Multipath policy
+                    mp_short        MP             Multipath policy (short)
+                    rx_bytes        RX             Bytes received
+                    tx_bytes        TX             Bytes send
+                    inflights       Inflights      Inflights
+                    reconnects      Reconnects     Reconnects
+                    side            Direction      Direction of the session: incoming or outgoing
+
+                    Default: sessname,state,path_uu,mp_short,tx_bytes,rx_bytes,inflights,reconnects
+
+    {format}        Output format: csv|json|xml
+    {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
+    help            Display help and exit. [fields|all]
+
+
+.B
+
+ibnbd client session remap [OPTIONS]
+
+Unmap and map again all devices of a given session
+
+Arguments:
+    <identifier>    Identifier of a session to remap all devices on.
+
+Options:
+    force           Force operation
+    verbose         Verbose output
+    help            Display help and exit
+
+
+.B
+
+ibnbd client session reconnect [OPTIONS]
+
+Disconnect and connect again a whole session
+
+Arguments:
+    <identifier>    Name or identifier of a session:
+                    [sessname]
 
 Options:
     verbose         Verbose output
     help            Display help and exit
 
 
-.B reconnect
+.B
 
-Usage: ibnbd reconnect <path or session> [OPTIONS]
+ibnbd client path list [OPTIONS]
 
-Disconnect and connect again a path or a whole session
+List information on paths.
+
+Options:
+    {fields}        Comma separated list of fields to be printed. The list can be
+                    prefixed with '+' or '-' to add or remove fields from the
+                    default selection.
+
+                    Field           Header         Description
+                    sessname        Sessname       Name of the session.
+                    pathname        Path name      Path name
+                    src_addr        Client Addr    Client address of the path
+                    dst_addr        Server Addr    Server address of the path
+                    hca_name        HCA            HCA name
+                    hca_port        Port           HCA port
+                    state           State          Name of the path
+                    rx_bytes        RX             Bytes received
+                    tx_bytes        TX             Bytes send
+                    inflights       Inflights      Inflights
+                    reconnects      Reconnects     Reconnects
+                    direction       Direction      Direction of the path: incoming or outgoing
+
+                    Default: sessname,hca_name,hca_port,dst_addr,state,tx_bytes,rx_bytes,inflights,reconnects
+
+    {format}        Output format: csv|json|xml
+    {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
+    notree          Don't display paths for each sessions
+    noheaders       Don't print headers
+    nototals        Don't print totals
+    help            Display help and exit. [fields|all]
+
+
+.B
+
+ibnbd client path show [OPTIONS]
+
+Show information about an ibnbd transport path.
 
 Arguments:
-    <identifier>    Name or identifier of a session or of a path:
-                    [sessname], [pathname], [sessname:port], etc.
+    <name>          In order to display path information, path name or identifier
+                    has to be provided, i.e. st401b-2:1.
+
+Options:
+    {fields}        Comma separated list of fields to be printed. The list can be
+                    prefixed with '+' or '-' to add or remove fields from the
+                    default selection.
+
+                    Field           Header         Description
+                    sessname        Sessname       Name of the session.
+                    pathname        Path name      Path name
+                    src_addr        Client Addr    Client address of the path
+                    dst_addr        Server Addr    Server address of the path
+                    hca_name        HCA            HCA name
+                    hca_port        Port           HCA port
+                    state           State          Name of the path
+                    rx_bytes        RX             Bytes received
+                    tx_bytes        TX             Bytes send
+                    inflights       Inflights      Inflights
+                    reconnects      Reconnects     Reconnects
+                    direction       Direction      Direction of the path: incoming or outgoing
+
+                    Default: sessname,hca_name,hca_port,dst_addr,state,tx_bytes,rx_bytes,inflights,reconnects
+
+    {format}        Output format: csv|json|xml
+    {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
+    help            Display help and exit. [fields|all]
+
+
+.B
+
+ibnbd client path disconnect [OPTIONS]
+
+Disconnect a path a given session
+
+Arguments:
+    <identifier>    Name or identifier of of a path:
+                    [pathname], [sessname:port], etc.
 
 Options:
     verbose         Verbose output
     help            Display help and exit
 
 
-.B addpath
+.B
 
-Usage: ibnbd addpath <session> <path> [OPTIONS]
+ibnbd client path reconnect [OPTIONS]
 
-Add a new path to an existing session
+Disconnect and connect again a single path of a session
 
 Arguments:
-    <session>       Name of the session to add the new path to
-    <path>          Path to be added: [src_addr,]dst_addr
-                    Address is of the form ip:<ipv4>, ip:<ipv6> or gid:<gid>
+    <identifier>    Name or identifier of a path:
+                    [pathname], [sessname:port], etc.
 
 Options:
     verbose         Verbose output
     help            Display help and exit
 
 
-.B delpath
+.B
 
-Usage: ibnbd delpath <path> [OPTIONS]
+ibnbd server device list [OPTIONS]
 
-Delete a given path from the corresponding session
+List information on devices.
+
+Options:
+    {fields}        Comma separated list of fields to be printed. The list can be
+                    prefixed with '+' or '-' to add or remove fields from the
+                    default selection.
+
+                    Field           Header         Description
+                    sessname        Session        Name of the IBTRS session of the device
+                    mapping_path    Mapping Path   Mapping name of the remote device
+                    devname         Device         Device name under /dev/. I.e. ibnbd0
+                    devpath         Device path    Device path under /dev/. I.e. /dev/ibnbd0
+                    state           State          State of the IBNBD device. (client only)
+                    access_mode     Access Mode    RW mode of the device: ro, rw or migration
+                    io_mode         IO mode        IO submission mode of the target device: file/block
+                    rx_sect         RX             Amount of data read from the device
+                    tx_sect         TX             Amount of data written to the device
+                    direction       Direction      Direction of data transfer: imported or exported
+                    Default: sessname,mapping_path,devname,access_mode,io_mode
+
+    {format}        Output format: csv|json|xml
+    {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
+    notree          Don't display paths for each sessions
+    noheaders       Don't print headers
+    nototals        Don't print totals
+    help            Display help and exit. [fields|all]
+
+
+.B
+
+ibnbd server device show [OPTIONS]
+
+Show information about an ibnbd block device.
 
 Arguments:
-    <path>          Name or any unique identifier of a path:
+    <name>          Name of a local or a remote block device.
+                    I.e. ibnbd0, /dev/ibnbd0, d12aef94-4110-4321-9373-3be8494a557b.
+
+Options:
+    {fields}        Comma separated list of fields to be printed. The list can be
+                    prefixed with '+' or '-' to add or remove fields from the
+                    default selection.
+
+                    Field           Header         Description
+                    sessname        Session        Name of the IBTRS session of the device
+                    mapping_path    Mapping Path   Mapping name of the remote device
+                    devname         Device         Device name under /dev/. I.e. ibnbd0
+                    devpath         Device path    Device path under /dev/. I.e. /dev/ibnbd0
+                    state           State          State of the IBNBD device. (client only)
+                    access_mode     Access Mode    RW mode of the device: ro, rw or migration
+                    io_mode         IO mode        IO submission mode of the target device: file/block
+                    rx_sect         RX             Amount of data read from the device
+                    tx_sect         TX             Amount of data written to the device
+                    direction       Direction      Direction of data transfer: imported or exported
+                    Default: sessname,mapping_path,devname,access_mode,io_mode
+
+    {format}        Output format: csv|json|xml
+    {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
+    help            Display help and exit. [fields|all]
+
+
+.B
+
+ibnbd server session list [OPTIONS]
+
+List information on sessions.
+
+Options:
+    {fields}        Comma separated list of fields to be printed. The list can be
+                    prefixed with '+' or '-' to add or remove fields from the
+                    default selection.
+
+                    Field           Header         Description
+                    sessname        Session name   Name of the session
+                    path_cnt        Path cnt       Number of paths
+                    act_path_cnt    Act path cnt   Number of active paths
+                    state           State          State of the session.
+                    path_uu         PS             Up (U) or down (_) state of every path
+                    mp              MP Policy      Multipath policy
+                    mp_short        MP             Multipath policy (short)
+                    rx_bytes        RX             Bytes received
+                    tx_bytes        TX             Bytes send
+                    inflights       Inflights      Inflights
+                    reconnects      Reconnects     Reconnects
+                    side            Direction      Direction of the session: incoming or outgoing
+                    Default: sessname,path_cnt,tx_bytes,rx_bytes,inflights
+
+    {format}        Output format: csv|json|xml
+    {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
+    notree          Don't display paths for each sessions
+    noheaders       Don't print headers
+    nototals        Don't print totals
+    help            Display help and exit. [fields|all]
+
+
+.B
+
+ibnbd server session show [OPTIONS]
+
+Show information about an ibnbd session.
+
+Arguments:
+    <name>          Session name or remote hostname.
+                    I.e. ps401a-1@st401b-2, st401b-2, <ip1>@<ip2>, etc.
+
+Options:
+    {fields}        Comma separated list of fields to be printed. The list can be
+                    prefixed with '+' or '-' to add or remove fields from the
+                    default selection.
+
+                    Field           Header         Description
+                    sessname        Session name   Name of the session
+                    path_cnt        Path cnt       Number of paths
+                    act_path_cnt    Act path cnt   Number of active paths
+                    state           State          State of the session.
+                    path_uu         PS             Up (U) or down (_) state of every path
+                    mp              MP Policy      Multipath policy
+                    mp_short        MP             Multipath policy (short)
+                    rx_bytes        RX             Bytes received
+                    tx_bytes        TX             Bytes send
+                    inflights       Inflights      Inflights
+                    reconnects      Reconnects     Reconnects
+                    side            Direction      Direction of the session: incoming or outgoing
+                    Default: sessname,path_cnt,tx_bytes,rx_bytes,inflights
+
+    {format}        Output format: csv|json|xml
+    {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
+    help            Display help and exit. [fields|all]
+
+
+.B
+
+ibnbd server session disconnect [OPTIONS]
+
+Disconnect all paths on a given session
+
+Arguments:
+    <identifier>    Name or identifier of a session:
+                    [sessname]
+
+Options:
+    verbose         Verbose output
+    help            Display help and exit
+
+
+.B
+
+ibnbd server path list [OPTIONS]
+
+List information on paths.
+
+Options:
+    {fields}        Comma separated list of fields to be printed. The list can be
+                    prefixed with '+' or '-' to add or remove fields from the
+                    default selection.
+
+                    Field           Header         Description
+                    sessname        Sessname       Name of the session.
+                    pathname        Path name      Path name
+                    src_addr        Client Addr    Client address of the path
+                    dst_addr        Server Addr    Server address of the path
+                    hca_name        HCA            HCA name
+                    hca_port        Port           HCA port
+                    state           State          Name of the path
+                    rx_bytes        RX             Bytes received
+                    tx_bytes        TX             Bytes send
+                    inflights       Inflights      Inflights
+                    reconnects      Reconnects     Reconnects
+                    direction       Direction      Direction of the path: incoming or outgoing
+                    Default: sessname,hca_name,hca_port,src_addr,tx_bytes,rx_bytes,inflights
+
+    {format}        Output format: csv|json|xml
+    {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
+    notree          Don't display paths for each sessions
+    noheaders       Don't print headers
+    nototals        Don't print totals
+    help            Display help and exit. [fields|all]
+
+
+.B
+
+ibnbd server path show [OPTIONS]
+
+Show information about an ibnbd transport path.
+
+Arguments:
+    <name>          In order to display path information, path name or identifier
+                    has to be provided, i.e. st401b-2:1.
+
+Options:
+    {fields}        Comma separated list of fields to be printed. The list can be
+                    prefixed with '+' or '-' to add or remove fields from the
+                    default selection.
+
+                    Field           Header         Description
+                    sessname        Sessname       Name of the session.
+                    pathname        Path name      Path name
+                    src_addr        Client Addr    Client address of the path
+                    dst_addr        Server Addr    Server address of the path
+                    hca_name        HCA            HCA name
+                    hca_port        Port           HCA port
+                    state           State          Name of the path
+                    rx_bytes        RX             Bytes received
+                    tx_bytes        TX             Bytes send
+                    inflights       Inflights      Inflights
+                    reconnects      Reconnects     Reconnects
+                    direction       Direction      Direction of the path: incoming or outgoing
+                    Default: sessname,hca_name,hca_port,src_addr,tx_bytes,rx_bytes,inflights
+
+    {format}        Output format: csv|json|xml
+    {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
+    help            Display help and exit. [fields|all]
+
+
+.B
+
+ibnbd server path disconnect [OPTIONS]
+
+Disconnect a path a given session
+
+Arguments:
+    <identifier>    Name or identifier of of a path:
                     [pathname], [sessname:port], etc.
 
 Options:
@@ -303,24 +598,26 @@ Options:
 
 
 .SH EXAMPLES
-List devices
+List server devices
 
-.B ibnbd list
+.B ibnbd server devices list
 
-List sessions
+List client sessions
 
-.B ibnbd list sess
+.B ibnbd client sessions list 
 
-List paths, display sizes in KB, display all columns
+List paths of server, display sizes in KB, display all columns
 
 
-.B ibnbd list paths KB all
+.B ibnbd server paths list K all
 
-List only imported devices, show only mapping_path and devpath, output in json
+List imported on client devices, show only mapping_path and devpath, output in json
 
-.B ibnbd list devs clt mapping_path,devpath json
+.B ibnbd client devices list mapping_path,devpath json
 
 .SH COPYRIGHT
 Copyright \(co 2019 IONOS Cloud GmbH. All Rights Reserved
-.SH AUTHOR
+.SH AUTHORS
 Danil Kipnis <danil.kipnis@cloud.ionos.com>
+.RE
+Lutz Pogrell <lutz.pogrell@cloud.ionos.com>

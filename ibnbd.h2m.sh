@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: GPL-2.0-or-later
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 ########################################
 # Run that and redirect to man/ibnbd.8 #
@@ -17,28 +17,39 @@ echo ".SH SYNOPSIS"
 ibnbd help | grep 'Usage:' | sed 's/Usage: //g'
 
 echo ".SH DESCRIPTION"
-ibnbd help
+ibnbd help all | grep -v "client|server|both|help" | sed 's/Usage: //g'
 
+modes="client server both"
+objects="device session path"
 cmds="list show map resize unmap remap disconnect reconnect addpath delpath"
 
 echo ".SH SUBCOMMANDS"
-for i in $cmds; do
-	echo -e ".B $i\n"
-	ibnbd $i help | sed 's/[[:space:]]*$//'
-	echo -e "\n"
+
+for m in $modes; do
+	for o in $objects; do
+		for c in $cmds; do
+			if ibnbd $m $o $c help > /dev/null; then
+				echo -e ".B\n"
+				ibnbd $m $o $c help all| sed 's/[[:space:]]*$//' | sed 's/Usage: //'
+				echo -e "\n"
+			fi
+		done
+	done
 done
 
 echo ".SH EXAMPLES"
-echo -e "List devices\n"
-echo -e ".B ibnbd list\n"
-echo -e "List sessions\n"
-echo -e ".B ibnbd list sess\n"
-echo -e "List paths, display sizes in KB, display all columns\n\n"
-echo -e ".B ibnbd list paths KB all\n"
-echo -e "List only imported devices, show only mapping_path and devpath, output in json\n"
-echo -e ".B ibnbd list devs clt mapping_path,devpath json\n"
+echo -e "List server devices\n"
+echo -e ".B ibnbd server devices list\n"
+echo -e "List client sessions\n"
+echo -e ".B ibnbd client sessions list \n"
+echo -e "List paths of server, display sizes in KB, display all columns\n\n"
+echo -e ".B ibnbd server paths list K all\n"
+echo -e "List imported on client devices, show only mapping_path and devpath, output in json\n"
+echo -e ".B ibnbd client devices list mapping_path,devpath json\n"
 
 echo ".SH COPYRIGHT"
 echo "Copyright \(co 2019 IONOS Cloud GmbH. All Rights Reserved"
-echo ".SH AUTHOR"
+echo ".SH AUTHORS"
 echo "Danil Kipnis <danil.kipnis@cloud.ionos.com>"
+echo ".RE"
+echo "Lutz Pogrell <lutz.pogrell@cloud.ionos.com>"
