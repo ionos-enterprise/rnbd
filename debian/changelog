@@ -1,3 +1,9 @@
+ibnbd-tool (0.2.1) jessie stretch buster; urgency=medium
+
+  * Implement creation of new session from a path for map operation
+
+ -- Lutz Pogrell <lutz.pogrell@cloud.ionos.com>  Fri, 25 Oct 2019 10:08:01 +0200
+
 ibnbd-tool (0.2.0) jessie stretch buster; urgency=medium
 
   * Adopt bash completion
@@ -5,7 +11,7 @@ ibnbd-tool (0.2.0) jessie stretch buster; urgency=medium
   * Improve help messages
   * Restructure command line api
 
- -- Lutz Pogrell <lutz.pogrell@cloud.ionos.com>  Fri, 25 Oct 2019 09:09:45 +0200
+ -- Lutz Pogrell <lutz.pogrell@cloud.ionos.com>  Thu, 24 Oct 2019 09:09:45 +0200
 
 ibnbd-tool (0.1.0) jessie stretch buster; urgency=medium
 

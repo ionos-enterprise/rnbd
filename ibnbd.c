@@ -1728,44 +1728,28 @@ static void help_map(const char *program_name,
 	print_sarg_descr("help");
 }
 
-static bool is_ip4(const char *arg)
-{
-	/* TODO */
-	return false;
-}
-
-static bool is_ip6(const char *arg)
-{
-	/* TODO */
-	return false;
-}
-
-static bool is_gid(const char *arg)
-{
-	/* TODO */
-	return is_ip6(arg);
-}
-
 static int parse_path(const char *arg,
 		      struct ibnbd_ctx *ctx)
 {
-	const char *src, *dst;
-	char *d;
+	char *src, *dst;
+	const char *d; int d_pos;
 
 	d = strchr(arg, '@');
 	if (d) {
-		src = arg;
-		dst = d + 1;
+		d_pos = d - arg;
+		src = strndup(arg, d_pos+1);
+		src[d_pos] = 0;
+		dst = strdup(d + 1);
 	} else {
 		src = NULL;
-		dst = arg;
+		dst = strdup(arg);
 	}
 
-	if (src && !is_ip4(src) && !is_ip6(src) && !is_gid(src))
-		return -EINVAL;
+	if (src && !is_path_addr(src))
+		goto free_error;
 
-	if (!is_ip4(dst) && !is_ip6(dst) && !is_gid(dst))
-		return -EINVAL;
+	if (!is_path_addr(dst))
+		goto free_error;
 
 	ctx->paths[ctx->path_cnt].src = src;
 	ctx->paths[ctx->path_cnt].dst = dst;
@@ -1773,6 +1757,14 @@ static int parse_path(const char *arg,
 	ctx->path_cnt++;
 
 	return 0;
+
+free_error:
+	if (src)
+		free(src);
+	if (dst)
+		free(dst);
+
+	return -EINVAL;
 }
 
 static void ibnbd_TODO(const struct sarg *cmd, const struct ibnbd_ctx *ctx)
@@ -2518,6 +2510,17 @@ static void init_ibnbd_ctx(struct ibnbd_ctx *ctx)
 
 }
 
+static void deinit_ibnbd_ctx(struct ibnbd_ctx *ctx)
+{
+	int i;
+	for (i = 0; i < ctx->path_cnt; i++) {
+		if (ctx->paths[i].src)
+			free((char*)ctx->paths[i].src);
+		if (ctx->paths[i].dst)
+			free((char*)ctx->paths[i].dst);
+	}
+}
+
 static void ibnbd_ctx_default(struct ibnbd_ctx *ctx)
 {
 	if (!ctx->lstmode_set)
@@ -2567,7 +2570,7 @@ static void help_mode(const char *mode, struct sarg *const sargs[],
  * == 0 there are no arguments to the list command
  */
 int parse_list_parameters(int argc, const char *argv[], struct ibnbd_ctx *ctx,
-		int (*parse_clms)(const char *arg, struct ibnbd_ctx *ctx),
+			  int (*parse_clms)(const char *arg, struct ibnbd_ctx *ctx),
 			  const struct sarg *cmd, const char *program_name)
 {
 	int err = 0; int start_argc = argc;
@@ -2619,10 +2622,37 @@ int parse_cmd_parameters(int argc, const char *argv[],
 		sarg = find_sarg(*argv, sargs);
 		if (sarg)
 			err = sarg->parse(argc, argv, 0, sarg, ctx);
-		if (err == 0)
+
+		if (err <= 0)
 			break;
 
-		argc--; argv++;
+		argc -= err; argv += err;
+	}
+	return err < 0 ? err : start_argc - argc;
+}
+
+/**
+ * Parse parameters for the map command as described by sarg.
+ */
+int parse_map_parameters(int argc, const char *argv[],
+			 struct sarg *const sargs[], struct ibnbd_ctx *ctx)
+{
+	int err = 0; int start_argc = argc;
+	const struct sarg *sarg;
+
+	while (argc && err >= 0) {
+		sarg = find_sarg(*argv, sargs);
+		if (sarg) {
+			err = sarg->parse(argc, argv, 0, sarg, ctx);
+		} else {
+			err = parse_path(*argv, ctx);
+			if (err == 0)
+				err = 1;
+		}
+		if (err <= 0)
+			break;
+
+		argc -= err; argv += err;
 	}
 	return err < 0 ? err : start_argc - argc;
 }
@@ -2758,7 +2788,7 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = parse_cmd_parameters(argc, argv,
+			err = parse_map_parameters(argc, argv,
 						   sargs_map_from_parameters,
 						   ctx);
 			if (err < 0)
@@ -2772,11 +2802,6 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			}
 			argc -= err; argv += err;
 
-			err = parse_cmd_parameters(argc, argv,
-						   sargs_map_parameters,
-						   ctx);
-			if (err < 0)
-				break;
 			if (argc > 0) {
 
 				handle_unknown_sarg(*argv,
@@ -3488,6 +3513,8 @@ free:
 	ibnbd_sysfs_free_all(sds_clt, sds_srv, sess_clt, sess_srv,
 			     paths_clt, paths_srv);
 out:
+	deinit_ibnbd_ctx(&ctx);
+
 	if (ret == -EAGAIN)
 		/* help message was printed */
 		ret = 0;

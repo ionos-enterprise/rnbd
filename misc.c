@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <string.h>
+#include <arpa/inet.h>  /* AF_INET */
 #include <unistd.h>	/* for isatty() */
 #include <stdbool.h>
 
@@ -315,5 +316,46 @@ int path_sess_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
 	default:
 		return snprintf(str, len, "?");
 	}
+}
+
+static bool is_ip(const char *arg)
+{
+	if (strncmp("ip:", arg, 3) == 0)
+		return true;
+	else
+		return false;
+}
+
+static bool is_ipv4_addr(const char *arg)
+{
+	char addr[4];
+
+	return inet_pton(AF_INET, arg, addr);
+}
+
+static bool is_ipv6_addr(const char *arg)
+{
+	char addr[16];
+
+	return inet_pton(AF_INET6, arg, addr);
+}
+
+static bool is_gid(const char *arg)
+{
+	if (strncmp("gid:", arg, 4) == 0)
+		return true;
+	else
+		return false;
+}
+
+bool is_path_addr(const char *arg)
+{
+	if (is_gid(arg) && is_ipv6_addr(arg+4))
+		return true;
+
+	if (is_ip(arg) && (is_ipv4_addr(arg+3) || is_ipv6_addr(arg+3)))
+		return true;
+
+	return false;
 }
 
