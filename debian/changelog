@@ -1,3 +1,12 @@
+ibnbd-tool (0.2.0) jessie stretch buster; urgency=medium
+
+  * Adopt bash completion
+  * Update man page
+  * Improve help messages
+  * Restructure command line api
+
+ -- Lutz Pogrell <lutz.pogrell@cloud.ionos.com>  Fri, 25 Oct 2019 09:09:45 +0200
+
 ibnbd-tool (0.1.0) jessie stretch buster; urgency=medium
 
   * Read path finished
