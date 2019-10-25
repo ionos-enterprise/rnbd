@@ -1,3 +1,12 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * Configuration tool for IBNBD driver and IBTRS library.
+ *
+ * Copyright (c) 2019 1&1 IONOS SE. All rights reserved.
+ * Authors: Danil Kipnis <danil.kipnis@cloud.ionos.com>
+ *          Lutz Pogrell <lutz.pogrell@cloud.ionos.com>
+ */
+
 #include <stdio.h>
 #include <errno.h>
 
