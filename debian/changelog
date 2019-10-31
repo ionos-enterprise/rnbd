@@ -1,5 +1,6 @@
 ibnbd-tool (0.2.1) jessie stretch buster; urgency=medium
 
+  * Implement remap of a device or all devices of a session
   * Implement creation of new session from a path for map operation
 
  -- Lutz Pogrell <lutz.pogrell@cloud.ionos.com>  Fri, 25 Oct 2019 10:08:01 +0200

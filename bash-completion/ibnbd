@@ -4,7 +4,7 @@ _client_device_names()
 {
 	local cmd
 
-	cmd='ibnbd client devices list noheaders nototals devname notree'
+	cmd='ibnbd client devices list noheaders nototals mapping_path,devname notree'
 	COMPREPLY=( $( compgen -W "$($cmd)" -- "$1" ) )
 	return 0
 }

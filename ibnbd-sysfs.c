@@ -34,12 +34,20 @@ int printf_sysfs(const char *dir, const char *entry, const char *format, ...)
 
 	f = fopen(path, "w");
 	if (!f)
-		return -1;
+		return -errno;
 
 	va_start(args, format);
 	ret = vfprintf(f, format, args);
 	va_end(args);
 
+	if (ret >= 0) {
+		if (fflush(f))
+			ret = -errno;
+		else
+			ret = 0;
+	}
+	/* if something failed flush should have reported, */
+	/* don't need to check return value of close. */
 	fclose(f);
 
 	return ret;

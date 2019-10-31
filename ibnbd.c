@@ -1827,74 +1827,74 @@ static int client_devices_map(const char *from_session, const char *device_name,
 		cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, " access_mode=%s",
 				ctx->access_mode);
 
-	errno = 0;
 	ret = printf_sysfs(PATH_IBNBD_CLT, "map_device", "%s", cmd);
-	ret = (ret < 0 ? ret : errno);
 	if (ret)
-		ERR(ctx->trm, "Failed to map device: %m (%d)\n", ret);
+		ERR(ctx->trm, "Failed to map device: %s (%d)\n",
+		    strerror(-ret), ret);
+	else
+		INF(ctx->verbose_set, "Successfully mapped '%s' from '%s'.\n",
+		    device_name, from_session);
 
 	return ret;
 }
 
 static struct ibnbd_sess_dev *find_single_device(const char *name,
 						 struct ibnbd_ctx *ctx,
-						 struct ibnbd_sess_dev **devs)
+						 struct ibnbd_sess_dev **devs,
+						 int dev_cnt)
 {
-	struct ibnbd_sess_dev *ds = NULL, **res;
-	int cnt;
+	struct ibnbd_sess_dev *res = NULL, **matching_devs;
+	int match_count;
 
-	if (!sds_clt_cnt) {
+	if (!dev_cnt) {
 		ERR(ctx->trm,
 		    "Device '%s' not found: no devices mapped\n", name);
 		return NULL;
 	}
 
-	res = calloc(sds_clt_cnt, sizeof(*res));
-	if (!res) {
+	matching_devs = calloc(dev_cnt, sizeof(*matching_devs));
+	if (!matching_devs) {
 		ERR(ctx->trm, "Failed to allocate memory\n");
 		return NULL;
 	}
 
-	cnt = find_devices(name, devs, res);
-	if (!cnt) {
-		ERR(ctx->trm, "Device '%s' not found\n", name);
-		goto free;
+	match_count = find_devices(name, devs, matching_devs);
+	if (match_count == 1) {
+
+		res = matching_devs[0];
+	} else {
+		ERR(ctx->trm, "%s '%s'.\n",
+		    (match_count > 1)  ?
+		    	"Please specify an exact device. There are multiple devices matching"
+		    	: "Device '%s' not found",
+		    name);
 	}
 
-	if (cnt > 1) {
-		ERR(ctx->trm,
-		"Please specify an exact path. There are multiple devices matching '%s':\n",
-		name);
-		list_devices(devs, cnt, &ds, 0, ctx);
-		goto free;
-	}
-
-	ds = res[0];
-
-free:
-	free(res);
-	return ds;
+	free(matching_devs);
+	return res;
 }
 
 static int client_devices_resize(const char *device_name, uint64_t size_sect,
 				 struct ibnbd_ctx *ctx)
 {
-	struct ibnbd_sess_dev *ds;
+	const struct ibnbd_sess_dev *ds;
 	char tmp[PATH_MAX];
 	int ret;
 
-	ds = find_single_device(device_name, ctx, sds_clt);
+	ds = find_single_device(device_name, ctx, sds_clt, sds_clt_cnt);
 	if (!ds) {
 		ERR(ctx->trm, "Device %s does not exist\n", device_name);
 		return -EINVAL;
 	}
-	sprintf(tmp, "/sys/block/%s/ibnbd/", ds->dev->devname);
-	errno = 0;
+	sprintf(tmp, "/sys/block/%s/ibnbd", ds->dev->devname);
 	ret = printf_sysfs(tmp, "resize", "%d", size_sect);
-	ret = (ret < 0 ? ret : errno);
 	if (ret)
-		ERR(ctx->trm, "Failed to resize %s: %m (%d)\n",
-		    ds->dev->devname, ret);
+		ERR(ctx->trm, "Failed to resize %s: %s (%d)\n",
+		    ds->dev->devname, strerror(-ret), ret);
+	else
+		INF(ctx->verbose_set,
+		    "Device '%s' resized sucessfully to %lu sectors.\n",
+		    ds->dev->devname, size_sect);
 
 	return ret;
 }
@@ -1938,25 +1938,125 @@ static void help_unmap(const char *program_name,
 static int client_devices_unmap(const char *device_name, bool force,
 				struct ibnbd_ctx *ctx)
 {
-	struct ibnbd_sess_dev *ds;
+	const struct ibnbd_sess_dev *ds;
 	char tmp[PATH_MAX];
 	int ret;
 
-	ds = find_single_device(device_name, ctx, sds_clt);
+	ds = find_single_device(device_name, ctx, sds_clt, sds_clt_cnt);
 	if (!ds)
 		return -EINVAL;
 
-	sprintf(tmp, "/sys/block/%s/ibnbd/", ds->dev->devname);
-	errno = 0;
+	sprintf(tmp, "/sys/block/%s/ibnbd", ds->dev->devname);
 	ret = printf_sysfs(tmp, "unmap_device", "%s",
 			   force ? "force" : "normal");
-	ret = (ret < 0 ? ret : errno);
 	if (ret)
-		ERR(ctx->trm, "Failed to %sunmap '%s': %m (%d)\n",
+		ERR(ctx->trm, "Failed to %sunmap '%s': %s (%d)\n",
 		    force ? "force-" : "",
-		    ds->dev->devname, ret);
+		    ds->dev->devname, strerror(-ret), ret);
+	else
+		INF(ctx->verbose_set, "Device '%s' sucessfully unmapped.\n",
+		    ds->dev->devname);
 
 	return ret;
+}
+
+static int client_device_remap(const struct ibnbd_dev *dev, struct ibnbd_ctx *ctx)
+{
+	char tmp[PATH_MAX];
+	int ret;
+
+	sprintf(tmp, "/sys/block/%s/ibnbd", dev->devname);
+	ret = printf_sysfs(tmp, "remap_device", "1");
+	if (ret == -EALREADY) {
+		INF(ctx->verbose_set,
+		    "Device '%s' does not need to be remapped.\n",
+		    dev->devname);
+		ret = 0;
+	} else if (ret) {
+		ERR(ctx->trm, "Failed to remap %s: %s (%d)\n",
+		    dev->devname, strerror(-ret), ret);
+	} else {
+		INF(ctx->verbose_set,
+		    "Device '%s' sucessfully remapped.\n",
+		    dev->devname);
+	}
+	return ret;
+}
+
+static int client_devices_remap(const char *device_name, struct ibnbd_ctx *ctx)
+{
+	const struct ibnbd_sess_dev *ds;
+
+	ds = find_single_device(device_name, ctx, sds_clt, sds_clt_cnt);
+	if (!ds) {
+		ERR(ctx->trm, "Device %s does not exist\n", device_name);
+		return -EINVAL;
+	}
+	return client_device_remap(ds->dev, ctx);
+}
+
+static struct ibnbd_sess *find_single_session(const char *session_name,
+					      struct ibnbd_ctx *ctx,
+					      struct ibnbd_sess **sessions,
+					      int sess_cnt)
+{
+	struct ibnbd_sess **matching_sess, *res = NULL;
+	int match_count;
+
+	if (!sess_cnt) {
+		ERR(ctx->trm,
+		    "Session '%s' not found: no sessions open\n", session_name);
+		return NULL;
+	}
+
+	matching_sess = calloc(sess_cnt, sizeof(*matching_sess));
+
+	if (sess_cnt && !matching_sess) {
+		ERR(ctx->trm, "Failed to alloc memory\n");
+		return NULL;
+	}
+	match_count = find_sessions_match(session_name, sessions, matching_sess);
+
+	if (match_count == 1) {
+		res = *matching_sess;
+	} else {
+		ERR(ctx->trm, "%s '%s'.\n",
+		    (match_count > 1)  ?
+		    	"Please specify the session uniquely. There are multiple sessions matching"
+		    	: "No session found matching matching",
+		    session_name);
+	}
+
+	free(matching_sess);
+	return res;
+}
+
+static int client_sessions_remap(const char *session_name, struct ibnbd_ctx *ctx)
+{
+	int tmp_err, err = 0;
+	struct ibnbd_sess_dev **sds_iter;
+	const struct ibnbd_sess *sess;
+
+	if (!sds_clt_cnt) {
+		ERR(ctx->trm,
+		    "No devices mapped. Nothing to be done!\n");
+		return -EINVAL;
+	}
+
+	sess = find_single_session(session_name, ctx, sess_clt, sds_clt_cnt);
+	if (!sess) {
+		return -EINVAL;
+	}
+	for (sds_iter = sds_clt; *sds_iter; sds_iter++) {
+		
+		if ((*sds_iter)->sess == sess) {
+			tmp_err = client_device_remap((*sds_iter)->dev, ctx);
+			/*  intentional continue on error */
+			if (!err && tmp_err)
+				err = tmp_err;
+		}
+	}
+	return err;
 }
 
 static void help_remap(const char *program_name,
@@ -2513,11 +2613,12 @@ static void init_ibnbd_ctx(struct ibnbd_ctx *ctx)
 static void deinit_ibnbd_ctx(struct ibnbd_ctx *ctx)
 {
 	int i;
+
 	for (i = 0; i < ctx->path_cnt; i++) {
 		if (ctx->paths[i].src)
-			free((char*)ctx->paths[i].src);
+			free((char *)ctx->paths[i].src);
 		if (ctx->paths[i].dst)
-			free((char*)ctx->paths[i].dst);
+			free((char *)ctx->paths[i].dst);
 	}
 }
 
@@ -2570,8 +2671,8 @@ static void help_mode(const char *mode, struct sarg *const sargs[],
  * == 0 there are no arguments to the list command
  */
 int parse_list_parameters(int argc, const char *argv[], struct ibnbd_ctx *ctx,
-			  int (*parse_clms)(const char *arg, struct ibnbd_ctx *ctx),
-			  const struct sarg *cmd, const char *program_name)
+		int (*parse_clms)(const char *arg, struct ibnbd_ctx *ctx),
+		const struct sarg *cmd, const char *program_name)
 {
 	int err = 0; int start_argc = argc;
 	const struct sarg *sarg;
@@ -2717,7 +2818,20 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			ibnbd_TODO(cmd, ctx);
+			err = parse_cmd_parameters(argc, argv,
+						   default_sargs, ctx);
+			if (err < 0)
+				break;
+
+			argc -= err; argv += err;
+
+			if (argc > 0) {
+
+				handle_unknown_sarg(*argv, default_sargs);
+				err = -EINVAL;
+				break;
+			}
+			err = client_sessions_remap(ctx->name, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, -1, NULL, ctx);
@@ -2865,6 +2979,9 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 						   sargs_unmap_parameters, ctx);
 			if (err < 0)
 				break;
+
+			argc -= err; argv += err;
+
 			if (argc > 0) {
 
 				handle_unknown_sarg(*argv,
@@ -2881,13 +2998,20 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
+			err = parse_cmd_parameters(argc, argv,
+						   default_sargs, ctx);
+			if (err < 0)
+				break;
+
+			argc -= err; argv += err;
+
 			if (argc > 0) {
 
 				handle_unknown_sarg(*argv, default_sargs);
 				err = -EINVAL;
 				break;
 			}
-			ibnbd_TODO(cmd, ctx);
+			err = client_devices_remap(ctx->name, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, -1, NULL, ctx);

@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include <limits.h>
 
-#define PATH_IBNBD_CLT "/sys/class/ibnbd-client/ctl/"
-#define PATH_SDS_CLT PATH_IBNBD_CLT "devices/"
+#define PATH_IBNBD_CLT "/sys/class/ibnbd-client/ctl"
+#define PATH_SDS_CLT PATH_IBNBD_CLT "/devices/"
 #define PATH_SESS_CLT "/sys/class/ibtrs-client/"
 #define PATH_SDS_SRV "/sys/class/ibnbd-server/ctl/devices/"
 #define PATH_SESS_SRV "/sys/class/ibtrs-server/"
