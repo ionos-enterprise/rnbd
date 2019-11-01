@@ -270,6 +270,15 @@ static int parse_flag(int argc, const char *argv[], int i,
 	return i + 1;
 }
 
+static int parse_debug(int argc, const char *argv[], int i,
+		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
+{
+	ctx->debug_set=true;
+	ctx->verbose_set=true;
+
+	return i + 1;
+}
+
 static struct sarg _sargs_from =
 {TOK_FROM, "from", "", "", "Destination to map a device from", parse_from, 0};
 static struct sarg _sargs_client =
@@ -336,9 +345,29 @@ static struct sarg _sargs_help =
 static struct sarg _sargs_verbose =
 	{TOK_VERBOSE, "verbose", "", "", "Verbose output", parse_flag,
 	 NULL, offsetof(struct ibnbd_ctx, verbose_set)};
+static struct sarg _sargs_minus_h =
+	{TOK_VERBOSE, "-h", "", "", "Help output", parse_help,
+	 NULL, offsetof(struct ibnbd_ctx, help_set)};
+static struct sarg _sargs_minus_minus_help =
+	{TOK_VERBOSE, "--help", "", "", "Help output", parse_help,
+	 NULL, offsetof(struct ibnbd_ctx, help_set)};
 static struct sarg _sargs_minus_v =
 	{TOK_VERBOSE, "-v", "", "", "Verbose output", parse_flag,
 	 NULL, offsetof(struct ibnbd_ctx, verbose_set)};
+static struct sarg _sargs_minus_minus_verbose =
+	{TOK_VERBOSE, "--verbose", "", "", "Verbose output", parse_flag,
+	 NULL, offsetof(struct ibnbd_ctx, verbose_set)};
+static struct sarg _sargs_minus_d =
+	{TOK_VERBOSE, "-d", "", "", "Debug mode", parse_debug,
+	 NULL, offsetof(struct ibnbd_ctx, debug_set)};
+static struct sarg _sargs_minus_minus_debug =
+	{TOK_VERBOSE, "--debug", "", "", "Debug mode", parse_debug, 0};
+static struct sarg _sargs_minus_s =
+	{TOK_VERBOSE, "-s", "", "", "Simulate", parse_flag, 0};
+static struct sarg _sargs_minus_minus_simulate =
+	{TOK_VERBOSE, "--simulate", "", "",
+	 "Print modifying operations only, do not execute", parse_flag,
+	 NULL, offsetof(struct ibnbd_ctx, simulate_set)};
 static struct sarg _sargs_byte =
 	{TOK_BYTE, "B", "", "", "Byte", parse_unit, 0};
 static struct sarg _sargs_kib =
@@ -375,14 +404,34 @@ static struct sarg _sargs_all =
 static struct sarg _sargs_null =
 	{TOK_NONE, 0};
 
-static struct sarg *default_sargs[] = {
+static struct sarg *sargs_flags[] = {
+	&_sargs_minus_minus_help,
+	&_sargs_minus_h,
+	&_sargs_minus_minus_verbose,
+	&_sargs_minus_v,
+	&_sargs_minus_minus_debug,
+	&_sargs_minus_d,
+	&_sargs_minus_minus_simulate,
+	&_sargs_minus_s,
+	&_sargs_null
+};
+
+static struct sarg *sargs_flags_help[] = {
+	&_sargs_minus_minus_help,
+	&_sargs_minus_minus_verbose,
+	&_sargs_minus_minus_debug,
+	&_sargs_minus_minus_simulate,
+	&_sargs_null
+};
+
+static struct sarg *sargs_default[] = {
 	&_sargs_help,
 	&_sargs_verbose,
 	&_sargs_minus_v,
 	&_sargs_null
 };
 
-static struct sarg *options_sargs[] = {
+static struct sarg *sargs_options[] = {
 	&_sargs_noheaders,
 	&_sargs_nototals,
 	&_sargs_notree,
@@ -536,7 +585,7 @@ static void print_sarg_descr(char *str)
 {
 	const struct sarg *s;
 
-	s = find_sarg(str, options_sargs);
+	s = find_sarg(str, sargs_options);
 	if (s)
 		print_opt(s->sarg_str, s->descr);
 }
@@ -571,6 +620,14 @@ static void print_usage(const char *sub_name, struct sarg * const cmds[],
 static bool help_print_all(const struct ibnbd_ctx *ctx)
 {
 	if (ctx->help_arg_set && strncmp(ctx->help_arg, "all", 3) == 0)
+		return true;
+	else
+		return false;
+}
+
+static bool help_print_flags(const struct ibnbd_ctx *ctx)
+{
+	if (ctx->help_arg_set && strncmp(ctx->help_arg, "flags", 3) == 0)
 		return true;
 	else
 		return false;
@@ -1827,7 +1884,7 @@ static int client_devices_map(const char *from_session, const char *device_name,
 		cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, " access_mode=%s",
 				ctx->access_mode);
 
-	ret = printf_sysfs(PATH_IBNBD_CLT, "map_device", "%s", cmd);
+	ret = printf_sysfs(PATH_IBNBD_CLT, "map_device", ctx, "%s", cmd);
 	if (ret)
 		ERR(ctx->trm, "Failed to map device: %s (%d)\n",
 		    strerror(-ret), ret);
@@ -1887,7 +1944,7 @@ static int client_devices_resize(const char *device_name, uint64_t size_sect,
 		return -EINVAL;
 	}
 	sprintf(tmp, "/sys/block/%s/ibnbd", ds->dev->devname);
-	ret = printf_sysfs(tmp, "resize", "%d", size_sect);
+	ret = printf_sysfs(tmp, "resize", ctx, "%d", size_sect);
 	if (ret)
 		ERR(ctx->trm, "Failed to resize %s: %s (%d)\n",
 		    ds->dev->devname, strerror(-ret), ret);
@@ -1947,7 +2004,7 @@ static int client_devices_unmap(const char *device_name, bool force,
 		return -EINVAL;
 
 	sprintf(tmp, "/sys/block/%s/ibnbd", ds->dev->devname);
-	ret = printf_sysfs(tmp, "unmap_device", "%s",
+	ret = printf_sysfs(tmp, "unmap_device", ctx, "%s",
 			   force ? "force" : "normal");
 	if (ret)
 		ERR(ctx->trm, "Failed to %sunmap '%s': %s (%d)\n",
@@ -1966,7 +2023,7 @@ static int client_device_remap(const struct ibnbd_dev *dev, struct ibnbd_ctx *ct
 	int ret;
 
 	sprintf(tmp, "/sys/block/%s/ibnbd", dev->devname);
-	ret = printf_sysfs(tmp, "remap_device", "1");
+	ret = printf_sysfs(tmp, "remap_device", ctx, "1");
 	if (ret == -EALREADY) {
 		INF(ctx->verbose_set,
 		    "Device '%s' does not need to be remapped.\n",
@@ -2656,6 +2713,29 @@ static void help_mode(const char *mode, struct sarg *const sargs[],
 	}
 }
 
+static void help_start(const struct ibnbd_ctx *ctx)
+{
+	if (help_print_flags(ctx) || help_print_all(ctx)) {
+		help_sarg(ctx->pname, sargs_flags_help, ctx);
+		if (help_print_all(ctx))
+			printf("\n\n");
+	}
+	if (!help_print_flags(ctx))
+		help_sarg(ctx->pname, sargs_mode_help, ctx);
+	
+	if (help_print_all(ctx)) {
+		
+		printf("\n\n");
+		help_mode("client",
+			  sargs_object_type_help_client, ctx);
+		printf("\n\n");
+		help_mode("server",
+			  sargs_object_type_help_server, ctx);
+		printf("\n\n");
+		help_mode("both", sargs_both_help, ctx);
+	}
+}
+
 /**
  * Parse all the possible parameters to list or show commands.
  * The results are collected in the ibnbd_ctx struct
@@ -2724,7 +2804,7 @@ int parse_cmd_parameters(int argc, const char *argv[],
 		if (sarg)
 			err = sarg->parse(argc, argv, 0, sarg, ctx);
 
-		if (err <= 0)
+		if (!sarg || err <= 0)
 			break;
 
 		argc -= err; argv += err;
@@ -2819,7 +2899,7 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 				break;
 
 			err = parse_cmd_parameters(argc, argv,
-						   default_sargs, ctx);
+						   sargs_default, ctx);
 			if (err < 0)
 				break;
 
@@ -2827,7 +2907,7 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 			if (argc > 0) {
 
-				handle_unknown_sarg(*argv, default_sargs);
+				handle_unknown_sarg(*argv, sargs_default);
 				err = -EINVAL;
 				break;
 			}
@@ -2962,7 +3042,7 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			/* for the amount to be resized to */
 			if (argc > 0) {
 
-				handle_unknown_sarg(*argv, default_sargs);
+				handle_unknown_sarg(*argv, sargs_default);
 				err = -EINVAL;
 				break;
 			}
@@ -2999,7 +3079,7 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 				break;
 
 			err = parse_cmd_parameters(argc, argv,
-						   default_sargs, ctx);
+						   sargs_default, ctx);
 			if (err < 0)
 				break;
 
@@ -3007,7 +3087,7 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 			if (argc > 0) {
 
-				handle_unknown_sarg(*argv, default_sargs);
+				handle_unknown_sarg(*argv, sargs_default);
 				err = -EINVAL;
 				break;
 			}
@@ -3086,7 +3166,7 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			}
 			if (argc > 0) {
 
-				handle_unknown_sarg(*argv, default_sargs);
+				handle_unknown_sarg(*argv, sargs_default);
 				err = -EINVAL;
 				break;
 			}
@@ -3100,7 +3180,7 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 			if (argc > 0) {
 
-				handle_unknown_sarg(*argv, default_sargs);
+				handle_unknown_sarg(*argv, sargs_default);
 				err = -EINVAL;
 				break;
 			}
@@ -3114,7 +3194,7 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 			if (argc > 0) {
 
-				handle_unknown_sarg(*argv, default_sargs);
+				handle_unknown_sarg(*argv, sargs_default);
 				err = -EINVAL;
 				break;
 			}
@@ -3128,7 +3208,7 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 			if (argc > 0) {
 
-				handle_unknown_sarg(*argv, default_sargs);
+				handle_unknown_sarg(*argv, sargs_default);
 				err = -EINVAL;
 				break;
 			}
@@ -3203,7 +3283,7 @@ int cmd_server_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 			if (argc > 0) {
 
-				handle_unknown_sarg(*argv, default_sargs);
+				handle_unknown_sarg(*argv, sargs_default);
 				err = -EINVAL;
 				break;
 			}
@@ -3340,7 +3420,7 @@ int cmd_server_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 			if (argc > 0) {
 
-				handle_unknown_sarg(*argv, default_sargs);
+				handle_unknown_sarg(*argv, sargs_default);
 				err = -EINVAL;
 				break;
 			}
@@ -3395,7 +3475,14 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			err = cmd_client_paths(--argc, ++argv, ctx);
 			break;
 		case TOK_HELP:
-			help_mode("client", sargs_object_type_help_client, ctx);
+			if (ctx->pname_with_mode
+			    && (help_print_flags(ctx) || help_print_all(ctx))) {
+				help_sarg(ctx->pname, sargs_flags_help, ctx);
+				if ( help_print_all(ctx))
+					printf("\n\n");
+			}
+			if (!ctx->pname_with_mode || !help_print_flags(ctx))
+				help_mode("client", sargs_object_type_help_client, ctx);
 			break;
 		default:
 			handle_unknown_sarg(*argv, sargs_object_type);
@@ -3442,7 +3529,14 @@ int cmd_server(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			err = cmd_server_paths(--argc, ++argv, ctx);
 			break;
 		case TOK_HELP:
-			help_mode("server", sargs_object_type_help_server, ctx);
+			if (ctx->pname_with_mode
+			    && (help_print_flags(ctx) || help_print_all(ctx))) {
+				help_sarg(ctx->pname, sargs_flags_help, ctx);
+				if ( help_print_all(ctx))
+					printf("\n\n");
+			}
+			if (!ctx->pname_with_mode || !help_print_flags(ctx))
+				help_mode("server", sargs_object_type_help_server, ctx);
 			break;
 		default:
 			handle_unknown_sarg(*argv, sargs_object_type);
@@ -3480,6 +3574,7 @@ int cmd_both(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 		*/
 		case TOK_HELP:
 			help_sarg(ctx->pname, sargs_mode_help, ctx);
+
 			if (help_print_all(ctx)) {
 
 				help_mode("client",
@@ -3530,18 +3625,8 @@ int cmd_start(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			err = cmd_both(--argc, ++argv, ctx);
 			break;
 		case TOK_HELP:
-			help_sarg(ctx->pname, sargs_mode_help, ctx);
-			if (help_print_all(ctx)) {
 
-				printf("\n\n");
-				help_mode("client",
-					  sargs_object_type_help_client, ctx);
-				printf("\n\n");
-				help_mode("server",
-					  sargs_object_type_help_server, ctx);
-				printf("\n\n");
-				help_mode("both", sargs_both_help, ctx);
-			}
+			help_start(ctx);
 			break;
 		default:
 			handle_unknown_sarg(*argv, sargs_mode);
@@ -3591,7 +3676,38 @@ int main(int argc, const char *argv[])
 		}
 		ibnbd_ctx_default(&ctx);
 
-		argv++; argc--;
+		ret = parse_cmd_parameters(--argc, ++argv,
+					   sargs_flags, &ctx);
+		if (ret < 0)
+			goto free;
+		
+		argc -= ret; argv += ret;
+		
+		if (argc && *argv[0] == '-') {
+			handle_unknown_sarg(*argv, sargs_flags);
+			help_sarg(ctx.pname, sargs_flags_help, &ctx);
+			ret = -EINVAL;
+			goto free;
+		} else if (ctx.help_set) {
+			if (help_print_flags(&ctx) || help_print_all(&ctx)) {
+				help_sarg(ctx.pname, sargs_flags_help, &ctx);
+				if ( help_print_all(&ctx))
+					printf("\n\n");
+			}
+			if (!help_print_flags(&ctx)) {
+				if (ctx.ibnbdmode == IBNBD_CLIENT)
+					help_mode("client", sargs_object_type_help_client, &ctx);
+				else
+					help_mode("server", sargs_object_type_help_server, &ctx);
+			}
+			ret = -EINVAL;
+			goto free;
+		}
+		if (argc && *argv[0] == '-') {
+			help_sarg(ctx.pname, sargs_flags_help, &ctx);
+			ret = -EINVAL;
+			goto free;
+		}
 
 		switch (ctx.ibnbdmode) {
 		case IBNBD_CLIENT:
@@ -3631,7 +3747,24 @@ int main(int argc, const char *argv[])
 
 	ibnbd_ctx_default(&ctx);
 
-	ret = cmd_start(--argc, ++argv, &ctx);
+	ret = parse_cmd_parameters(--argc, ++argv,
+				   sargs_flags, &ctx);
+	if (ret < 0)
+		goto free;
+	
+	argc -= ret; argv += ret;
+
+	if (argc && *argv[0] == '-') {
+		handle_unknown_sarg(*argv, sargs_flags);
+		help_sarg(ctx.pname, sargs_flags_help, &ctx);
+		ret = -EINVAL;
+		goto free;
+	} else if (ctx.help_set) {
+		help_start(&ctx);
+		ret = -EINVAL;
+		goto free;
+	}
+	ret = cmd_start(argc, argv, &ctx);
 
 free:
 	ibnbd_sysfs_free_all(sds_clt, sds_srv, sess_clt, sess_srv,

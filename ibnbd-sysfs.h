@@ -92,5 +92,8 @@ int ibnbd_sysfs_read_all(struct ibnbd_sess_dev **sds_clt,
 			 struct ibnbd_path **paths_clt,
 			 struct ibnbd_path **paths_srv);
 
-int printf_sysfs(const char *dir, const char *entry, const char *format, ...);
+struct ibnbd_ctx;
+
+int printf_sysfs(const char *dir, const char *entry,
+		 const struct ibnbd_ctx *ctx, const char *format, ...);
 int scanf_sysfs(const char *dir, const char *entry, const char *format, ...);

@@ -18,27 +18,41 @@
 #include <unistd.h>	/* for write() */
 #include <stdarg.h>
 #include <libgen.h>	/* for basename */
+#include <inttypes.h>
+#include <stdbool.h>
 
 #include "ibnbd-sysfs.h"
+#include "table.h"
+#include "misc.h"
 
 struct ibnbd_dev *devs[4096]; /* FIXME: this has to be a list */
 
-int printf_sysfs(const char *dir, const char *entry, const char *format, ...)
+int printf_sysfs(const char *dir, const char *entry,
+		 const struct ibnbd_ctx *ctx, const char *format, ...)
 {
 	char path[PATH_MAX];
+	char cmd[4096];
 	va_list args;
 	FILE *f;
 	int ret;
 
 	snprintf(path, sizeof(path), "%s/%s", dir, entry);
 
+	va_start(args, format);
+	ret = vsnprintf(cmd, sizeof(cmd), format, args);
+	va_end(args);
+
+	if (ctx->debug_set || ctx->simulate_set) {
+
+		printf("echo '%s' > %s\n", cmd, path);
+		if (ctx->simulate_set)
+			return 0;
+	}
 	f = fopen(path, "w");
 	if (!f)
 		return -errno;
 
-	va_start(args, format);
-	ret = vfprintf(f, format, args);
-	va_end(args);
+	ret = fprintf(f, cmd, args);
 
 	if (ret >= 0) {
 		if (fflush(f))
