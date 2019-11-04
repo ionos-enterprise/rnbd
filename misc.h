@@ -164,6 +164,8 @@ int path_to_shortdesc(char *str, size_t len, const struct ibnbd_ctx *ctx,
 
 bool is_path_addr(const char *arg);
 
+bool match_path_addr(const char *left, const char *right);
+
 #define container_of(ptr, type, member) ({                      \
 		const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
 		(type *)( (char *)__mptr - offsetof(type,member) );})

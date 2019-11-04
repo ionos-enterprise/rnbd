@@ -273,8 +273,8 @@ static int parse_flag(int argc, const char *argv[], int i,
 static int parse_debug(int argc, const char *argv[], int i,
 		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
-	ctx->debug_set=true;
-	ctx->verbose_set=true;
+	ctx->debug_set = true;
+	ctx->verbose_set = true;
 
 	return i + 1;
 }
@@ -318,7 +318,9 @@ static struct sarg _sargs_paths =
 static struct sarg _sargs_path =
 	{TOK_PATHS, "path", "", "", "", parse_lst, 0};
 static struct sarg _sargs_path_param =
-	{TOK_PATHS, "<path>", "", "", "Path to use (i.e. gid:fe80::1@gid:fe80::2)", NULL, 0};
+	{TOK_PATHS, "<path>", "", "",
+	 "Path to use (i.e. gid:fe80::1@gid:fe80::2)",
+	 NULL, 0};
 static struct sarg _sargs_notree =
 	{TOK_NOTREE, "notree", "", "", "Don't display paths for each sessions",
 	 parse_flag, NULL, offsetof(struct ibnbd_ctx, notree_set)};
@@ -1300,15 +1302,65 @@ static int find_sess_all(const char *name, enum ibnbdmode ibnbdmode,
 	return cnt_clt + cnt_srv;
 }
 
+static int parse_path1(const char *arg,
+		       struct path *path)
+{
+	char *src, *dst;
+	const char *d; int d_pos;
+
+	d = strchr(arg, '@');
+	if (d) {
+		d_pos = d - arg;
+		src = strndup(arg, d_pos+1);
+		src[d_pos] = 0;
+		dst = strdup(d + 1);
+	} else {
+		src = NULL;
+		dst = strdup(arg);
+	}
+
+	if (src && !is_path_addr(src))
+		goto free_error;
+
+	if (!is_path_addr(dst))
+		goto free_error;
+
+	path->src = src;
+	path->dst = dst;
+
+	return 1;
+
+free_error:
+	if (src)
+		free(src);
+	if (dst)
+		free(dst);
+
+	return 0;
+}
+
 static bool match_path(struct ibnbd_path *p, const char *name)
 {
+	struct path other = {NULL, NULL};
 	int port;
 	char *at;
 
 	if (!strcmp(p->pathname, name) ||
 	    !strcmp(name, p->src_addr) ||
-	    !strcmp(name, p->dst_addr) ||
-	    (sscanf(name, "%d\n", &port) == 1 &&
+	    !strcmp(name, p->dst_addr))
+		return true;
+
+	if (parse_path1(name, &other)) {
+		if ((!other.src
+		     || match_path_addr(p->src_addr, other.src))
+		    && match_path_addr(p->dst_addr, other.dst))
+			return true;
+		if (!other.src
+		     && match_path_addr(p->src_addr, other.dst))
+			return true;
+	}
+
+	if ((sscanf(name, "%d\n", &port) == 1 &&
 	     p->hca_port == port) ||
 	    !strcmp(name, p->hca_name))
 		return true;
@@ -1824,40 +1876,12 @@ static void help_map(const char *program_name,
 static int parse_path(const char *arg,
 		      struct ibnbd_ctx *ctx)
 {
-	char *src, *dst;
-	const char *d; int d_pos;
-
-	d = strchr(arg, '@');
-	if (d) {
-		d_pos = d - arg;
-		src = strndup(arg, d_pos+1);
-		src[d_pos] = 0;
-		dst = strdup(d + 1);
-	} else {
-		src = NULL;
-		dst = strdup(arg);
-	}
-
-	if (src && !is_path_addr(src))
-		goto free_error;
-
-	if (!is_path_addr(dst))
-		goto free_error;
-
-	ctx->paths[ctx->path_cnt].src = src;
-	ctx->paths[ctx->path_cnt].dst = dst;
+	if (!parse_path1(arg, ctx->paths+ctx->path_cnt))
+		return -EINVAL;
 
 	ctx->path_cnt++;
 
 	return 0;
-
-free_error:
-	if (src)
-		free(src);
-	if (dst)
-		free(dst);
-
-	return -EINVAL;
 }
 
 static void ibnbd_TODO(const struct sarg *cmd, const struct ibnbd_ctx *ctx)
@@ -1958,8 +1982,8 @@ static struct ibnbd_sess_dev *find_single_device(const char *name,
 	} else {
 		ERR(ctx->trm, "%s '%s'.\n",
 		    (match_count > 1)  ?
-		    	"Please specify an exact device. There are multiple devices matching"
-		    	: "Device '%s' not found",
+			"Please specify an exact device. There are multiple devices matching"
+			: "Device '%s' not found",
 		    name);
 	}
 
@@ -2053,7 +2077,8 @@ static int client_devices_unmap(const char *device_name, bool force,
 	return ret;
 }
 
-static int client_device_remap(const struct ibnbd_dev *dev, struct ibnbd_ctx *ctx)
+static int client_device_remap(const struct ibnbd_dev *dev,
+			       struct ibnbd_ctx *ctx)
 {
 	char tmp[PATH_MAX];
 	int ret;
@@ -2108,15 +2133,16 @@ static struct ibnbd_sess *find_single_session(const char *session_name,
 		ERR(ctx->trm, "Failed to alloc memory\n");
 		return NULL;
 	}
-	match_count = find_sessions_match(session_name, sessions, matching_sess);
+	match_count = find_sessions_match(session_name, sessions,
+					  matching_sess);
 
 	if (match_count == 1) {
 		res = *matching_sess;
 	} else {
 		ERR(ctx->trm, "%s '%s'.\n",
 		    (match_count > 1)  ?
-		    	"Please specify the session uniquely. There are multiple sessions matching"
-		    	: "No session found matching matching",
+			"Please specify the session uniquely. There are multiple sessions matching"
+			: "No session found matching matching",
 		    session_name);
 	}
 
@@ -2124,7 +2150,8 @@ static struct ibnbd_sess *find_single_session(const char *session_name,
 	return res;
 }
 
-static int client_sessions_remap(const char *session_name, struct ibnbd_ctx *ctx)
+static int client_sessions_remap(const char *session_name,
+				 struct ibnbd_ctx *ctx)
 {
 	int tmp_err, err = 0;
 	struct ibnbd_sess_dev **sds_iter;
@@ -2137,11 +2164,11 @@ static int client_sessions_remap(const char *session_name, struct ibnbd_ctx *ctx
 	}
 
 	sess = find_single_session(session_name, ctx, sess_clt, sds_clt_cnt);
-	if (!sess) {
+	if (!sess)
 		return -EINVAL;
-	}
+
 	for (sds_iter = sds_clt; *sds_iter; sds_iter++) {
-		
+
 		if ((*sds_iter)->sess == sess) {
 			tmp_err = client_device_remap((*sds_iter)->dev, ctx);
 			/*  intentional continue on error */
@@ -2280,15 +2307,19 @@ static int client_session_add(const char *session_name,
 		return -EINVAL;
 	}
 
-	snprintf(sysfs_path, sizeof(sysfs_path), PATH_SESS_CLT "%s", sess->sessname);
+	snprintf(sysfs_path, sizeof(sysfs_path),
+		 PATH_SESS_CLT "%s", sess->sessname);
 	if (path->src)
-		snprintf(address_string, sizeof(address_string), "%s@%s", path->src, path->dst);
+		snprintf(address_string, sizeof(address_string),
+			 "%s@%s", path->src, path->dst);
 	else
-		snprintf(address_string, sizeof(address_string), "%s", path->dst);
+		snprintf(address_string, sizeof(address_string),
+			 "%s", path->dst);
 
 	ret = printf_sysfs(sysfs_path, "add_path", ctx, "%s", address_string);
 	if (ret)
-		ERR(ctx->trm, "Failed to add path '%s' to session '%s': %s (%d)\n",
+		ERR(ctx->trm,
+		    "Failed to add path '%s' to session '%s': %s (%d)\n",
 		    sess->sessname, address_string, strerror(-ret), ret);
 	else
 		INF(ctx->verbose_set, "Successfully added path '%s' to '%s'.\n",
@@ -2791,9 +2822,9 @@ static void help_start(const struct ibnbd_ctx *ctx)
 	}
 	if (!help_print_flags(ctx))
 		help_sarg(ctx->pname, sargs_mode_help, ctx);
-	
+
 	if (help_print_all(ctx)) {
-		
+
 		printf("\n\n");
 		help_mode("client",
 			  sargs_object_type_help_client, ctx);
@@ -2884,7 +2915,7 @@ int parse_cmd_parameters(int argc, const char *argv[],
 /**
  * Parse parameters for the map command as described by sarg.
  */
-int parse_map_parameters(int argc, const char *argv[], int * accepted,
+int parse_map_parameters(int argc, const char *argv[], int *accepted,
 			 struct sarg *const sargs[], struct ibnbd_ctx *ctx)
 {
 	int err = 0; int start_argc = argc;
@@ -3070,7 +3101,9 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 						    sargs_map_parameters);
 				if (err < 0) {
 					printf("\n");
-					print_sarg(ctx->pname, sargs_map_parameters_help, ctx);
+					print_sarg(ctx->pname,
+						   sargs_map_parameters_help,
+						   ctx);
 				}
 				err = -EINVAL;
 				break;
@@ -3270,8 +3303,10 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (accepted == 0) {
 
 				ERR(ctx->trm,
-				    "Please specify the path to add to session %s\n", ctx->name);
-				print_opt(_sargs_path_param.sarg_str, _sargs_path_param.descr);
+				    "Please specify the path to add to session %s\n",
+				    ctx->name);
+				print_opt(_sargs_path_param.sarg_str,
+					  _sargs_path_param.descr);
 				err = -EINVAL;
 				break;
 			}
@@ -3282,7 +3317,9 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 				handle_unknown_sarg(*argv, sargs_add_path_help);
 				if (err < 0) {
 					printf("\n");
-					print_sarg(ctx->pname, sargs_add_path_help, ctx);
+					print_sarg(ctx->pname,
+						   sargs_add_path_help,
+						   ctx);
 				}
 				err = -EINVAL;
 				break;
@@ -3291,7 +3328,7 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 				ERR(ctx->trm,
 				    "No valid path provided. Please provide a path to add to session '%s'.\n",
 				    ctx->name);
-			
+
 			if (ctx->path_cnt > 1)
 				ERR(ctx->trm,
 				    "You provided %d paths. Please provide exactly one path to add to session '%s'.\n",
@@ -3577,11 +3614,12 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (ctx->pname_with_mode
 			    && (help_print_flags(ctx) || help_print_all(ctx))) {
 				help_sarg(ctx->pname, sargs_flags_help, ctx);
-				if ( help_print_all(ctx))
+				if (help_print_all(ctx))
 					printf("\n\n");
 			}
 			if (!ctx->pname_with_mode || !help_print_flags(ctx))
-				help_mode("client", sargs_object_type_help_client, ctx);
+				help_mode("client",
+					  sargs_object_type_help_client, ctx);
 			break;
 		default:
 			handle_unknown_sarg(*argv, sargs_object_type);
@@ -3631,11 +3669,13 @@ int cmd_server(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (ctx->pname_with_mode
 			    && (help_print_flags(ctx) || help_print_all(ctx))) {
 				help_sarg(ctx->pname, sargs_flags_help, ctx);
-				if ( help_print_all(ctx))
+				if (help_print_all(ctx))
 					printf("\n\n");
 			}
 			if (!ctx->pname_with_mode || !help_print_flags(ctx))
-				help_mode("server", sargs_object_type_help_server, ctx);
+				help_mode("server",
+					  sargs_object_type_help_server,
+					  ctx);
 			break;
 		default:
 			handle_unknown_sarg(*argv, sargs_object_type);
@@ -3779,9 +3819,9 @@ int main(int argc, const char *argv[])
 					   sargs_flags, &ctx);
 		if (ret < 0)
 			goto free;
-		
+
 		argc -= ret; argv += ret;
-		
+
 		if (argc && *argv[0] == '-') {
 			handle_unknown_sarg(*argv, sargs_flags);
 			help_sarg(ctx.pname, sargs_flags_help, &ctx);
@@ -3790,14 +3830,18 @@ int main(int argc, const char *argv[])
 		} else if (ctx.help_set) {
 			if (help_print_flags(&ctx) || help_print_all(&ctx)) {
 				help_sarg(ctx.pname, sargs_flags_help, &ctx);
-				if ( help_print_all(&ctx))
+				if (help_print_all(&ctx))
 					printf("\n\n");
 			}
 			if (!help_print_flags(&ctx)) {
 				if (ctx.ibnbdmode == IBNBD_CLIENT)
-					help_mode("client", sargs_object_type_help_client, &ctx);
+					help_mode("client",
+						  sargs_object_type_help_client,
+						  &ctx);
 				else
-					help_mode("server", sargs_object_type_help_server, &ctx);
+					help_mode("server",
+						  sargs_object_type_help_server,
+						  &ctx);
 			}
 			ret = -EINVAL;
 			goto free;
@@ -3850,7 +3894,7 @@ int main(int argc, const char *argv[])
 				   sargs_flags, &ctx);
 	if (ret < 0)
 		goto free;
-	
+
 	argc -= ret; argv += ret;
 
 	if (argc && *argv[0] == '-') {

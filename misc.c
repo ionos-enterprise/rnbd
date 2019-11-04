@@ -235,7 +235,8 @@ int sd_sess_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
 	}
 }
 
-int i_to_byte_unit(char *str, size_t len, const struct ibnbd_ctx *ctx, uint64_t v, bool humanize)
+int i_to_byte_unit(char *str, size_t len, const struct ibnbd_ctx *ctx,
+		   uint64_t v, bool humanize)
 {
 	if (humanize)
 		if (ctx->unit_set)
@@ -359,3 +360,80 @@ bool is_path_addr(const char *arg)
 	return false;
 }
 
+/**
+ * Evaluate whether both left and right string represent
+ * equivalent IBNBD path addresses.
+ *
+ * Address strings start with either 'ip:' or 'gid:'
+ * followed by an valid (IPv4 or IPv6) address
+ * or a valid gid (which looks like a link local IPv6 address).
+ *
+ * If both are neither one or the other string comparison is used
+ * as fallback.
+ *
+ * For both ip and gid two addresses match if they are representations
+ * if the same 'normalized' ip address string.
+ */
+bool match_path_addr(const char *left, const char *right)
+{
+	bool left_is_gid;
+	bool left_is_ip;
+	bool right_is_ip;
+	char left_addr[16];
+	char right_addr[16];
+	char left_normalized[INET6_ADDRSTRLEN];
+	char right_normalized[INET6_ADDRSTRLEN];
+
+	if (!left && !right)
+		return true;
+
+	if ((!left && right) || (left && !right))
+		return false;
+
+	if ((is_gid(left) && is_gid(right))
+	    || (is_ip(left) && is_ip(right))) {
+
+		left_is_gid = is_gid(left);
+		left_is_ip = inet_pton(AF_INET6, left+(left_is_gid ? 4 : 3),
+				       left_addr);
+		right_is_ip = inet_pton(AF_INET6, right+(left_is_gid ? 4 : 3),
+					right_addr);
+
+		if ((!left_is_ip && right_is_ip)
+		    || (left_is_ip && !right_is_ip))
+			return false;
+
+		if (left_is_ip) {
+
+			inet_ntop(AF_INET6, left_addr, left_normalized,
+				  INET6_ADDRSTRLEN);
+			inet_ntop(AF_INET6, right_addr, right_normalized,
+				  INET6_ADDRSTRLEN);
+
+			return !strcmp(left_normalized, right_normalized);
+
+		} else if (!left_is_gid) {
+			left_is_ip = inet_aton(left+3,
+					       (struct in_addr *)left_addr);
+			right_is_ip = inet_aton(right+3,
+						(struct in_addr *)right_addr);
+
+			if ((!left_is_ip && right_is_ip)
+			    || (left_is_ip && !right_is_ip))
+				return false;
+
+			if (left_is_ip) {
+
+				inet_ntop(AF_INET, left_addr,
+					  left_normalized, INET6_ADDRSTRLEN);
+				inet_ntop(AF_INET, right_addr,
+					  right_normalized, INET6_ADDRSTRLEN);
+
+				return !strcmp(left_normalized,
+					       right_normalized);
+			}
+		}
+	}
+
+	return !strcmp(left, right);
+}
