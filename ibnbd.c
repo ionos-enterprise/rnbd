@@ -547,6 +547,13 @@ static struct sarg *sargs_unmap_parameters[] = {
 	&_sargs_null
 };
 
+static struct sarg *sargs_add_path_parameters[] = {
+	&_sargs_help,
+	&_sargs_verbose,
+	&_sargs_minus_v,
+	&_sargs_null
+};
+
 static const struct sarg *find_sarg(const char *str,
 				    struct sarg *const sargs[])
 {
@@ -2227,6 +2234,39 @@ static void help_disconnect_path(const char *program_name,
 	print_sarg_descr("help");
 }
 
+static int client_session_add(const char *session_name,
+			      const struct path *path,
+			      struct ibnbd_ctx *ctx)
+{
+	char address_string[4096];
+	char sysfs_path[4096];
+	struct ibnbd_sess *sess;
+	int ret;
+
+	sess = find_session(session_name, sess_clt);
+
+	if (!sess) {
+		ERR(ctx->trm,
+		    "Session '%s' does not exists.\n", session_name);
+		return -EINVAL;
+	}
+
+	snprintf(sysfs_path, sizeof(sysfs_path), PATH_SESS_CLT "%s", sess->sessname);
+	if (path->src)
+		snprintf(address_string, sizeof(address_string), "%s@%s", path->src, path->dst);
+	else
+		snprintf(address_string, sizeof(address_string), "%s", path->dst);
+
+	ret = printf_sysfs(sysfs_path, "add_path", ctx, "%s", address_string);
+	if (ret)
+		ERR(ctx->trm, "Failed to add path '%s' to session '%s': %s (%d)\n",
+		    sess->sessname, address_string, strerror(-ret), ret);
+	else
+		INF(ctx->verbose_set, "Successfully added path '%s' to '%s'.\n",
+		    address_string, sess->sessname);
+	return ret;
+}
+
 static void help_addpath(const char *program_name,
 			 const struct sarg *cmd,
 			 const struct ibnbd_ctx *ctx)
@@ -3192,13 +3232,38 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
+			err = parse_map_parameters(argc, argv,
+						   sargs_add_path_parameters,
+						   ctx);
+			if (err < 0)
+				break;
+
+			if (err == 0) {
+
+				ERR(ctx->trm,
+				    "Please specify the path to add to session %s\n", ctx->name);
+				err = -EINVAL;
+				break;
+			}
+			argc -= err; argv += err;
+
 			if (argc > 0) {
 
 				handle_unknown_sarg(*argv, sargs_default);
 				err = -EINVAL;
 				break;
 			}
-			ibnbd_TODO(cmd, ctx);
+			if (ctx->path_cnt <= 0)
+				ERR(ctx->trm,
+				    "No valid path provided. Please provide a path to add to session '%s'.\n",
+				    ctx->name);
+			
+			if (ctx->path_cnt > 1)
+				ERR(ctx->trm,
+				    "You provided %d paths. Please provide exactly one path to add to session '%s'.\n",
+				    ctx->path_cnt, ctx->name);
+
+			err = client_session_add(ctx->name, ctx->paths, ctx);
 			break;
 		case TOK_DELETE:
 			err = parse_name_help(argc--, argv++,
