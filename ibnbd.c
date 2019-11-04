@@ -2368,6 +2368,71 @@ static void help_delpath(const char *program_name,
 	print_sarg_descr("help");
 }
 
+static struct ibnbd_path *find_single_path(const char *path_name,
+					   struct ibnbd_ctx *ctx,
+					   struct ibnbd_path **paths,
+					   int path_cnt)
+{
+	struct ibnbd_path **matching_paths, *res = NULL;
+	int match_count;
+
+	if (!path_cnt) {
+		ERR(ctx->trm,
+		    "Path '%s' not found: there exists no paths\n", path_name);
+		return NULL;
+	}
+
+	matching_paths = calloc(path_cnt, sizeof(*matching_paths));
+
+	if (path_cnt && !matching_paths) {
+		ERR(ctx->trm, "Failed to alloc memory\n");
+		return NULL;
+	}
+	match_count = find_paths(path_name, paths, matching_paths);
+
+	if (match_count == 1) {
+		res = *matching_paths;
+	} else {
+		ERR(ctx->trm, "%s '%s'.\n",
+		    (match_count > 1)  ?
+			"Please specify the path uniquely. There are multiple paths matching"
+			: "No path found matching matching",
+		    path_name);
+	}
+
+	free(matching_paths);
+	return res;
+}
+
+static int client_session_delete(const char *path_name,
+				 struct ibnbd_ctx *ctx)
+{
+	char sysfs_path[4096];
+	struct ibnbd_path *path;
+	int ret;
+
+	path = find_single_path(path_name, ctx, paths_clt, paths_clt_cnt);
+
+	if (!path) {
+		ERR(ctx->trm,
+		    "Path '%s' does not exists.\n", path_name);
+		return -EINVAL;
+	}
+
+	snprintf(sysfs_path, sizeof(sysfs_path),
+		 PATH_SESS_CLT "%s/paths/%s", path->sess->sessname, path->pathname);
+
+	ret = printf_sysfs(sysfs_path, "remove_path", ctx, "1");
+	if (ret)
+		ERR(ctx->trm,
+		    "Failed to remove path '%s' from session '%s': %s (%d)\n",
+		    path->pathname, path->sess->sessname, strerror(-ret), ret);
+	else
+		INF(ctx->verbose_set, "Successfully removed path '%s' from '%s'.\n",
+		    path->pathname, path->sess->sessname);
+	return ret;
+}
+
 static struct sarg _cmd_list_devices =
 	{TOK_LIST, "list",
 		"List information on all",
@@ -3348,7 +3413,7 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 				err = -EINVAL;
 				break;
 			}
-			ibnbd_TODO(cmd, ctx);
+			client_session_delete(ctx->name, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, -1, NULL, ctx);
