@@ -317,6 +317,8 @@ static struct sarg _sargs_paths =
 	{TOK_PATHS, "paths", "", "", "Handle paths", parse_lst, 0};
 static struct sarg _sargs_path =
 	{TOK_PATHS, "path", "", "", "", parse_lst, 0};
+static struct sarg _sargs_path_param =
+	{TOK_PATHS, "<path>", "", "", "Path to use (i.e. gid:fe80::1@gid:fe80::2)", NULL, 0};
 static struct sarg _sargs_notree =
 	{TOK_NOTREE, "notree", "", "", "Don't display paths for each sessions",
 	 parse_flag, NULL, offsetof(struct ibnbd_ctx, notree_set)};
@@ -539,6 +541,20 @@ static struct sarg *sargs_map_parameters[] = {
 	&_sargs_null
 };
 
+static struct sarg *sargs_map_parameters_help[] = {
+	&_sargs_from,
+	&_sargs_path_param,
+	&_sargs_ro,
+	&_sargs_rw,
+	&_sargs_migration,
+	&_sargs_blockio,
+	&_sargs_fileio,
+	&_sargs_help,
+	&_sargs_verbose,
+	&_sargs_minus_v,
+	&_sargs_null
+};
+
 static struct sarg *sargs_unmap_parameters[] = {
 	&_sargs_help,
 	&_sargs_force,
@@ -551,6 +567,13 @@ static struct sarg *sargs_add_path_parameters[] = {
 	&_sargs_help,
 	&_sargs_verbose,
 	&_sargs_minus_v,
+	&_sargs_null
+};
+
+static struct sarg *sargs_add_path_help[] = {
+	&_sargs_help,
+	&_sargs_path_param,
+	&_sargs_verbose,
 	&_sargs_null
 };
 
@@ -597,14 +620,20 @@ static void print_sarg_descr(char *str)
 		print_opt(s->sarg_str, s->descr);
 }
 
+static  void print_sarg(const char *str, struct sarg *const sargs[],
+			const struct ibnbd_ctx *ctx)
+{
+	do {
+		print_opt((*sargs)->sarg_str, (*sargs)->descr);
+	} while ((*++sargs)->sarg_str);
+}
+
 static  void help_sarg(const char *str, struct sarg *const sargs[],
 		       const struct ibnbd_ctx *ctx)
 {
 	usage_sarg(str, sargs, ctx);
 
-	do {
-		print_opt((*sargs)->sarg_str, (*sargs)->descr);
-	} while ((*++sargs)->sarg_str);
+	print_sarg(str, sargs, ctx);
 }
 
 static void print_usage(const char *sub_name, struct sarg * const cmds[],
@@ -2280,7 +2309,7 @@ static void help_addpath(const char *program_name,
 	print_opt("<session>",
 		  "Name of the session to add the new path to");
 	print_opt("<path>",
-		  "Path to be added: [src_addr,]dst_addr");
+		  "Path to be added: [src_addr@]dst_addr");
 	print_opt("",
 		  "Address is of the form ip:<ipv4>, ip:<ipv6> or gid:<gid>");
 
@@ -2855,7 +2884,7 @@ int parse_cmd_parameters(int argc, const char *argv[],
 /**
  * Parse parameters for the map command as described by sarg.
  */
-int parse_map_parameters(int argc, const char *argv[],
+int parse_map_parameters(int argc, const char *argv[], int * accepted,
 			 struct sarg *const sargs[], struct ibnbd_ctx *ctx)
 {
 	int err = 0; int start_argc = argc;
@@ -2875,7 +2904,8 @@ int parse_map_parameters(int argc, const char *argv[],
 
 		argc -= err; argv += err;
 	}
-	return err < 0 ? err : start_argc - argc;
+	*accepted = start_argc - argc;
+	return err;
 }
 
 int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
@@ -2975,7 +3005,7 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	const char *_help_context = ctx->pname_with_mode
 		? "device" : "client device";
 
-	int err = 0;
+	int accepted = 0, err = 0;
 	const struct sarg *cmd;
 
 	cmd = find_sarg(*argv, cmds_client_devices);
@@ -3022,24 +3052,26 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = parse_map_parameters(argc, argv,
+			err = parse_map_parameters(argc, argv, &accepted,
 						   sargs_map_from_parameters,
 						   ctx);
-			if (err < 0)
-				break;
-			if (err == 0) {
+			if (accepted == 0) {
 
 				ERR(ctx->trm,
 				    "Please specify the destination to map from\n");
 				err = -EINVAL;
 				break;
 			}
-			argc -= err; argv += err;
+			argc -= accepted; argv += accepted;
 
-			if (argc > 0) {
+			if (argc > 0 || (err < 0 && err != -EAGAIN)) {
 
 				handle_unknown_sarg(*argv,
 						    sargs_map_parameters);
+				if (err < 0) {
+					printf("\n");
+					print_sarg(ctx->pname, sargs_map_parameters_help, ctx);
+				}
 				err = -EINVAL;
 				break;
 			}
@@ -3152,7 +3184,7 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	const char *_help_context = ctx->pname_with_mode
 		? "path" : "client path";
 
-	int err = 0;
+	int accepted = 0, err = 0;
 	const struct sarg *cmd;
 
 	cmd = find_sarg(*argv, cmds_client_paths);
@@ -3232,24 +3264,26 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = parse_map_parameters(argc, argv,
+			err = parse_map_parameters(argc, argv, &accepted,
 						   sargs_add_path_parameters,
 						   ctx);
-			if (err < 0)
-				break;
-
-			if (err == 0) {
+			if (accepted == 0) {
 
 				ERR(ctx->trm,
 				    "Please specify the path to add to session %s\n", ctx->name);
+				print_opt(_sargs_path_param.sarg_str, _sargs_path_param.descr);
 				err = -EINVAL;
 				break;
 			}
-			argc -= err; argv += err;
+			argc -= accepted; argv += accepted;
 
-			if (argc > 0) {
+			if (argc > 0 || (err < 0 && err != -EAGAIN)) {
 
-				handle_unknown_sarg(*argv, sargs_default);
+				handle_unknown_sarg(*argv, sargs_add_path_help);
+				if (err < 0) {
+					printf("\n");
+					print_sarg(ctx->pname, sargs_add_path_help, ctx);
+				}
 				err = -EINVAL;
 				break;
 			}
