@@ -370,7 +370,7 @@ static struct sarg _sargs_minus_s =
 	{TOK_VERBOSE, "-s", "", "", "Simulate", parse_flag, 0};
 static struct sarg _sargs_minus_minus_simulate =
 	{TOK_VERBOSE, "--simulate", "", "",
-	 "Print modifying operations only, do not execute", parse_flag,
+	 "Only print modifying operations, do not execute", parse_flag,
 	 NULL, offsetof(struct ibnbd_ctx, simulate_set)};
 static struct sarg _sargs_byte =
 	{TOK_BYTE, "B", "", "", "Byte", parse_unit, 0};
@@ -2475,6 +2475,51 @@ static int client_path_disconnect(const char *path_name,
 			      ctx);
 }
 
+static int client_path_readd(const char *path_name,
+			     struct ibnbd_ctx *ctx)
+{
+	char sysfs_path[4096];
+	struct ibnbd_path *path;
+	int ret;
+
+	path = find_single_path(path_name, ctx, paths_clt, paths_clt_cnt);
+
+	if (!path) {
+		ERR(ctx->trm,
+		    "Path '%s' does not exists.\n", path_name);
+		return -EINVAL;
+	}
+
+	snprintf(sysfs_path, sizeof(sysfs_path),
+		 PATH_SESS_CLT "%s/paths/%s",
+		 path->sess->sessname, path->pathname);
+
+	ret = printf_sysfs(sysfs_path, "remove_path", ctx, "1");
+	if (ret) {
+		ERR(ctx->trm,
+		    "Failed to remove path '%s' from session '%s': %s (%d)\n",
+		    path->pathname,
+		    path->sess->sessname, strerror(-ret), ret);
+		return ret;
+	} else {
+		INF(ctx->verbose_set,
+		    "Successfully removed path '%s' from '%s'.\n",
+		    path->pathname, path->sess->sessname);
+	}
+	snprintf(sysfs_path, sizeof(sysfs_path),
+		 PATH_SESS_CLT "%s", path->sess->sessname);
+
+	ret = printf_sysfs(sysfs_path, "add_path", ctx, "%s", path->pathname);
+	if (ret)
+		ERR(ctx->trm,
+		    "Failed to readd path '%s' to session '%s': %s (%d)\n",
+		    path->sess->sessname, path->pathname, strerror(-ret), ret);
+	else
+		INF(ctx->verbose_set, "Successfully readded path '%s' to '%s'.\n",
+		    path->pathname, path->sess->sessname);
+	return ret;
+}
+
 static int server_path_disconnect(const char *path_name,
 				  struct ibnbd_ctx *ctx)
 {
@@ -2639,6 +2684,12 @@ static struct sarg _cmd_del =
 		"",
 		"Delete a given path from the corresponding session",
 		 NULL, help_delpath};
+static struct sarg _cmd_readd =
+	{TOK_READD, "readd",
+		"Readd a",
+		"",
+		"Delete and add again a given path to the corresponding session",
+		 NULL, help_delpath};
 static struct sarg _cmd_help =
 	{TOK_HELP, "help",
 		"Display help on",
@@ -2688,6 +2739,7 @@ static struct sarg *cmds_client_paths[] = {
 	&_cmd_add,
 	&_cmd_delete,
 	&_cmd_del,
+	&_cmd_readd,
 	&_cmd_help,
 	&_cmd_null
 };
@@ -2699,6 +2751,7 @@ static struct sarg *cmds_client_paths_help[] = {
 	&_cmd_reconnect_path,
 	&_cmd_add,
 	&_cmd_delete,
+	&_cmd_readd,
 	&_cmd_help,
 	&_cmd_null
 };
@@ -3528,13 +3581,28 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 				err = -EINVAL;
 				break;
 			}
+			err = client_path_delete(ctx->name, ctx);
+			break;
+		case TOK_READD:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			err = parse_cmd_parameters(argc, argv,
+						   sargs_default, ctx);
+			if (err < 0)
+				break;
+
+			argc -= err; argv += err;
+
 			if (argc > 0) {
 
 				handle_unknown_sarg(*argv, sargs_default);
 				err = -EINVAL;
 				break;
 			}
-			err = client_path_delete(ctx->name, ctx);
+			err = client_path_readd(ctx->name, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, -1, NULL, ctx);

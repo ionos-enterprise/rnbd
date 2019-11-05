@@ -17,11 +17,11 @@ echo ".SH SYNOPSIS"
 ibnbd help | grep 'Usage:' | sed 's/Usage: //g'
 
 echo ".SH DESCRIPTION"
-ibnbd help all | grep -v "client|server|both|help" | sed 's/Usage: //g'
+ibnbd help all | grep -v "client|server|both|help" | grep -v -e "--help|--verbose|--debug|--simulate" | sed 's/Usage: //g'
 
 modes="client server both"
 objects="device session path"
-cmds="list show map resize unmap remap disconnect reconnect addpath delpath"
+cmds="list show map resize unmap remap disconnect reconnect add delete readd"
 
 echo ".SH SUBCOMMANDS"
 

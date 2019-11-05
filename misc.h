@@ -194,6 +194,7 @@ enum ibnbd_token {
 	TOK_RECONNECT,
 	TOK_ADD,
 	TOK_DELETE,
+	TOK_READD,
 
 	/* access permissions */
 	TOK_RO,

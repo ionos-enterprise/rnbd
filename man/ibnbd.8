@@ -1,9 +1,16 @@
-.TH IBNBD "8" "Oktober 2019" "ibnbd 0.1.0" "System Administration Utilities"
+.TH IBNBD "8" "November 2019" "ibnbd 0.2.1" "System Administration Utilities"
 .SH NAME
 ibnbd - Configuration tool for IBNBD driver and IBTRS library.
 .SH SYNOPSIS
 ibnbd client|server|both|help ...
 .SH DESCRIPTION
+
+    --help          Help output
+    --verbose       Verbose output
+    --debug         Debug mode
+    --simulate      Only print modifying operations, do not execute
+
+
 
     client          Operations of client
     server          Operations of server
@@ -357,6 +364,52 @@ Disconnect and connect again a single path of a session
 
 Arguments:
     <identifier>    Name or identifier of a path:
+                    [pathname], [sessname:port], etc.
+
+Options:
+    verbose         Verbose output
+    help            Display help and exit
+
+
+.B
+
+ibnbd client path add [OPTIONS]
+
+Add a new path to an existing session
+
+Arguments:
+    <session>       Name of the session to add the new path to
+    <path>          Path to be added: [src_addr@]dst_addr
+                    Address is of the form ip:<ipv4>, ip:<ipv6> or gid:<gid>
+
+Options:
+    verbose         Verbose output
+    help            Display help and exit
+
+
+.B
+
+ibnbd client path delete [OPTIONS]
+
+Delete a given path from the corresponding session
+
+Arguments:
+    <path>          Name or any unique identifier of a path:
+                    [pathname], [sessname:port], etc.
+
+Options:
+    verbose         Verbose output
+    help            Display help and exit
+
+
+.B
+
+ibnbd client path readd [OPTIONS]
+
+Delete and add again a given path to the corresponding session
+
+Arguments:
+    <path>          Name or any unique identifier of a path:
                     [pathname], [sessname:port], etc.
 
 Options:
