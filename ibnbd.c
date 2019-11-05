@@ -1869,15 +1869,6 @@ static int parse_path(const char *arg,
 	return 0;
 }
 
-static void ibnbd_TODO(const struct sarg *cmd, const struct ibnbd_ctx *ctx)
-{
-	if (ctx->trm)
-		printf("%s%s", colors[CMAG], colors[CBLD]);
-	printf("Command %s is not implemented yet.\n", cmd->sarg_str);
-	if (ctx->trm)
-		printf("%s", colors[CNRM]);
-}
-
 static int client_devices_map(const char *from_session, const char *device_name,
 			      struct ibnbd_ctx *ctx)
 {
@@ -2164,35 +2155,40 @@ static int client_session_remap(const char *session_name,
 	return err;
 }
 
-static int client_session_do_all_paths(const char *session_name,
-				       int (*do_it)(const char *path_name,
-						    struct ibnbd_ctx *ctx),
-				       struct ibnbd_ctx *ctx)
+static int session_do_all_paths(enum ibnbdmode mode,
+				const char *session_name,
+				int (*do_it)(const char *path_name,
+					     struct ibnbd_ctx *ctx),
+				struct ibnbd_ctx *ctx)
 {
-	int tmp_err, err = 0;
+	int err = 0;
 	struct ibnbd_path *const *paths_iter;
 	const struct ibnbd_sess *sess;
 
-	if (!sess_clt_cnt) {
+	if (!(mode == IBNBD_CLIENT ?
+	      sess_clt_cnt
+	      : sess_srv_cnt)) {
 		ERR(ctx->trm,
 		    "No sessions opened!\n");
 		return -EINVAL;
 	}
 
-	sess = find_single_session(session_name, ctx, sess_clt, sds_clt_cnt);
+	if (mode == IBNBD_CLIENT)
+		sess = find_single_session(session_name, ctx,
+					   sess_clt, sess_clt_cnt);
+	else
+		sess = find_single_session(session_name, ctx,
+					   sess_srv, sess_srv_cnt);
+
 	if (!sess)
 		/*find_single_session has printed an error message*/
 		return -EINVAL;
 
-	for (paths_iter = paths_clt; *paths_iter; paths_iter++) {
+	for (paths_iter = (mode == IBNBD_CLIENT ? paths_clt : paths_srv);
+	     *paths_iter && !err; paths_iter++) {
 
-		if ((*paths_iter)->sess == sess) {
-
-			tmp_err = do_it((*paths_iter)->pathname, ctx);
-			/*  intentional continue on error */
-			if (!err && tmp_err)
-				err = tmp_err;
-		}
+		if ((*paths_iter)->sess == sess)
+			err = do_it((*paths_iter)->pathname, ctx);
 	}
 	return err;
 }
@@ -2475,8 +2471,40 @@ static int client_path_disconnect(const char *path_name,
 {
 	return client_path_do(path_name, "disconnect",
 			      "Successfully disconnected path '%s' from session '%s'.\n",
-			      "Failed to reconnect path '%s' of session '%s': %s (%d)\n",
+			      "Failed to disconnect path '%s' of session '%s': %s (%d)\n",
 			      ctx);
+}
+
+static int server_path_disconnect(const char *path_name,
+				  struct ibnbd_ctx *ctx)
+{
+	char sysfs_path[4096];
+	struct ibnbd_path *path;
+	int ret;
+
+	path = find_single_path(path_name, ctx, paths_srv, paths_srv_cnt);
+
+	if (!path) {
+		ERR(ctx->trm,
+		    "Path '%s' does not exists.\n", path_name);
+		return -EINVAL;
+	}
+
+	snprintf(sysfs_path, sizeof(sysfs_path),
+		 PATH_SESS_SRV "%s/paths/%s",
+		 path->sess->sessname, path->pathname);
+
+	ret = printf_sysfs(sysfs_path, "disconnect", ctx, "1");
+	if (ret)
+		ERR(ctx->trm,
+		    "Failed to disconnect path '%s' of session '%s': %s (%d)\n",
+		    path->pathname,
+		    path->sess->sessname, strerror(-ret), ret);
+	else
+		INF(ctx->verbose_set,
+		    "Successfully disconnected path '%s' from session '%s'.\n",
+		    path->pathname, path->sess->sessname);
+	return ret;
 }
 
 static struct sarg _cmd_list_devices =
@@ -3115,9 +3143,19 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 				err = -EINVAL;
 				break;
 			}
-			err = client_session_do_all_paths(ctx->name,
-							  client_path_reconnect,
-							  ctx);
+			/* We want the session to change it's state to */
+			/* disconnected. So disconnect all paths first.*/
+			err = session_do_all_paths(IBNBD_CLIENT, ctx->name,
+						   client_path_disconnect,
+						   ctx);
+			/* If the session does not exist at all we will   */
+			/* get -EINVAL. In all other error cases we try   */
+			/* to reconnect the path to reconnect the session.*/
+			if (err == 0 || err == -EINVAL)
+				err = session_do_all_paths(IBNBD_CLIENT,
+							ctx->name,
+							client_path_reconnect,
+							ctx);
 			break;
 		case TOK_REMAP:
 			err = parse_name_help(argc--, argv++,
@@ -3571,7 +3609,9 @@ int cmd_server_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 				err = -EINVAL;
 				break;
 			}
-			ibnbd_TODO(cmd, ctx);
+			err = session_do_all_paths(IBNBD_SERVER, ctx->name,
+						   server_path_disconnect,
+						   ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, -1, NULL, ctx);
@@ -3702,13 +3742,20 @@ int cmd_server_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
+			err = parse_cmd_parameters(argc, argv,
+						   sargs_default, ctx);
+			if (err < 0)
+				break;
+
+			argc -= err; argv += err;
+
 			if (argc > 0) {
 
 				handle_unknown_sarg(*argv, sargs_default);
 				err = -EINVAL;
 				break;
 			}
-			ibnbd_TODO(cmd, ctx);
+			err = server_path_disconnect(ctx->name, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, -1, NULL, ctx);
