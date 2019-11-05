@@ -1689,21 +1689,6 @@ out:
 	return ret;
 }
 
-static int parse_name(int argc, const char *argv[], int i,
-		      struct ibnbd_ctx *ctx)
-{
-	int j = i + 1;
-
-	if (j >= argc) {
-		ERR(ctx->trm, "Please specify the <name> argument\n");
-		return i;
-	}
-
-	ctx->name = argv[j];
-
-	return j + 1;
-}
-
 static int parse_name_help(int argc, const char *argv[], const char *what,
 			   const struct sarg *cmd, struct ibnbd_ctx *ctx)
 {
@@ -2150,11 +2135,11 @@ static struct ibnbd_sess *find_single_session(const char *session_name,
 	return res;
 }
 
-static int client_sessions_remap(const char *session_name,
+static int client_session_remap(const char *session_name,
 				 struct ibnbd_ctx *ctx)
 {
 	int tmp_err, err = 0;
-	struct ibnbd_sess_dev **sds_iter;
+	struct ibnbd_sess_dev *const *sds_iter;
 	const struct ibnbd_sess *sess;
 
 	if (!sds_clt_cnt) {
@@ -2171,6 +2156,39 @@ static int client_sessions_remap(const char *session_name,
 
 		if ((*sds_iter)->sess == sess) {
 			tmp_err = client_device_remap((*sds_iter)->dev, ctx);
+			/*  intentional continue on error */
+			if (!err && tmp_err)
+				err = tmp_err;
+		}
+	}
+	return err;
+}
+
+static int client_session_do_all_paths(const char *session_name,
+				       int (*do_it)(const char *path_name,
+						    struct ibnbd_ctx *ctx),
+				       struct ibnbd_ctx *ctx)
+{
+	int tmp_err, err = 0;
+	struct ibnbd_path *const *paths_iter;
+	const struct ibnbd_sess *sess;
+
+	if (!sess_clt_cnt) {
+		ERR(ctx->trm,
+		    "No sessions opened!\n");
+		return -EINVAL;
+	}
+
+	sess = find_single_session(session_name, ctx, sess_clt, sds_clt_cnt);
+	if (!sess)
+		/*find_single_session has printed an error message*/
+		return -EINVAL;
+
+	for (paths_iter = paths_clt; *paths_iter; paths_iter++) {
+
+		if ((*paths_iter)->sess == sess) {
+
+			tmp_err = do_it((*paths_iter)->pathname, ctx);
 			/*  intentional continue on error */
 			if (!err && tmp_err)
 				err = tmp_err;
@@ -2404,8 +2422,9 @@ static struct ibnbd_path *find_single_path(const char *path_name,
 	return res;
 }
 
-static int client_session_delete(const char *path_name,
-				 struct ibnbd_ctx *ctx)
+static int client_path_do(const char *path_name, const char *sysfs_entry,
+			  const char *message_success,
+			  const char *message_fail, struct ibnbd_ctx *ctx)
 {
 	char sysfs_path[4096];
 	struct ibnbd_path *path;
@@ -2420,17 +2439,44 @@ static int client_session_delete(const char *path_name,
 	}
 
 	snprintf(sysfs_path, sizeof(sysfs_path),
-		 PATH_SESS_CLT "%s/paths/%s", path->sess->sessname, path->pathname);
+		 PATH_SESS_CLT "%s/paths/%s",
+		 path->sess->sessname, path->pathname);
 
-	ret = printf_sysfs(sysfs_path, "remove_path", ctx, "1");
+	ret = printf_sysfs(sysfs_path, sysfs_entry, ctx, "1");
 	if (ret)
-		ERR(ctx->trm,
-		    "Failed to remove path '%s' from session '%s': %s (%d)\n",
-		    path->pathname, path->sess->sessname, strerror(-ret), ret);
+		ERR(ctx->trm, message_fail, path->pathname,
+		    path->sess->sessname, strerror(-ret), ret);
 	else
-		INF(ctx->verbose_set, "Successfully removed path '%s' from '%s'.\n",
+		INF(ctx->verbose_set, message_success,
 		    path->pathname, path->sess->sessname);
 	return ret;
+}
+
+static int client_path_delete(const char *path_name,
+				 struct ibnbd_ctx *ctx)
+{
+	return client_path_do(path_name, "remove_path",
+				 "Successfully removed path '%s' from '%s'.\n",
+				 "Failed to remove path '%s' from session '%s': %s (%d)\n",
+				 ctx);
+}
+
+static int client_path_reconnect(const char *path_name,
+				    struct ibnbd_ctx *ctx)
+{
+	return client_path_do(path_name, "reconnect",
+			      "Successfully reconnected path '%s' of session '%s'.\n",
+			      "Failed to reconnect path '%s' from session '%s': %s (%d)\n",
+			      ctx);
+}
+
+static int client_path_disconnect(const char *path_name,
+				  struct ibnbd_ctx *ctx)
+{
+	return client_path_do(path_name, "disconnect",
+			      "Successfully disconnected path '%s' from session '%s'.\n",
+			      "Failed to reconnect path '%s' of session '%s': %s (%d)\n",
+			      ctx);
 }
 
 static struct sarg _cmd_list_devices =
@@ -3056,7 +3102,22 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			ibnbd_TODO(cmd, ctx);
+			err = parse_cmd_parameters(argc, argv,
+						   sargs_default, ctx);
+			if (err < 0)
+				break;
+
+			argc -= err; argv += err;
+
+			if (argc > 0) {
+
+				handle_unknown_sarg(*argv, sargs_default);
+				err = -EINVAL;
+				break;
+			}
+			err = client_session_do_all_paths(ctx->name,
+							  client_path_reconnect,
+							  ctx);
 			break;
 		case TOK_REMAP:
 			err = parse_name_help(argc--, argv++,
@@ -3077,7 +3138,7 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 				err = -EINVAL;
 				break;
 			}
-			err = client_sessions_remap(ctx->name, ctx);
+			err = client_session_remap(ctx->name, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, -1, NULL, ctx);
@@ -3329,18 +3390,20 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = parse_name(argc--, argv++, 0, ctx);
-			if (err == 0) {
-				err = -EINVAL;
+			err = parse_cmd_parameters(argc, argv,
+						   sargs_default, ctx);
+			if (err < 0)
 				break;
-			}
+
+			argc -= err; argv += err;
+
 			if (argc > 0) {
 
 				handle_unknown_sarg(*argv, sargs_default);
 				err = -EINVAL;
 				break;
 			}
-			ibnbd_TODO(cmd, ctx);
+			err = client_path_disconnect(ctx->name, ctx);
 			break;
 		case TOK_RECONNECT:
 			err = parse_name_help(argc--, argv++,
@@ -3348,13 +3411,20 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
+			err = parse_cmd_parameters(argc, argv,
+						   sargs_default, ctx);
+			if (err < 0)
+				break;
+
+			argc -= err; argv += err;
+
 			if (argc > 0) {
 
 				handle_unknown_sarg(*argv, sargs_default);
 				err = -EINVAL;
 				break;
 			}
-			ibnbd_TODO(cmd, ctx);
+			err = client_path_reconnect(ctx->name, ctx);
 			break;
 		case TOK_ADD:
 			err = parse_name_help(argc--, argv++,
@@ -3407,13 +3477,26 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
+			err = parse_cmd_parameters(argc, argv,
+						   sargs_default, ctx);
+			if (err < 0)
+				break;
+
+			argc -= err; argv += err;
+
 			if (argc > 0) {
 
 				handle_unknown_sarg(*argv, sargs_default);
 				err = -EINVAL;
 				break;
 			}
-			client_session_delete(ctx->name, ctx);
+			if (argc > 0) {
+
+				handle_unknown_sarg(*argv, sargs_default);
+				err = -EINVAL;
+				break;
+			}
+			err = client_path_delete(ctx->name, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, -1, NULL, ctx);
@@ -3422,7 +3505,7 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 		default:
 			print_usage(_help_context, cmds_client_paths_help, ctx);
 			handle_unknown_sarg(cmd->sarg_str,
-					    cmds_client_sessions);
+					    cmds_client_paths);
 			err = -EINVAL;
 			break;
 		}
