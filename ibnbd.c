@@ -3804,7 +3804,7 @@ int cmd_server_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = cmd_server_paths(argc--, argv++, ctx);
+			err = show_paths(ctx->name, ctx);
 			break;
 		case TOK_DISCONNECT:
 			err = parse_name_help(argc--, argv++,
