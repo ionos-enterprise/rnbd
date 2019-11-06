@@ -1370,7 +1370,9 @@ static bool match_path(struct ibnbd_path *p, const char *name)
 		return false;
 
 	if (strncmp(p->sess->sessname, name,
-		    strlen(p->sess->sessname)))
+		    strlen(p->sess->sessname)) &&
+	    strncmp(p->hca_name, name,
+		    strlen(p->hca_name)))
 		return false;
 
 	if ((sscanf(at + 1, "%d\n", &port) == 1 &&
