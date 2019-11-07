@@ -469,6 +469,7 @@ static struct sarg *sargs_both_help[] = {
 	&_sargs_help,
 	&_sargs_null
 };
+static struct sarg **sargs_both = sargs_both_help;
 
 static struct sarg *sargs_object_type[] = {
 	&_sargs_devices,
@@ -3963,11 +3964,14 @@ int cmd_both(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 		err = -EINVAL;
 	}
 	if (err >= 0) {
-		sarg = find_sarg(*argv, sargs_both_help);
-		if (!sarg)
+		sarg = find_sarg(*argv, sargs_both);
+		if (!sarg) {
+			handle_unknown_sarg(*argv, sargs_both);
+			usage_sarg(ctx->pname, sargs_both_help, ctx);
 			err = -EINVAL;
-		else
+		} else {
 			(void) sarg->parse(argc, argv, 0, sarg, ctx);
+		}
 	}
 	if (err >= 0) {
 		switch (sarg->tok) {
@@ -3977,7 +3981,7 @@ int cmd_both(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		*/
 		case TOK_HELP:
-			help_sarg(ctx->pname, sargs_mode_help, ctx);
+			help_sarg(ctx->pname, sargs_both_help, ctx);
 
 			if (help_print_all(ctx)) {
 
@@ -3989,6 +3993,8 @@ int cmd_both(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			}
 			break;
 		default:
+			handle_unknown_sarg(*argv, sargs_both);
+			usage_sarg(ctx->pname, sargs_both_help, ctx);
 			err = -EINVAL;
 			break;
 		}
