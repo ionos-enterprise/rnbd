@@ -44,6 +44,7 @@ struct sarg {
 	const char *short_d;
 	const char *short_d2;
 	const char *descr;
+	const char *params;
 	int (*parse)(int argc, const char *argv[], int i,
 		     const struct sarg *sarg, struct ibnbd_ctx *ctx);
 	void (*help)(const char *program_name,
@@ -280,131 +281,141 @@ static int parse_debug(int argc, const char *argv[], int i,
 }
 
 static struct sarg _sargs_from =
-{TOK_FROM, "from", "", "", "Destination to map a device from", parse_from, 0};
+	{TOK_FROM, "from", "", "", "Destination to map a device from",
+	 NULL, parse_from, 0};
 static struct sarg _sargs_client =
-	{TOK_CLIENT, "client", "", "", "Operations of client", parse_mode, 0};
+	{TOK_CLIENT, "client", "", "", "Operations of client",
+	 NULL, parse_mode, 0};
 static struct sarg _sargs_clt =
-	{TOK_CLIENT, "clt", "", "", "Operations of client", parse_mode, 0};
+	{TOK_CLIENT, "clt", "", "", "Operations of client",
+	 NULL, parse_mode, 0};
 static struct sarg _sargs_cli =
-	{TOK_CLIENT, "cli", "", "", "Operations of client", parse_mode, 0};
+	{TOK_CLIENT, "cli", "", "", "Operations of client",
+	 NULL, parse_mode, 0};
 static struct sarg _sargs_server =
-	{TOK_SERVER, "server", "", "", "Operations of server", parse_mode, 0};
+	{TOK_SERVER, "server", "", "", "Operations of server",
+	 NULL, parse_mode, 0};
 static struct sarg _sargs_serv =
-	{TOK_SERVER, "serv", "", "", "Operations of server", parse_mode, 0};
+	{TOK_SERVER, "serv", "", "", "Operations of server",
+	 NULL, parse_mode, 0};
 static struct sarg _sargs_srv =
-	{TOK_SERVER, "srv", "", "", "Operations of server", parse_mode, 0};
+	{TOK_SERVER, "srv", "", "", "Operations of server",
+	 NULL, parse_mode, 0};
 static struct sarg _sargs_both =
 	{TOK_BOTH, "both", "", "", "Operations of both client and server",
-	 parse_mode, 0};
+	 NULL, parse_mode, 0};
 static struct sarg _sargs_devices_client =
 	{TOK_DEVICES, "devices", "", "", "Map/unmapped/modify devices",
-	 parse_lst, 0};
+	 NULL, parse_lst, 0};
 static struct sarg _sargs_devices =
-	{TOK_DEVICES, "devices", "", "", "List devices", parse_lst, 0};
+	{TOK_DEVICES, "devices", "", "", "List devices", NULL, parse_lst, 0};
 static struct sarg _sargs_device =
-	{TOK_DEVICES, "device", "", "", "", parse_lst, 0};
+	{TOK_DEVICES, "device", "", "", "", NULL, parse_lst, 0};
 static struct sarg _sargs_devs =
-	{TOK_DEVICES, "devs", "", "", "", parse_lst, 0};
+	{TOK_DEVICES, "devs", "", "", "", NULL, parse_lst, 0};
 static struct sarg _sargs_dev =
-	{TOK_DEVICES, "dev", "", "", "", parse_lst, 0};
+	{TOK_DEVICES, "dev", "", "", "", NULL, parse_lst, 0};
 static struct sarg _sargs_sessions =
-	{TOK_SESSIONS, "sessions", "", "", "Operate on sessions", parse_lst, 0};
+	{TOK_SESSIONS, "sessions", "", "", "Operate on sessions",
+	 NULL, parse_lst, 0};
 static struct sarg _sargs_session =
-	{TOK_SESSIONS, "session", "", "", "", parse_lst, 0};
+	{TOK_SESSIONS, "session", "", "", "", NULL, parse_lst, 0};
 static struct sarg _sargs_sess =
-	{TOK_SESSIONS, "sess", "", "", "", parse_lst, 0};
+	{TOK_SESSIONS, "sess", "", "", "", NULL, parse_lst, 0};
 static struct sarg _sargs_paths =
-	{TOK_PATHS, "paths", "", "", "Handle paths", parse_lst, 0};
+	{TOK_PATHS, "paths", "", "", "Handle paths", NULL, parse_lst, 0};
 static struct sarg _sargs_path =
-	{TOK_PATHS, "path", "", "", "", parse_lst, 0};
+	{TOK_PATHS, "path", "", "", "", NULL, parse_lst, 0};
 static struct sarg _sargs_path_param =
 	{TOK_PATHS, "<path>", "", "",
 	 "Path to use (i.e. gid:fe80::1@gid:fe80::2)",
-	 NULL, 0};
+	 NULL, NULL, 0};
 static struct sarg _sargs_notree =
 	{TOK_NOTREE, "notree", "", "", "Don't display paths for each sessions",
-	 parse_flag, NULL, offsetof(struct ibnbd_ctx, notree_set)};
+	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, notree_set)};
 static struct sarg _sargs_xml =
-	{TOK_XML, "xml", "", "", "Print in XML format", parse_fmt, 0};
+	{TOK_XML, "xml", "", "", "Print in XML format", NULL, parse_fmt, 0};
 static struct sarg _sargs_cvs =
-	{TOK_CSV, "csv", "", "", "Print in CSV format", parse_fmt, 0};
+	{TOK_CSV, "csv", "", "", "Print in CSV format", NULL, parse_fmt, 0};
 static struct sarg _sargs_json =
-	{TOK_JSON, "json", "", "", "Print in JSON format", parse_fmt, 0};
+	{TOK_JSON, "json", "", "", "Print in JSON format", NULL, parse_fmt, 0};
 static struct sarg _sargs_term =
-	{TOK_TERM, "term", "", "", "Print for terminal", parse_fmt, 0};
+	{TOK_TERM, "term", "", "", "Print for terminal", NULL, parse_fmt, 0};
 static struct sarg _sargs_ro =
-	{TOK_RO, "ro", "", "", "Readonly", parse_rw, 0};
+	{TOK_RO, "ro", "", "", "Readonly", NULL, parse_rw, 0};
 static struct sarg _sargs_rw =
-	{TOK_RW, "rw", "", "", "Writable", parse_rw, 0};
+	{TOK_RW, "rw", "", "", "Writable", NULL, parse_rw, 0};
 static struct sarg _sargs_migration =
 	{TOK_MIGRATION, "migration", "", "", "Writable (migration)",
-	 parse_rw, 0};
+	 NULL, parse_rw, 0};
 static struct sarg _sargs_blockio =
-	{TOK_BLOCKIO, "blockio", "", "", "Block IO mode", parse_io_mode, 0};
+	{TOK_BLOCKIO, "blockio", "", "", "Block IO mode",
+	 NULL, parse_io_mode, 0};
 static struct sarg _sargs_fileio =
-	{TOK_FILEIO, "fileio", "", "", "File IO mode", parse_io_mode, 0};
+	{TOK_FILEIO, "fileio", "", "", "File IO mode",
+	 NULL, parse_io_mode, 0};
 static struct sarg _sargs_help =
-	{TOK_HELP, "help", "", "", "Display help and exit", parse_help,
-	 NULL, offsetof(struct ibnbd_ctx, help_set)};
+	{TOK_HELP, "help", "", "", "Display help and exit",
+	 NULL, parse_help, NULL, offsetof(struct ibnbd_ctx, help_set)};
 static struct sarg _sargs_verbose =
-	{TOK_VERBOSE, "verbose", "", "", "Verbose output", parse_flag,
-	 NULL, offsetof(struct ibnbd_ctx, verbose_set)};
+	{TOK_VERBOSE, "verbose", "", "", "Verbose output",
+	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, verbose_set)};
 static struct sarg _sargs_minus_h =
-	{TOK_VERBOSE, "-h", "", "", "Help output", parse_help,
-	 NULL, offsetof(struct ibnbd_ctx, help_set)};
+	{TOK_VERBOSE, "-h", "", "", "Help output",
+	 NULL, parse_help, NULL, offsetof(struct ibnbd_ctx, help_set)};
 static struct sarg _sargs_minus_minus_help =
-	{TOK_VERBOSE, "--help", "", "", "Help output", parse_help,
-	 NULL, offsetof(struct ibnbd_ctx, help_set)};
+	{TOK_VERBOSE, "--help", "", "", "Help output",
+	 NULL, parse_help, NULL, offsetof(struct ibnbd_ctx, help_set)};
 static struct sarg _sargs_minus_v =
-	{TOK_VERBOSE, "-v", "", "", "Verbose output", parse_flag,
-	 NULL, offsetof(struct ibnbd_ctx, verbose_set)};
+	{TOK_VERBOSE, "-v", "", "", "Verbose output",
+	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, verbose_set)};
 static struct sarg _sargs_minus_minus_verbose =
-	{TOK_VERBOSE, "--verbose", "", "", "Verbose output", parse_flag,
-	 NULL, offsetof(struct ibnbd_ctx, verbose_set)};
+	{TOK_VERBOSE, "--verbose", "", "", "Verbose output",
+	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, verbose_set)};
 static struct sarg _sargs_minus_d =
-	{TOK_VERBOSE, "-d", "", "", "Debug mode", parse_debug,
-	 NULL, offsetof(struct ibnbd_ctx, debug_set)};
+	{TOK_VERBOSE, "-d", "", "", "Debug mode",
+	 NULL, parse_debug, NULL, offsetof(struct ibnbd_ctx, debug_set)};
 static struct sarg _sargs_minus_minus_debug =
-	{TOK_VERBOSE, "--debug", "", "", "Debug mode", parse_debug, 0};
+	{TOK_VERBOSE, "--debug", "", "", "Debug mode", NULL, parse_debug, 0};
 static struct sarg _sargs_minus_s =
-	{TOK_VERBOSE, "-s", "", "", "Simulate", parse_flag, 0};
+	{TOK_VERBOSE, "-s", "", "", "Simulate", NULL, parse_flag, 0};
 static struct sarg _sargs_minus_minus_simulate =
 	{TOK_VERBOSE, "--simulate", "", "",
-	 "Only print modifying operations, do not execute", parse_flag,
-	 NULL, offsetof(struct ibnbd_ctx, simulate_set)};
+	 "Only print modifying operations, do not execute",
+	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, simulate_set)};
 static struct sarg _sargs_byte =
-	{TOK_BYTE, "B", "", "", "Byte", parse_unit, 0};
+	{TOK_BYTE, "B", "", "", "Byte", NULL, parse_unit, 0};
 static struct sarg _sargs_kib =
-	{TOK_KIB, "K", "", "", "KiB", parse_unit, 0};
+	{TOK_KIB, "K", "", "", "KiB", NULL, parse_unit, 0};
 static struct sarg _sargs_mib =
-	{TOK_MIB, "M", "", "", "MiB", parse_unit, 0};
+	{TOK_MIB, "M", "", "", "MiB", NULL, parse_unit, 0};
 static struct sarg _sargs_gib =
-	{TOK_GIB, "G", "", "", "GiB", parse_unit, 0};
+	{TOK_GIB, "G", "", "", "GiB", NULL, parse_unit, 0};
 static struct sarg _sargs_tib =
-	{TOK_TIB, "T", "", "", "TiB", parse_unit, 0};
+	{TOK_TIB, "T", "", "", "TiB", NULL, parse_unit, 0};
 static struct sarg _sargs_pib =
-	{TOK_PIB, "P", "", "", "PiB", parse_unit, 0};
+	{TOK_PIB, "P", "", "", "PiB", NULL, parse_unit, 0};
 static struct sarg _sargs_eib =
-	{TOK_EIB, "E", "", "", "EiB", parse_unit, 0};
+	{TOK_EIB, "E", "", "", "EiB", NULL, parse_unit, 0};
 static struct sarg _sargs_noheaders =
-	{TOK_NOHEADERS, "noheaders", "", "", "Don't print headers", parse_flag,
-	 NULL, offsetof(struct ibnbd_ctx, noheaders_set)};
+	{TOK_NOHEADERS, "noheaders", "", "", "Don't print headers",
+	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, noheaders_set)};
 static struct sarg _sargs_nototals =
-	{TOK_NOTOTALS, "nototals", "", "", "Don't print totals", parse_flag,
-	 NULL, offsetof(struct ibnbd_ctx, nototals_set)};
+	{TOK_NOTOTALS, "nototals", "", "", "Don't print totals",
+	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, nototals_set)};
 static struct sarg _sargs_force =
-	{TOK_FORCE, "force", "", "", "Force operation", parse_flag,
-	 NULL, offsetof(struct ibnbd_ctx, force_set)};
+	{TOK_FORCE, "force", "", "", "Force operation",
+	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, force_set)};
 static struct sarg _sargs_noterm =
-	{TOK_NOTERM, "noterm", "", "", "Non-interactive mode", parse_flag,
-	 NULL, offsetof(struct ibnbd_ctx, noterm_set)};
+	{TOK_NOTERM, "noterm", "", "", "Non-interactive mode",
+	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, noterm_set)};
 #if 0
 static struct sarg _sargs_minus_f =
-	{TOK_FORCE, "-f", "", "", "", parse_flag,
-	 NULL, offsetof(struct ibnbd_ctx, force_set)};
+	{TOK_FORCE, "-f", "", "", "",
+	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, force_set)};
 #endif
 static struct sarg _sargs_all =
-	{TOK_ALL, "all", "", "", "Print all columns", parse_all, 0};
+	{TOK_ALL, "all", "", "", "Print all columns", NULL, parse_all, 0};
 static struct sarg _sargs_null =
 	{TOK_NONE, 0};
 
@@ -680,16 +691,24 @@ static bool help_print_fields(const struct ibnbd_ctx *ctx)
 		return false;
 }
 
-static void cmd_print_usage(const struct sarg *cmd, const char *a,
+static void cmd_print_usage_short(const struct sarg *cmd, const char *a,
 			    const struct ibnbd_ctx *ctx)
 {
-	printf("Usage: %s%s%s %s%s%s %s%s%s [OPTIONS]\n",
+	printf("Usage: %s%s%s %s%s%s %s%s%s",
 	       CLR(ctx->trm, CBLD, ctx->pname),
 	       CLR(ctx->trm, CBLD, a),
 	       CLR(ctx->trm, CBLD, cmd->sarg_str));
-	printf("\n%s\n", cmd->descr);
+	if (cmd->params)
+		printf(" %s", cmd->params);
+	printf(" [OPTIONS]\n\n");
 }
 
+static void cmd_print_usage_descr(const struct sarg *cmd, const char *a,
+				  const struct ibnbd_ctx *ctx)
+{
+	cmd_print_usage_short(cmd, a, ctx);
+	printf("%s\n", cmd->descr);
+}
 static void print_help(const char *program_name, struct sarg * const cmds[],
 		       const struct ibnbd_ctx *ctx)
 {
@@ -727,7 +746,7 @@ static void help_help(const char *program_name,
 		      const struct sarg *cmd,
 		      const struct ibnbd_ctx *ctx)
 {
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 	print_opt("all", "Print help for all sub-commands as well.");
 }
 
@@ -765,7 +784,7 @@ static void help_list(const char *program_name,
 		      const struct sarg *cmd,
 		      const struct ibnbd_ctx *ctx)
 {
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	printf("\nOptions:\n");
 	print_opt("{mode}", "Information to print: sessions.");
@@ -801,7 +820,7 @@ static void help_list_devices(const char *program_name,
 	if (!program_name)
 		program_name = "devices";
 
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	if (!help_print_fields(ctx))
 		printf("\nOptions:\n");
@@ -835,7 +854,7 @@ static void help_list_sessions(const char *program_name,
 	if (!program_name)
 		program_name = "sessions";
 
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	if (!help_print_fields(ctx))
 		printf("\nOptions:\n");
@@ -870,7 +889,7 @@ static void help_list_paths(const char *program_name,
 	if (!program_name)
 		program_name = "paths";
 
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	if (!help_print_fields(ctx))
 		printf("\nOptions:\n");
@@ -1703,6 +1722,7 @@ static int parse_name_help(int argc, const char *argv[], const char *what,
 			word++; /* skip space */
 		else
 			word = what;
+		cmd_print_usage_short(cmd, what, ctx);
 		ERR(ctx->trm, "Please specify the %s argument\n", word);
 		return -EINVAL;
 	}
@@ -1724,12 +1744,12 @@ static void help_show_devices(const char *program_name,
 	if (!program_name)
 		program_name = "devices";
 
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	if (!help_print_fields(ctx)) {
 
 		printf("\nArguments:\n");
-		print_opt("<name>",
+		print_opt("<device>",
 			  "Name of a local or a remote block device.");
 		print_opt("",
 			  "I.e. ibnbd0, /dev/ibnbd0, d12aef94-4110-4321-9373-3be8494a557b.");
@@ -1763,12 +1783,12 @@ static void help_show_sessions(const char *program_name,
 	if (!program_name)
 		program_name = "sessions";
 
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	if (!help_print_fields(ctx)) {
 
 		printf("\nArguments:\n");
-		print_opt("<name>",
+		print_opt("<session>",
 			  "Session name or remote hostname.");
 		print_opt("",
 			  "I.e. ps401a-1@st401b-2, st401b-2, <ip1>@<ip2>, etc.");
@@ -1802,12 +1822,12 @@ static void help_show_paths(const char *program_name,
 	if (!program_name)
 		program_name = "paths";
 
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	if (!help_print_fields(ctx)) {
 
 		printf("\nArguments:\n");
-		print_opt("<name>",
+		print_opt("<path>",
 			  "In order to display path information, path name or identifier");
 		print_opt("", "has to be provided, i.e. st401b-2:1.");
 
@@ -1842,7 +1862,7 @@ static void help_map(const char *program_name,
 	if (!program_name)
 		program_name = "device ";
 
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	printf("\nArguments:\n");
 	print_opt("<device>", "Path to the device to be mapped on server side");
@@ -1961,8 +1981,8 @@ static struct ibnbd_sess_dev *find_single_device(const char *name,
 	} else {
 		ERR(ctx->trm, "%s '%s'.\n",
 		    (match_count > 1)  ?
-			"Please specify an exact device. There are multiple devices matching"
-			: "Device '%s' not found",
+			"Please specify an unique device. There are multiple devices matching"
+			: "Did not found device",
 		    name);
 	}
 
@@ -1978,10 +1998,9 @@ static int client_devices_resize(const char *device_name, uint64_t size_sect,
 	int ret;
 
 	ds = find_single_device(device_name, ctx, sds_clt, sds_clt_cnt);
-	if (!ds) {
-		ERR(ctx->trm, "Device %s does not exist\n", device_name);
+	if (!ds)
 		return -EINVAL;
-	}
+
 	sprintf(tmp, "/sys/block/%s/ibnbd", ds->dev->devname);
 	ret = printf_sysfs(tmp, "resize", ctx, "%d", size_sect);
 	if (ret)
@@ -2002,7 +2021,7 @@ static void help_resize(const char *program_name,
 	if (!program_name)
 		program_name = "<device name or path or mapping path> ";
 
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	printf("\nArguments:\n");
 	print_opt("<device>", "Name of the device to be resized");
@@ -2020,7 +2039,7 @@ static void help_unmap(const char *program_name,
 	if (!program_name)
 		program_name = "<device name or path or mapping path> ";
 
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	printf("\nArguments:\n");
 	print_opt("<device>", "Name of the device to be unmapped");
@@ -2085,10 +2104,9 @@ static int client_devices_remap(const char *device_name, struct ibnbd_ctx *ctx)
 	const struct ibnbd_sess_dev *ds;
 
 	ds = find_single_device(device_name, ctx, sds_clt, sds_clt_cnt);
-	if (!ds) {
-		ERR(ctx->trm, "Device %s does not exist\n", device_name);
+	if (!ds)
 		return -EINVAL;
-	}
+
 	return client_device_remap(ds->dev, ctx);
 }
 
@@ -2121,7 +2139,7 @@ static struct ibnbd_sess *find_single_session(const char *session_name,
 		ERR(ctx->trm, "%s '%s'.\n",
 		    (match_count > 1)  ?
 			"Please specify the session uniquely. There are multiple sessions matching"
-			: "No session found matching matching",
+			: "No session found matching",
 		    session_name);
 	}
 
@@ -2203,7 +2221,7 @@ static void help_remap(const char *program_name,
 	if (!program_name)
 		program_name = "<device name> ";
 
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	printf("\nArguments:\n");
 	print_opt("<identifier>", "Identifier of a device to be remapped.");
@@ -2221,10 +2239,10 @@ static void help_remap_session(const char *program_name,
 	if (!program_name)
 		program_name = "<session name> ";
 
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	printf("\nArguments:\n");
-	print_opt("<identifier>",
+	print_opt("<session>",
 		  "Identifier of a session to remap all devices on.");
 
 	printf("\nOptions:\n");
@@ -2240,12 +2258,10 @@ static void help_reconnect_session(const char *program_name,
 	if (!program_name)
 		program_name = "<session> ";
 
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	printf("\nArguments:\n");
-	print_opt("<identifier>",
-		  "Name or identifier of a session:");
-	print_opt("", "[sessname]");
+	print_opt("<session>", "Name or identifier of a session.");
 
 	printf("\nOptions:\n");
 	print_sarg_descr("verbose");
@@ -2259,7 +2275,7 @@ static void help_reconnect_path(const char *program_name,
 	if (!program_name)
 		program_name = "<path> ";
 
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	printf("\nArguments:\n");
 	print_opt("<identifier>",
@@ -2278,11 +2294,10 @@ static void help_disconnect_session(const char *program_name,
 	if (!program_name)
 		program_name = "<session> ";
 
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	printf("\nArguments:\n");
-	print_opt("<identifier>", "Name or identifier of a session:");
-	print_opt("", "[sessname]");
+	print_opt("<session>", "Name or identifier of a session.");
 
 	printf("\nOptions:\n");
 	print_sarg_descr("verbose");
@@ -2296,7 +2311,7 @@ static void help_disconnect_path(const char *program_name,
 	if (!program_name)
 		program_name = "<path> ";
 
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	printf("\nArguments:\n");
 	print_opt("<identifier>", "Name or identifier of of a path:");
@@ -2351,7 +2366,7 @@ static void help_addpath(const char *program_name,
 	if (!program_name)
 		program_name = "<session> <path> ";
 
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	printf("\nArguments:\n");
 	print_opt("<session>",
@@ -2373,7 +2388,7 @@ static void help_delpath(const char *program_name,
 	if (!program_name)
 		program_name = "<path> ";
 
-	cmd_print_usage(cmd, program_name, ctx);
+	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	printf("\nArguments:\n");
 	print_opt("<path>",
@@ -2413,7 +2428,7 @@ static struct ibnbd_path *find_single_path(const char *path_name,
 		ERR(ctx->trm, "%s '%s'.\n",
 		    (match_count > 1)  ?
 			"Please specify the path uniquely. There are multiple paths matching"
-			: "No path found matching matching",
+			: "No path found matching",
 		    path_name);
 	}
 
@@ -2431,11 +2446,8 @@ static int client_path_do(const char *path_name, const char *sysfs_entry,
 
 	path = find_single_path(path_name, ctx, paths_clt, paths_clt_cnt);
 
-	if (!path) {
-		ERR(ctx->trm,
-		    "Path '%s' does not exists.\n", path_name);
+	if (!path)
 		return -EINVAL;
-	}
 
 	snprintf(sysfs_path, sizeof(sysfs_path),
 		 PATH_SESS_CLT "%s/paths/%s",
@@ -2487,11 +2499,8 @@ static int client_path_readd(const char *path_name,
 
 	path = find_single_path(path_name, ctx, paths_clt, paths_clt_cnt);
 
-	if (!path) {
-		ERR(ctx->trm,
-		    "Path '%s' does not exists.\n", path_name);
+	if (!path)
 		return -EINVAL;
-	}
 
 	snprintf(sysfs_path, sizeof(sysfs_path),
 		 PATH_SESS_CLT "%s/paths/%s",
@@ -2532,11 +2541,8 @@ static int server_path_disconnect(const char *path_name,
 
 	path = find_single_path(path_name, ctx, paths_srv, paths_srv_cnt);
 
-	if (!path) {
-		ERR(ctx->trm,
-		    "Path '%s' does not exists.\n", path_name);
+	if (!path)
 		return -EINVAL;
-	}
 
 	snprintf(sysfs_path, sizeof(sysfs_path),
 		 PATH_SESS_SRV "%s/paths/%s",
@@ -2560,145 +2566,165 @@ static struct sarg _cmd_list_devices =
 		"List information on all",
 		"s",
 		"List information on devices.",
-		NULL, help_list_devices};
+		NULL, NULL, help_list_devices};
 static struct sarg _cmd_list_sessions =
 	{TOK_LIST, "list",
 		"List information on all",
 		"s",
 		"List information on sessions.",
-		NULL, help_list_sessions};
+		NULL, NULL, help_list_sessions};
 static struct sarg _cmd_list_paths =
 	{TOK_LIST, "list",
 		"List information on all",
 		"s",
 		"List information on paths.",
-		NULL, help_list_paths};
+		NULL, NULL, help_list_paths};
 static struct sarg _cmd_show_devices =
 	{TOK_SHOW, "show",
 		"Show information about a",
 		"",
 		"Show information about an ibnbd block device.",
+	 	"<device>",
 		NULL, help_show_devices};
 static struct sarg _cmd_show_sessions =
 	{TOK_SHOW, "show",
 		"Show information about a",
 		"",
 		"Show information about an ibnbd session.",
+	 	"<session>",
 		NULL, help_show_sessions};
 static struct sarg _cmd_show_paths =
 	{TOK_SHOW, "show",
 		"Show information about a",
 		"",
 		"Show information about an ibnbd transport path.",
+	 	"<path>",
 		NULL, help_show_paths};
 static struct sarg _cmd_map =
 	{TOK_MAP, "map",
 		"Map a",
 		" from a given server",
 		"Map a device from a given server",
+	 	"<device> from <server>",
 		 NULL, help_map};
 static struct sarg _cmd_resize =
 	{TOK_RESIZE, "resize",
 		"Resize a mapped",
 		"",
 		"Change size of a mapped device",
+	 	"<device> <size>",
 		 NULL, help_resize};
 static struct sarg _cmd_unmap =
 	{TOK_UNMAP, "unmap",
 		"Unmap an imported",
 		"",
 		"Umap a given imported device",
+	 	"<device>",
 		NULL, help_unmap};
 static struct sarg _cmd_remap =
 	{TOK_REMAP, "remap",
 		"Remap a",
 		"",
 		"Unmap and map again an imported device",
+	 	"<device>",
 		 NULL, help_remap};
 static struct sarg _cmd_remap_session =
 	{TOK_REMAP, "remap",
 		"Remap all devicess on a",
 		"",
 		"Unmap and map again all devices of a given session",
+	 	"<session>",
 		 NULL, help_remap_session};
 static struct sarg _cmd_disconnect_session =
 	{TOK_DISCONNECT, "disconnect",
 		"Disconnect a",
 		"",
 		"Disconnect all paths on a given session",
+	 	"<session>",
 		NULL, help_disconnect_session};
 static struct sarg _cmd_dis_session =
 	{TOK_DISCONNECT, "dis",
 		"Disconnect a",
 		"",
 		"Disconnect all paths on a given session",
+	 	"<session>",
 		NULL, help_disconnect_session};
 static struct sarg _cmd_disconnect_path =
 	{TOK_DISCONNECT, "disconnect",
 		"Disconnect a",
 		"",
 		"Disconnect a path a given session",
+	 	"<session>",
 		NULL, help_disconnect_path};
 static struct sarg _cmd_dis_path =
 	{TOK_DISCONNECT, "dis",
 		"Disconnect a",
 		"",
 		"Disconnect a path a given session",
+	 	"<path>",
 		NULL, help_disconnect_path};
 static struct sarg _cmd_reconnect_session =
 	{TOK_RECONNECT, "reconnect",
 		"Reconnect a",
 		"",
 		"Disconnect and connect again a whole session",
+	 	"<session>",
 		 NULL, help_reconnect_session};
 static struct sarg _cmd_rec_session =
 	{TOK_RECONNECT, "rec",
 		"Reconnect a",
 		"",
 		"Disconnect and connect again a whole session",
+	 	"<session>",
 		 NULL, help_reconnect_session};
 static struct sarg _cmd_reconnect_path =
 	{TOK_RECONNECT, "reconnect",
 		"Reconnect a",
 		"",
 		"Disconnect and connect again a single path of a session",
+	 	"<path>",
 		 NULL, help_reconnect_path};
 static struct sarg _cmd_rec_path =
 	{TOK_RECONNECT, "rec",
 		"Reconnect a",
 		"",
 		"Disconnect and connect again a single path of a session",
+	 	"<path>",
 		 NULL, help_reconnect_path};
 static struct sarg _cmd_add =
 	{TOK_ADD, "add",
 		"Add a",
 		" to an existing session",
 		"Add a new path to an existing session",
+	 	"<session> <path>",
 		 NULL, help_addpath};
 static struct sarg _cmd_delete =
 	{TOK_DELETE, "delete",
 		"Delete a",
 		"",
 		"Delete a given path from the corresponding session",
+	 	"<path>",
 		 NULL, help_delpath};
 static struct sarg _cmd_del =
 	{TOK_DELETE, "del",
 		"Delete a",
 		"",
 		"Delete a given path from the corresponding session",
+	 	"<path>",
 		 NULL, help_delpath};
 static struct sarg _cmd_readd =
 	{TOK_READD, "readd",
 		"Readd a",
 		"",
 		"Delete and add again a given path to the corresponding session",
+	 	"<path>",
 		 NULL, help_delpath};
 static struct sarg _cmd_help =
 	{TOK_HELP, "help",
 		"Display help on",
 		"s",
 		"Display help message and exit.",
-		NULL, help_help};
+		NULL, NULL, help_help};
 static struct sarg _cmd_null =
 		{ 0 };
 
@@ -3089,7 +3115,8 @@ int parse_list_parameters(int argc, const char *argv[], struct ibnbd_ctx *ctx,
  * Parse parameters for a command as described by sarg.
  */
 int parse_cmd_parameters(int argc, const char *argv[],
-			 struct sarg *const sargs[], struct ibnbd_ctx *ctx)
+			 struct sarg *const sargs[], struct ibnbd_ctx *ctx,
+			 const struct sarg *cmd, const char *program_name)
 {
 	int err = 0; int start_argc = argc;
 	const struct sarg *sarg;
@@ -3104,6 +3131,10 @@ int parse_cmd_parameters(int argc, const char *argv[],
 
 		argc -= err; argv += err;
 	}
+	if (ctx->help_set && cmd) {
+		cmd->help(program_name, cmd, ctx);
+		err = -EAGAIN;
+	}
 	return err < 0 ? err : start_argc - argc;
 }
 
@@ -3111,7 +3142,8 @@ int parse_cmd_parameters(int argc, const char *argv[],
  * Parse parameters for the map command as described by sarg.
  */
 int parse_map_parameters(int argc, const char *argv[], int *accepted,
-			 struct sarg *const sargs[], struct ibnbd_ctx *ctx)
+			 struct sarg *const sargs[], struct ibnbd_ctx *ctx,
+			 const struct sarg *cmd, const char *program_name)
 {
 	int err = 0; int start_argc = argc;
 	const struct sarg *sarg;
@@ -3129,6 +3161,10 @@ int parse_map_parameters(int argc, const char *argv[], int *accepted,
 			break;
 
 		argc -= err; argv += err;
+	}
+	if (ctx->help_set) {
+		cmd->help(program_name, cmd, ctx);
+		err = -EAGAIN;
 	}
 	*accepted = start_argc - argc;
 	return err;
@@ -3186,8 +3222,8 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = parse_cmd_parameters(argc, argv,
-						   sargs_default, ctx);
+			err = parse_cmd_parameters(argc, argv, sargs_default,
+						   ctx, cmd, _help_context);
 			if (err < 0)
 				break;
 
@@ -3207,7 +3243,7 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			/* If the session does not exist at all we will   */
 			/* get -EINVAL. In all other error cases we try   */
 			/* to reconnect the path to reconnect the session.*/
-			if (err == 0 || err == -EINVAL)
+			if (err != -EINVAL)
 				err = session_do_all_paths(IBNBD_CLIENT,
 							ctx->name,
 							client_path_reconnect,
@@ -3220,7 +3256,8 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 				break;
 
 			err = parse_cmd_parameters(argc, argv,
-						   sargs_default, ctx);
+						   sargs_default,
+						   ctx, cmd, _help_context);
 			if (err < 0)
 				break;
 
@@ -3305,9 +3342,10 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 			err = parse_map_parameters(argc, argv, &accepted,
 						   sargs_map_from_parameters,
-						   ctx);
+						   ctx, cmd, _help_context);
 			if (accepted == 0) {
 
+				cmd_print_usage_short(cmd, _help_context, ctx);
 				ERR(ctx->trm,
 				    "Please specify the destination to map from\n");
 				err = -EINVAL;
@@ -3357,6 +3395,7 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			else
 				err = -EINVAL;
 			if (err < 0) {
+				cmd_print_usage_short(cmd, _help_context, ctx);
 				ERR(ctx->trm,
 				    "Please provide the size of device to be configured\n");
 				break;
@@ -3381,7 +3420,8 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 				break;
 
 			err = parse_cmd_parameters(argc, argv,
-						   sargs_unmap_parameters, ctx);
+						   sargs_unmap_parameters,
+						   ctx, cmd, _help_context);
 			if (err < 0)
 				break;
 
@@ -3403,8 +3443,8 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = parse_cmd_parameters(argc, argv,
-						   sargs_default, ctx);
+			err = parse_cmd_parameters(argc, argv, sargs_default,
+						   ctx, cmd, _help_context);
 			if (err < 0)
 				break;
 
@@ -3484,8 +3524,8 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = parse_cmd_parameters(argc, argv,
-						   sargs_default, ctx);
+			err = parse_cmd_parameters(argc, argv, sargs_default,
+						   ctx, cmd, _help_context);
 			if (err < 0)
 				break;
 
@@ -3505,8 +3545,8 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = parse_cmd_parameters(argc, argv,
-						   sargs_default, ctx);
+			err = parse_cmd_parameters(argc, argv, sargs_default,
+						   ctx, cmd, _help_context);
 			if (err < 0)
 				break;
 
@@ -3522,15 +3562,16 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		case TOK_ADD:
 			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
+					      "session", cmd, ctx);
 			if (err < 0)
 				break;
 
 			err = parse_map_parameters(argc, argv, &accepted,
 						   sargs_add_path_parameters,
-						   ctx);
+						   ctx, cmd, _help_context);
 			if (accepted == 0) {
 
+				cmd_print_usage_short(cmd, _help_context, ctx);
 				ERR(ctx->trm,
 				    "Please specify the path to add to session %s\n",
 				    ctx->name);
@@ -3553,16 +3594,18 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 				err = -EINVAL;
 				break;
 			}
-			if (ctx->path_cnt <= 0)
+			if (ctx->path_cnt <= 0) {
+				cmd_print_usage_short(cmd, _help_context, ctx);
 				ERR(ctx->trm,
 				    "No valid path provided. Please provide a path to add to session '%s'.\n",
 				    ctx->name);
-
-			if (ctx->path_cnt > 1)
+			}
+			if (ctx->path_cnt > 1) {
+				cmd_print_usage_short(cmd, _help_context, ctx);
 				ERR(ctx->trm,
 				    "You provided %d paths. Please provide exactly one path to add to session '%s'.\n",
 				    ctx->path_cnt, ctx->name);
-
+			}
 			err = client_session_add(ctx->name, ctx->paths, ctx);
 			break;
 		case TOK_DELETE:
@@ -3571,8 +3614,8 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = parse_cmd_parameters(argc, argv,
-						   sargs_default, ctx);
+			err = parse_cmd_parameters(argc, argv, sargs_default,
+						   ctx, cmd, _help_context);
 			if (err < 0)
 				break;
 
@@ -3592,8 +3635,8 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = parse_cmd_parameters(argc, argv,
-						   sargs_default, ctx);
+			err = parse_cmd_parameters(argc, argv, sargs_default,
+						   ctx, cmd, _help_context);
 			if (err < 0)
 				break;
 
@@ -3673,6 +3716,13 @@ int cmd_server_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 					      _help_context, cmd, ctx);
 			if (err < 0)
 				break;
+
+			err = parse_cmd_parameters(argc, argv, sargs_default,
+						   ctx, cmd, _help_context);
+			if (err < 0)
+				break;
+
+			argc -= err; argv += err;
 
 			if (argc > 0) {
 
@@ -3813,8 +3863,8 @@ int cmd_server_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = parse_cmd_parameters(argc, argv,
-						   sargs_default, ctx);
+			err = parse_cmd_parameters(argc, argv, sargs_default,
+						   ctx, cmd, _help_context);
 			if (err < 0)
 				break;
 
@@ -3849,16 +3899,16 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	const struct sarg *sarg;
 
 	if (argc < 1) {
-		ERR(ctx->trm, "no object specified\n");
 		usage_sarg("ibnbd client", sargs_object_type_help_client, ctx);
+		ERR(ctx->trm, "no object specified\n");
 		err = -EINVAL;
 	}
 	if (err >= 0) {
 		sarg = find_sarg(*argv, sargs_object_type);
 		if (!sarg) {
-			handle_unknown_sarg(*argv, sargs_object_type);
 			usage_sarg("ibnbd client",
 				   sargs_object_type_help_client, ctx);
+			handle_unknown_sarg(*argv, sargs_object_type);
 			err = -EINVAL;
 		} else {
 			(void) sarg->parse(argc, argv, 0, sarg, ctx);
@@ -3888,9 +3938,9 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 					  sargs_object_type_help_client, ctx);
 			break;
 		default:
-			handle_unknown_sarg(*argv, sargs_object_type);
 			usage_sarg("ibnbd client",
 				   sargs_object_type_help_client, ctx);
+			handle_unknown_sarg(*argv, sargs_object_type);
 			err = -EINVAL;
 			break;
 		}
@@ -3904,16 +3954,16 @@ int cmd_server(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	const struct sarg *sarg;
 
 	if (argc < 1) {
-		ERR(ctx->trm, "no object specified\n");
 		usage_sarg("ibnbd server", sargs_object_type_help_server, ctx);
+		ERR(ctx->trm, "no object specified\n");
 		err = -EINVAL;
 	}
 	if (err >= 0) {
 		sarg = find_sarg(*argv, sargs_object_type);
 		if (!sarg) {
-			handle_unknown_sarg(*argv, sargs_object_type);
 			usage_sarg("ibnbd server",
 				   sargs_object_type_help_server, ctx);
+			handle_unknown_sarg(*argv, sargs_object_type);
 			err = -EINVAL;
 		} else {
 			(void) sarg->parse(argc, argv, 0, sarg, ctx);
@@ -3944,9 +3994,9 @@ int cmd_server(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 					  ctx);
 			break;
 		default:
-			handle_unknown_sarg(*argv, sargs_object_type);
 			usage_sarg("ibnbd server",
 				   sargs_object_type_help_server, ctx);
+			handle_unknown_sarg(*argv, sargs_object_type);
 			err = -EINVAL;
 			break;
 		}
@@ -4008,8 +4058,8 @@ int cmd_start(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	const struct sarg *sarg;
 
 	if (argc < 1) {
-		ERR(ctx->trm, "mode not specified\n");
 		usage_sarg(ctx->pname, sargs_mode_help, ctx);
+		ERR(ctx->trm, "mode not specified\n");
 		err = -EINVAL;
 	}
 	if (err >= 0) {
@@ -4086,8 +4136,8 @@ int main(int argc, const char *argv[])
 		}
 		ibnbd_ctx_default(&ctx);
 
-		ret = parse_cmd_parameters(--argc, ++argv,
-					   sargs_flags, &ctx);
+		ret = parse_cmd_parameters(--argc, ++argv, sargs_flags,
+					   &ctx, NULL, NULL);
 		if (ret < 0)
 			goto free;
 
@@ -4161,8 +4211,8 @@ int main(int argc, const char *argv[])
 
 	ibnbd_ctx_default(&ctx);
 
-	ret = parse_cmd_parameters(--argc, ++argv,
-				   sargs_flags, &ctx);
+	ret = parse_cmd_parameters(--argc, ++argv, sargs_flags,
+				   &ctx, NULL, NULL);
 	if (ret < 0)
 		goto free;
 
