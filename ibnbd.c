@@ -116,13 +116,6 @@ static int parse_lst(int argc, const char *argv[], int i,
 	return i + 1;
 }
 
-enum ibnbdmode {
-	IBNBD_NONE = 0,
-	IBNBD_CLIENT = 1,
-	IBNBD_SERVER = 1 << 1,
-	IBNBD_BOTH = IBNBD_CLIENT | IBNBD_SERVER,
-};
-
 static int parse_from(int argc, const char *argv[], int i,
 		      const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
@@ -1519,7 +1512,7 @@ static int show_session(struct ibnbd_sess **ss_clt, struct ibnbd_sess **ss_srv,
 		table_entry_print_term("", flds, cs,
 				       table_get_max_h_width(cs), ctx->trm);
 		printf("%s%s%s", CLR(ctx->trm, CBLD, ss[0]->sessname));
-		if (ss[0]->side == IBNBD_CLT)
+		if (ss[0]->side == IBNBD_CLIENT)
 			printf(" %s(%s)%s",
 			       CLR(ctx->trm, CBLD, ss[0]->mp_short));
 		printf("\n");
@@ -4078,9 +4071,28 @@ int cmd_start(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	if (err >= 0) {
 		sarg = find_sarg(*argv, sargs_mode);
 		if (!sarg) {
-			handle_unknown_sarg(*argv, sargs_mode);
-			usage_sarg(ctx->pname, sargs_mode_help, ctx);
-			err = -EINVAL;
+			ctx->ibnbdmode = mode_for_host();
+			
+			INF(ctx->debug_set,
+			    "IBNBD mode deduced from sysfs: '%s'.\n",
+			    mode_to_string(ctx->ibnbdmode));
+
+			switch (ctx->ibnbdmode) {
+			case IBNBD_CLIENT:
+				return cmd_client(argc, argv, ctx);
+			case IBNBD_SERVER:
+				return cmd_server(argc, argv, ctx);
+			case IBNBD_BOTH:
+				return cmd_both(argc, argv, ctx);
+			default:
+				ERR(ctx->trm,
+				    "IBNBD mode not specified and could not be deduced.\n");
+				print_usage(NULL, sargs_mode_help, ctx);
+
+				handle_unknown_sarg(*argv, sargs_mode);
+				usage_sarg(ctx->pname, sargs_mode_help, ctx);
+				err = -EINVAL;
+			}
 		} else {
 			(void) sarg->parse(argc, argv, 0, sarg, ctx);
 		}

@@ -273,7 +273,7 @@ int ibnbd_sysfs_alloc_all(struct ibnbd_sess_dev ***sds_clt,
 
 static struct ibnbd_dev *find_or_add_dev(const char *syspath,
 					 struct ibnbd_dev **devs,
-					 enum ibnbd_side side)
+					 enum ibnbdmode side)
 {
 	char *devname, *r, tmp[PATH_MAX], rpath[PATH_MAX];
 	int i;
@@ -300,7 +300,7 @@ static struct ibnbd_dev *find_or_add_dev(const char *syspath,
 	scanf_sysfs(rpath, "stat", "%d %*d %*d %*d %d", &devs[i]->rx_sect,
 		    &devs[i]->tx_sect);
 
-	if (side == IBNBD_CLT) {
+	if (side == IBNBD_CLIENT) {
 		strcat(rpath, "/ibnbd/");
 		scanf_sysfs(rpath, "io_mode", "%s", devs[i]->io_mode);
 		scanf_sysfs(rpath, "state", "%s", devs[i]->state);
@@ -346,7 +346,7 @@ static struct ibnbd_path *add_path(const char *sdir,
 static struct ibnbd_sess *find_or_add_sess(const char *sessname,
 					   struct ibnbd_sess **sess,
 					   struct ibnbd_path **paths,
-					   enum ibnbd_side side)
+					   enum ibnbdmode side)
 {
 	struct ibnbd_sess *s;
 	struct ibnbd_path *p;
@@ -355,7 +355,7 @@ static struct ibnbd_sess *find_or_add_sess(const char *sessname,
 	DIR *pdir;
 	int i;
 
-	if (side == IBNBD_CLT)
+	if (side == IBNBD_CLIENT)
 		sprintf(tmp, PATH_SESS_CLT "%s", sessname);
 	else
 		sprintf(tmp, PATH_SESS_SRV "%s", sessname);
@@ -432,12 +432,12 @@ static struct ibnbd_sess_dev *add_sess_dev(const char *devname,
 					   struct ibnbd_sess_dev **sds,
 					   struct ibnbd_sess *s,
 					   struct ibnbd_dev *d,
-					   enum ibnbd_side side)
+					   enum ibnbdmode side)
 {
 	char tmp[PATH_MAX];
 	int i;
 
-	if (side == IBNBD_CLT)
+	if (side == IBNBD_CLIENT)
 		sprintf(tmp, PATH_SDS_CLT "%s/ibnbd/", devname);
 	else
 		sprintf(tmp, PATH_SDS_SRV "%s/sessions/%s", devname,
@@ -482,15 +482,15 @@ static int ibnbd_sysfs_read_clt(struct ibnbd_sess_dev **sds,
 		sprintf(tmp, PATH_SDS_CLT "%s", dent->d_name);
 		scanf_sysfs(tmp, "/ibnbd/session", "%s", sessname);
 
-		s = find_or_add_sess(sessname, sess, paths, IBNBD_CLT);
+		s = find_or_add_sess(sessname, sess, paths, IBNBD_CLIENT);
 		if (!s)
 			return -ENOMEM;
 
-		d = find_or_add_dev(tmp, devs, IBNBD_CLT);
+		d = find_or_add_dev(tmp, devs, IBNBD_CLIENT);
 		if (!d)
 			return -ENOMEM;
 
-		sd = add_sess_dev(dent->d_name, sds, s, d, IBNBD_CLT);
+		sd = add_sess_dev(dent->d_name, sds, s, d, IBNBD_CLIENT);
 		if (!sd)
 			return -ENOMEM;
 	}
@@ -522,7 +522,7 @@ static int ibnbd_sysfs_read_srv(struct ibnbd_sess_dev **sds,
 
 		sprintf(tmp, PATH_SDS_SRV "%s/block_dev", dent->d_name);
 
-		d = find_or_add_dev(tmp, devs, IBNBD_SRV);
+		d = find_or_add_dev(tmp, devs, IBNBD_SERVER);
 		if (!d)
 			return -ENOMEM;
 
@@ -534,11 +534,11 @@ static int ibnbd_sysfs_read_srv(struct ibnbd_sess_dev **sds,
 			if (sent->d_name[0] == '.')
 				continue;
 			s = find_or_add_sess(sent->d_name, sess, paths,
-					     IBNBD_SRV);
+					     IBNBD_SERVER);
 			if (!s)
 				return -ENOMEM;
 
-			sd = add_sess_dev(dent->d_name, sds, s, d, IBNBD_SRV);
+			sd = add_sess_dev(dent->d_name, sds, s, d, IBNBD_SERVER);
 			if (!sd)
 				return -ENOMEM;
 		}
@@ -570,4 +570,37 @@ int ibnbd_sysfs_read_all(struct ibnbd_sess_dev **sds_clt,
 	ret = ibnbd_sysfs_read_srv(sds_srv, sess_srv, paths_srv, devs);
 
 	return ret;
+}
+
+enum ibnbdmode mode_for_host(void)
+{
+	enum ibnbdmode mode = IBNBD_NONE;
+
+	if (faccessat(AT_FDCWD, PATH_IBNBD_CLT, F_OK, AT_EACCESS) == 0) {
+		mode |= IBNBD_CLIENT;
+	}
+	/* else we are not interested in any error diagnossis here  */
+	/* if we can not deduce the mode, than we just know nothing */
+
+	if (faccessat(AT_FDCWD, PATH_IBNBD_SRV, F_OK, AT_EACCESS) == 0) {
+		mode |= IBNBD_SERVER;
+	}
+	return mode;
+}
+
+const char *mode_to_string(enum ibnbdmode mode)
+{
+	switch (mode) {
+	case IBNBD_NONE:
+		return "none";
+	case IBNBD_CLIENT:
+		return "client";
+	case IBNBD_SERVER:
+		return "server";
+	case IBNBD_BOTH:
+		return "both";
+	}
+	/* NOTREACHED */
+
+	return "";
 }

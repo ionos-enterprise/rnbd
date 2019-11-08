@@ -4,12 +4,15 @@
 #define PATH_IBNBD_CLT "/sys/class/ibnbd-client/ctl"
 #define PATH_SDS_CLT PATH_IBNBD_CLT "/devices/"
 #define PATH_SESS_CLT "/sys/class/ibtrs-client/"
-#define PATH_SDS_SRV "/sys/class/ibnbd-server/ctl/devices/"
+#define PATH_IBNBD_SRV "/sys/class/ibnbd-server/ctl"
+#define PATH_SDS_SRV PATH_IBNBD_SRV "/devices/"
 #define PATH_SESS_SRV "/sys/class/ibtrs-server/"
 
-enum ibnbd_side {
-	IBNBD_CLT,
-	IBNBD_SRV
+enum ibnbdmode {
+	IBNBD_NONE = 0,
+	IBNBD_CLIENT = 1,
+	IBNBD_SERVER = 1 << 1,
+	IBNBD_BOTH = IBNBD_CLIENT | IBNBD_SERVER,
 };
 
 /*
@@ -40,7 +43,7 @@ struct ibnbd_path {
 };
 
 struct ibnbd_sess {
-	enum ibnbd_side	  side;			/* client or server side */
+	enum ibnbdmode	  side;			/* client or server side */
 	char		  sessname[NAME_MAX];	/* session name */
 	char		  mp[NAME_MAX];		/* multipath policy */
 	char		  mp_short[NAME_MAX];	/* multipath policy short */
@@ -97,3 +100,6 @@ struct ibnbd_ctx;
 int printf_sysfs(const char *dir, const char *entry,
 		 const struct ibnbd_ctx *ctx, const char *format, ...);
 int scanf_sysfs(const char *dir, const char *entry, const char *format, ...);
+
+enum ibnbdmode mode_for_host(void);
+const char *mode_to_string(enum ibnbdmode mode);

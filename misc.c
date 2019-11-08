@@ -226,9 +226,9 @@ int sd_sess_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		return 0;
 
 	switch (p->sess->side) {
-	case IBNBD_CLT:
+	case IBNBD_CLIENT:
 		return snprintf(str, len, "import");
-	case IBNBD_SRV:
+	case IBNBD_SERVER:
 		return snprintf(str, len, "export");
 	default:
 		return snprintf(str, len, "?");
@@ -291,7 +291,7 @@ int sess_side_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
 	struct ibnbd_sess *s = container_of(v, struct ibnbd_sess, side);
 
 	*clr = CNRM;
-	if (s->side == IBNBD_CLT)
+	if (s->side == IBNBD_CLIENT)
 		return snprintf(str, len, "outgoing");
 	else
 		return snprintf(str, len, "incoming");
@@ -310,9 +310,9 @@ int path_sess_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		return 0;
 
 	switch (p->sess->side) {
-	case IBNBD_CLT:
+	case IBNBD_CLIENT:
 		return snprintf(str, len, "outgoing");
-	case IBNBD_SRV:
+	case IBNBD_SERVER:
 		return snprintf(str, len, "incoming");
 	default:
 		return snprintf(str, len, "?");
