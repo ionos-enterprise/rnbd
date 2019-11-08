@@ -3,7 +3,7 @@
 ibnbd - Configuration tool for IBNBD driver and IBTRS library.
 .SH SYNOPSIS
 ibnbd client|server|both|help ...
-.SH DESCRIPTION
+.SH SYNOPSIS
 
     --help          Help output
     --verbose       Verbose output
@@ -37,6 +37,14 @@ ibnbd server devices|sessions|paths|help ...
 ibnbd both help ...
 
     help            Display help and exit
+
+
+.SH DESCRIPTION
+The commands of the tool are structured in the following fashion:
+client vs server -> device vs. session vs. path. If the context of
+a command is unambiguous, it can be also called directly.
+For example: ibnbd map (instead of ibnbd client device map), ibnbd session list
+(instead of ibnbd client session list), ibnbd show client@server (instead of ibnbd client session show client@server, etc.
 .SH SUBCOMMANDS
 .B
 
@@ -73,12 +81,12 @@ Options:
 
 .B
 
-ibnbd client device show [OPTIONS]
+ibnbd client device show <device> [OPTIONS]
 
 Show information about an ibnbd block device.
 
 Arguments:
-    <name>          Name of a local or a remote block device.
+    <device>        Name of a local or a remote block device.
                     I.e. ibnbd0, /dev/ibnbd0, d12aef94-4110-4321-9373-3be8494a557b.
 
 Options:
@@ -107,7 +115,7 @@ Options:
 
 .B
 
-ibnbd client device map [OPTIONS]
+ibnbd client device map <device> from <server> [OPTIONS]
 
 Map a device from a given server
 
@@ -126,7 +134,7 @@ Options:
 
 .B
 
-ibnbd client device resize [OPTIONS]
+ibnbd client device resize <device> <size> [OPTIONS]
 
 Change size of a mapped device
 
@@ -141,7 +149,7 @@ Options:
 
 .B
 
-ibnbd client device unmap [OPTIONS]
+ibnbd client device unmap <device> [OPTIONS]
 
 Umap a given imported device
 
@@ -156,7 +164,7 @@ Options:
 
 .B
 
-ibnbd client device remap [OPTIONS]
+ibnbd client device remap <device> [OPTIONS]
 
 Unmap and map again an imported device
 
@@ -206,12 +214,12 @@ Options:
 
 .B
 
-ibnbd client session show [OPTIONS]
+ibnbd client session show <session> [OPTIONS]
 
 Show information about an ibnbd session.
 
 Arguments:
-    <name>          Session name or remote hostname.
+    <session>       Session name or remote hostname.
                     I.e. ps401a-1@st401b-2, st401b-2, <ip1>@<ip2>, etc.
 
 Options:
@@ -242,12 +250,12 @@ Options:
 
 .B
 
-ibnbd client session remap [OPTIONS]
+ibnbd client session remap <session> [OPTIONS]
 
 Unmap and map again all devices of a given session
 
 Arguments:
-    <identifier>    Identifier of a session to remap all devices on.
+    <session>       Identifier of a session to remap all devices on.
 
 Options:
     force           Force operation
@@ -257,13 +265,12 @@ Options:
 
 .B
 
-ibnbd client session reconnect [OPTIONS]
+ibnbd client session reconnect <session> [OPTIONS]
 
 Disconnect and connect again a whole session
 
 Arguments:
-    <identifier>    Name or identifier of a session:
-                    [sessname]
+    <session>       Name or identifier of a session.
 
 Options:
     verbose         Verbose output
@@ -307,12 +314,12 @@ Options:
 
 .B
 
-ibnbd client path show [OPTIONS]
+ibnbd client path show <path> [OPTIONS]
 
 Show information about an ibnbd transport path.
 
 Arguments:
-    <name>          In order to display path information, path name or identifier
+    <path>          In order to display path information, path name or identifier
                     has to be provided, i.e. st401b-2:1.
 
 Options:
@@ -343,7 +350,7 @@ Options:
 
 .B
 
-ibnbd client path disconnect [OPTIONS]
+ibnbd client path disconnect <session> [OPTIONS]
 
 Disconnect a path a given session
 
@@ -358,7 +365,7 @@ Options:
 
 .B
 
-ibnbd client path reconnect [OPTIONS]
+ibnbd client path reconnect <path> [OPTIONS]
 
 Disconnect and connect again a single path of a session
 
@@ -373,7 +380,7 @@ Options:
 
 .B
 
-ibnbd client path add [OPTIONS]
+ibnbd session add <session> <path> [OPTIONS]
 
 Add a new path to an existing session
 
@@ -389,7 +396,7 @@ Options:
 
 .B
 
-ibnbd client path delete [OPTIONS]
+ibnbd client path delete <path> [OPTIONS]
 
 Delete a given path from the corresponding session
 
@@ -404,7 +411,7 @@ Options:
 
 .B
 
-ibnbd client path readd [OPTIONS]
+ibnbd client path readd <path> [OPTIONS]
 
 Delete and add again a given path to the corresponding session
 
@@ -451,12 +458,12 @@ Options:
 
 .B
 
-ibnbd server device show [OPTIONS]
+ibnbd server device show <device> [OPTIONS]
 
 Show information about an ibnbd block device.
 
 Arguments:
-    <name>          Name of a local or a remote block device.
+    <device>        Name of a local or a remote block device.
                     I.e. ibnbd0, /dev/ibnbd0, d12aef94-4110-4321-9373-3be8494a557b.
 
 Options:
@@ -518,12 +525,12 @@ Options:
 
 .B
 
-ibnbd server session show [OPTIONS]
+ibnbd server session show <session> [OPTIONS]
 
 Show information about an ibnbd session.
 
 Arguments:
-    <name>          Session name or remote hostname.
+    <session>       Session name or remote hostname.
                     I.e. ps401a-1@st401b-2, st401b-2, <ip1>@<ip2>, etc.
 
 Options:
@@ -553,13 +560,12 @@ Options:
 
 .B
 
-ibnbd server session disconnect [OPTIONS]
+ibnbd server session disconnect <session> [OPTIONS]
 
 Disconnect all paths on a given session
 
 Arguments:
-    <identifier>    Name or identifier of a session:
-                    [sessname]
+    <session>       Name or identifier of a session.
 
 Options:
     verbose         Verbose output
@@ -602,12 +608,12 @@ Options:
 
 .B
 
-ibnbd server path show [OPTIONS]
+ibnbd server path show <path> [OPTIONS]
 
 Show information about an ibnbd transport path.
 
 Arguments:
-    <name>          In order to display path information, path name or identifier
+    <path>          In order to display path information, path name or identifier
                     has to be provided, i.e. st401b-2:1.
 
 Options:
@@ -637,7 +643,7 @@ Options:
 
 .B
 
-ibnbd server path disconnect [OPTIONS]
+ibnbd server path disconnect <session> [OPTIONS]
 
 Disconnect a path a given session
 

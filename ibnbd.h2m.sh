@@ -16,8 +16,16 @@ echo ".SH SYNOPSIS"
 
 ibnbd help | grep 'Usage:' | sed 's/Usage: //g'
 
-echo ".SH DESCRIPTION"
+echo ".SH SYNOPSIS"
 ibnbd help all | grep -v "client|server|both|help" | grep -v -e "--help|--verbose|--debug|--simulate" | sed 's/Usage: //g'
+
+echo -e "\n"
+echo ".SH DESCRIPTION"
+echo "The commands of the tool are structured in the following fashion:"
+echo "client vs server -> device vs. session vs. path. If the context of"
+echo "a command is unambiguous, it can be also called directly."
+echo "For example: ibnbd map (instead of ibnbd client device map), ibnbd session list"
+echo "(instead of ibnbd client session list), ibnbd show client@server (instead of ibnbd client session show client@server, etc."
 
 modes="client server both"
 objects="device session path"

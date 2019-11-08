@@ -412,174 +412,12 @@ static struct sarg _sargs_all =
 static struct sarg _sargs_null =
 	{TOK_NONE, 0};
 
-static struct sarg *sargs_flags[] = {
-	&_sargs_minus_minus_help,
-	&_sargs_minus_h,
-	&_sargs_minus_minus_verbose,
-	&_sargs_minus_v,
-	&_sargs_minus_minus_debug,
-	&_sargs_minus_d,
-	&_sargs_minus_minus_simulate,
-	&_sargs_minus_s,
-	&_sargs_null
-};
-
-static struct sarg *sargs_flags_help[] = {
-	&_sargs_minus_minus_help,
-	&_sargs_minus_minus_verbose,
-	&_sargs_minus_minus_debug,
-	&_sargs_minus_minus_simulate,
-	&_sargs_null
-};
-
-static struct sarg *sargs_default[] = {
-	&_sargs_help,
-	&_sargs_verbose,
-	&_sargs_minus_v,
-	&_sargs_null
-};
-
 static struct sarg *sargs_options[] = {
 	&_sargs_noheaders,
 	&_sargs_nototals,
 	&_sargs_notree,
 	&_sargs_force,
 	&_sargs_help,
-	&_sargs_verbose,
-	&_sargs_null
-};
-
-static struct sarg *sargs_mode[] = {
-	&_sargs_client,
-	&_sargs_clt,
-	&_sargs_cli,
-	&_sargs_server,
-	&_sargs_serv,
-	&_sargs_srv,
-	&_sargs_both,
-	&_sargs_help,
-	&_sargs_null
-};
-
-static struct sarg *sargs_mode_help[] = {
-	&_sargs_client,
-	&_sargs_server,
-	&_sargs_both,
-	&_sargs_help,
-	&_sargs_null
-};
-
-static struct sarg *sargs_both_help[] = {
-	&_sargs_help,
-	&_sargs_null
-};
-static struct sarg **sargs_both = sargs_both_help;
-
-static struct sarg *sargs_object_type[] = {
-	&_sargs_devices,
-	&_sargs_device,
-	&_sargs_devs,
-	&_sargs_dev,
-	&_sargs_sessions,
-	&_sargs_session,
-	&_sargs_sess,
-	&_sargs_paths,
-	&_sargs_path,
-	&_sargs_help,
-	&_sargs_null
-};
-
-static struct sarg *sargs_object_type_help_client[] = {
-	&_sargs_devices_client,
-	&_sargs_sessions,
-	&_sargs_paths,
-	&_sargs_help,
-	&_sargs_null
-};
-
-static struct sarg *sargs_object_type_help_server[] = {
-	&_sargs_devices,
-	&_sargs_sessions,
-	&_sargs_paths,
-	&_sargs_help,
-	&_sargs_null
-};
-
-static struct sarg *sargs_list_parameters[] = {
-	&_sargs_xml,
-	&_sargs_cvs,
-	&_sargs_json,
-	&_sargs_term,
-	&_sargs_byte,
-	&_sargs_kib,
-	&_sargs_mib,
-	&_sargs_gib,
-	&_sargs_tib,
-	&_sargs_pib,
-	&_sargs_eib,
-	&_sargs_notree,
-	&_sargs_noheaders,
-	&_sargs_nototals,
-	&_sargs_noterm,
-	&_sargs_all,
-	&_sargs_verbose,
-	&_sargs_help,
-	&_sargs_null
-};
-
-static struct sarg *sargs_map_from_parameters[] = {
-	&_sargs_from,
-	&_sargs_help,
-	&_sargs_verbose,
-	&_sargs_minus_v,
-	&_sargs_null
-};
-
-static struct sarg *sargs_map_parameters[] = {
-	&_sargs_from,
-	&_sargs_ro,
-	&_sargs_rw,
-	&_sargs_migration,
-	&_sargs_blockio,
-	&_sargs_fileio,
-	&_sargs_help,
-	&_sargs_verbose,
-	&_sargs_minus_v,
-	&_sargs_null
-};
-
-static struct sarg *sargs_map_parameters_help[] = {
-	&_sargs_from,
-	&_sargs_path_param,
-	&_sargs_ro,
-	&_sargs_rw,
-	&_sargs_migration,
-	&_sargs_blockio,
-	&_sargs_fileio,
-	&_sargs_help,
-	&_sargs_verbose,
-	&_sargs_minus_v,
-	&_sargs_null
-};
-
-static struct sarg *sargs_unmap_parameters[] = {
-	&_sargs_help,
-	&_sargs_force,
-	&_sargs_verbose,
-	&_sargs_minus_v,
-	&_sargs_null
-};
-
-static struct sarg *sargs_add_path_parameters[] = {
-	&_sargs_help,
-	&_sargs_verbose,
-	&_sargs_minus_v,
-	&_sargs_null
-};
-
-static struct sarg *sargs_add_path_help[] = {
-	&_sargs_help,
-	&_sargs_path_param,
 	&_sargs_verbose,
 	&_sargs_null
 };
@@ -1930,8 +1768,12 @@ static int client_devices_map(const char *from_session, const char *device_name,
 			device_name);
 
 	for (i = 0; i < ctx->path_cnt; i++)
-		cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, " path=%s@%s",
-				ctx->paths[i].src, ctx->paths[i].dst);
+		if (ctx->paths[i].src)
+			cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, " path=%s@%s",
+					ctx->paths[i].src, ctx->paths[i].dst);
+		else
+			cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, " path=%s",
+					ctx->paths[i].dst);
 
 	if (sess)
 		for (i = 0; i < sess->path_cnt; i++)
@@ -2732,6 +2574,188 @@ static struct sarg _cmd_help =
 static struct sarg _cmd_null =
 		{ 0 };
 
+static struct sarg *sargs_flags[] = {
+	&_sargs_minus_minus_help,
+	&_sargs_minus_h,
+	&_sargs_minus_minus_verbose,
+	&_sargs_minus_v,
+	&_sargs_minus_minus_debug,
+	&_sargs_minus_d,
+	&_sargs_minus_minus_simulate,
+	&_sargs_minus_s,
+	&_sargs_null
+};
+
+static struct sarg *sargs_flags_help[] = {
+	&_sargs_minus_minus_help,
+	&_sargs_minus_minus_verbose,
+	&_sargs_minus_minus_debug,
+	&_sargs_minus_minus_simulate,
+	&_sargs_null
+};
+
+static struct sarg *sargs_default[] = {
+	&_sargs_help,
+	&_sargs_verbose,
+	&_sargs_minus_v,
+	&_sargs_null
+};
+
+static struct sarg *sargs_mode[] = {
+	&_sargs_client,
+	&_sargs_clt,
+	&_sargs_cli,
+	&_sargs_server,
+	&_sargs_serv,
+	&_sargs_srv,
+	&_sargs_both,
+	&_sargs_help,
+	&_sargs_null
+};
+
+static struct sarg *sargs_mode_help[] = {
+	&_sargs_client,
+	&_sargs_server,
+	&_sargs_both,
+	&_sargs_help,
+	&_sargs_null
+};
+
+static struct sarg *sargs_both[] = {
+	&_cmd_map,
+	&_sargs_help,
+	&_sargs_null
+};
+
+static struct sarg *sargs_both_help[] = {
+	&_sargs_help,
+	&_sargs_null
+};
+
+static struct sarg *sargs_object_type_client[] = {
+	&_sargs_devices,
+	&_sargs_device,
+	&_sargs_devs,
+	&_sargs_dev,
+	&_sargs_sessions,
+	&_sargs_session,
+	&_sargs_sess,
+	&_sargs_paths,
+	&_sargs_path,
+	&_cmd_map,
+	&_sargs_help,
+	&_sargs_null
+};
+
+static struct sarg *sargs_object_type_server[] = {
+	&_sargs_devices,
+	&_sargs_device,
+	&_sargs_devs,
+	&_sargs_dev,
+	&_sargs_sessions,
+	&_sargs_session,
+	&_sargs_sess,
+	&_sargs_paths,
+	&_sargs_path,
+	&_sargs_help,
+	&_sargs_null
+};
+
+static struct sarg *sargs_object_type_help_client[] = {
+	&_sargs_devices_client,
+	&_sargs_sessions,
+	&_sargs_paths,
+	&_sargs_help,
+	&_sargs_null
+};
+
+static struct sarg *sargs_object_type_help_server[] = {
+	&_sargs_devices,
+	&_sargs_sessions,
+	&_sargs_paths,
+	&_sargs_help,
+	&_sargs_null
+};
+
+static struct sarg *sargs_list_parameters[] = {
+	&_sargs_xml,
+	&_sargs_cvs,
+	&_sargs_json,
+	&_sargs_term,
+	&_sargs_byte,
+	&_sargs_kib,
+	&_sargs_mib,
+	&_sargs_gib,
+	&_sargs_tib,
+	&_sargs_pib,
+	&_sargs_eib,
+	&_sargs_notree,
+	&_sargs_noheaders,
+	&_sargs_nototals,
+	&_sargs_noterm,
+	&_sargs_all,
+	&_sargs_verbose,
+	&_sargs_help,
+	&_sargs_null
+};
+
+static struct sarg *sargs_map_from_parameters[] = {
+	&_sargs_from,
+	&_sargs_help,
+	&_sargs_verbose,
+	&_sargs_minus_v,
+	&_sargs_null
+};
+
+static struct sarg *sargs_map_parameters[] = {
+	&_sargs_from,
+	&_sargs_ro,
+	&_sargs_rw,
+	&_sargs_migration,
+	&_sargs_blockio,
+	&_sargs_fileio,
+	&_sargs_help,
+	&_sargs_verbose,
+	&_sargs_minus_v,
+	&_sargs_null
+};
+
+static struct sarg *sargs_map_parameters_help[] = {
+	&_sargs_from,
+	&_sargs_path_param,
+	&_sargs_ro,
+	&_sargs_rw,
+	&_sargs_migration,
+	&_sargs_blockio,
+	&_sargs_fileio,
+	&_sargs_help,
+	&_sargs_verbose,
+	&_sargs_minus_v,
+	&_sargs_null
+};
+
+static struct sarg *sargs_unmap_parameters[] = {
+	&_sargs_help,
+	&_sargs_force,
+	&_sargs_verbose,
+	&_sargs_minus_v,
+	&_sargs_null
+};
+
+static struct sarg *sargs_add_path_parameters[] = {
+	&_sargs_help,
+	&_sargs_verbose,
+	&_sargs_minus_v,
+	&_sargs_null
+};
+
+static struct sarg *sargs_add_path_help[] = {
+	&_sargs_help,
+	&_sargs_path_param,
+	&_sargs_verbose,
+	&_sargs_null
+};
+
 static struct sarg *cmds_client_sessions[] = {
 	&_cmd_list_sessions,
 	&_cmd_show_sessions,
@@ -3174,6 +3198,44 @@ int parse_map_parameters(int argc, const char *argv[], int *accepted,
 	return err;
 }
 
+int cmd_map(int argc, const char *argv[], const struct sarg *cmd,
+	    const char *help_context, struct ibnbd_ctx *ctx)
+{
+	int accepted = 0, err = 0;
+
+	err = parse_name_help(argc--, argv++,
+			      help_context, cmd, ctx);
+	if (err < 0)
+		return err;
+	
+	err = parse_map_parameters(argc, argv, &accepted,
+				   sargs_map_from_parameters,
+				   ctx, cmd, help_context);
+	if (accepted == 0) {
+		
+		cmd_print_usage_short(cmd, help_context, ctx);
+		ERR(ctx->trm,
+		    "Please specify the destination to map from\n");
+
+		return -EINVAL;
+	}
+	argc -= accepted; argv += accepted;
+	
+	if (argc > 0 || (err < 0 && err != -EAGAIN)) {
+		
+		handle_unknown_sarg(*argv,
+				    sargs_map_parameters);
+		if (err < 0) {
+			printf("\n");
+			print_sarg(ctx->pname,
+				   sargs_map_parameters_help,
+				   ctx);
+		}
+		return -EINVAL;
+	}
+	return err = client_devices_map(ctx->from, ctx->name, ctx);
+}
+
 int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 {
 	const char *_help_context = ctx->pname_with_mode
@@ -3297,7 +3359,7 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	const char *_help_context = ctx->pname_with_mode
 		? "device" : "client device";
 
-	int accepted = 0, err = 0;
+	int err = 0;
 	const struct sarg *cmd;
 
 	cmd = find_sarg(*argv, cmds_client_devices);
@@ -3339,38 +3401,7 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			err = show_devices(ctx->name, ctx);
 			break;
 		case TOK_MAP:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_map_parameters(argc, argv, &accepted,
-						   sargs_map_from_parameters,
-						   ctx, cmd, _help_context);
-			if (accepted == 0) {
-
-				cmd_print_usage_short(cmd, _help_context, ctx);
-				ERR(ctx->trm,
-				    "Please specify the destination to map from\n");
-				err = -EINVAL;
-				break;
-			}
-			argc -= accepted; argv += accepted;
-
-			if (argc > 0 || (err < 0 && err != -EAGAIN)) {
-
-				handle_unknown_sarg(*argv,
-						    sargs_map_parameters);
-				if (err < 0) {
-					printf("\n");
-					print_sarg(ctx->pname,
-						   sargs_map_parameters_help,
-						   ctx);
-				}
-				err = -EINVAL;
-				break;
-			}
-			err = client_devices_map(ctx->from, ctx->name, ctx);
+			err = cmd_map(argc, argv, cmd, _help_context, ctx);
 			break;
 		/* map-by-host ?
 		case TOK_MAP_BY_HOST:
@@ -3910,13 +3941,13 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 		err = -EINVAL;
 	}
 	if (err >= 0) {
-		sarg = find_sarg(*argv, sargs_object_type);
+		sarg = find_sarg(*argv, sargs_object_type_client);
 		if (!sarg) {
 			usage_sarg("ibnbd client",
 				   sargs_object_type_help_client, ctx);
-			handle_unknown_sarg(*argv, sargs_object_type);
+			handle_unknown_sarg(*argv, sargs_object_type_client);
 			err = -EINVAL;
-		} else {
+		} else if (sarg->parse) {
 			(void) sarg->parse(argc, argv, 0, sarg, ctx);
 		}
 	}
@@ -3932,6 +3963,9 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 		case TOK_PATHS:
 			err = cmd_client_paths(--argc, ++argv, ctx);
 			break;
+		case TOK_MAP:
+			err = cmd_map(--argc, ++argv, sarg, "client", ctx);
+			break;
 		case TOK_HELP:
 			if (ctx->pname_with_mode
 			    && (help_print_flags(ctx) || help_print_all(ctx))) {
@@ -3946,7 +3980,7 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 		default:
 			usage_sarg("ibnbd client",
 				   sargs_object_type_help_client, ctx);
-			handle_unknown_sarg(*argv, sargs_object_type);
+			handle_unknown_sarg(*argv, sargs_object_type_client);
 			err = -EINVAL;
 			break;
 		}
@@ -3965,13 +3999,13 @@ int cmd_server(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 		err = -EINVAL;
 	}
 	if (err >= 0) {
-		sarg = find_sarg(*argv, sargs_object_type);
+		sarg = find_sarg(*argv, sargs_object_type_server);
 		if (!sarg) {
 			usage_sarg("ibnbd server",
 				   sargs_object_type_help_server, ctx);
-			handle_unknown_sarg(*argv, sargs_object_type);
+			handle_unknown_sarg(*argv, sargs_object_type_server);
 			err = -EINVAL;
-		} else {
+		} else if (sarg->parse) {
 			(void) sarg->parse(argc, argv, 0, sarg, ctx);
 		}
 	}
@@ -4002,7 +4036,7 @@ int cmd_server(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 		default:
 			usage_sarg("ibnbd server",
 				   sargs_object_type_help_server, ctx);
-			handle_unknown_sarg(*argv, sargs_object_type);
+			handle_unknown_sarg(*argv, sargs_object_type_server);
 			err = -EINVAL;
 			break;
 		}
@@ -4025,7 +4059,7 @@ int cmd_both(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			handle_unknown_sarg(*argv, sargs_both);
 			usage_sarg(ctx->pname, sargs_both_help, ctx);
 			err = -EINVAL;
-		} else {
+		} else if (sarg->parse) {
 			(void) sarg->parse(argc, argv, 0, sarg, ctx);
 		}
 	}
@@ -4036,6 +4070,9 @@ int cmd_both(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			err = cmd_client_paths(--argc, ++argv, ctx);
 			break;
 		*/
+		case TOK_MAP:
+			err = cmd_map(--argc, ++argv, sarg, "", ctx);
+			break;
 		case TOK_HELP:
 			help_sarg(ctx->pname, sargs_both_help, ctx);
 
@@ -4093,7 +4130,7 @@ int cmd_start(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 				usage_sarg(ctx->pname, sargs_mode_help, ctx);
 				err = -EINVAL;
 			}
-		} else {
+		} else if (sarg->parse) {
 			(void) sarg->parse(argc, argv, 0, sarg, ctx);
 		}
 	}
