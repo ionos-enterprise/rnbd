@@ -709,26 +709,30 @@ static void cmd_print_usage_descr(const struct sarg *cmd, const char *a,
 	cmd_print_usage_short(cmd, a, ctx);
 	printf("%s\n", cmd->descr);
 }
-static void print_help(const char *program_name, struct sarg * const cmds[],
+static void print_help(const char *program_name,
+		       const struct sarg * cmd,
+		       struct sarg * const sub_cmds[],
 		       const struct ibnbd_ctx *ctx)
 {
-	print_usage(program_name, cmds, ctx);
-	printf("\nIBNBD command line utility.\n");
+	print_usage(program_name, sub_cmds, ctx);
+
+	cmd->help(program_name, cmd, ctx);
+
 	printf("\nSubcommands:\n");
 	do {
 		if (help_print_all(ctx)) {
 			printf("\n\n");
-			(*cmds)->help(program_name, *cmds, ctx);
+			(*sub_cmds)->help(program_name, *sub_cmds, ctx);
 		} else {
 			if (program_name)
 				printf("     %-*s%s %s%s\n", 20,
-				       (*cmds)->sarg_str, (*cmds)->short_d,
-				       program_name, (*cmds)->short_d2);
+				       (*sub_cmds)->sarg_str, (*sub_cmds)->short_d,
+				       program_name, (*sub_cmds)->short_d2);
 			else
-				printf("     %-*s%s\n", 20, (*cmds)->sarg_str,
-				       (*cmds)->short_d);
+				printf("     %-*s%s\n", 20, (*sub_cmds)->sarg_str,
+				       (*sub_cmds)->short_d);
 		}
-	} while ((*++cmds)->sarg_str);
+	} while ((*++sub_cmds)->sarg_str);
 }
 
 static void print_clms_list(struct table_column **clms)
@@ -742,12 +746,19 @@ static void print_clms_list(struct table_column **clms)
 	printf("\n");
 }
 
-static void help_help(const char *program_name,
-		      const struct sarg *cmd,
-		      const struct ibnbd_ctx *ctx)
+static void help_object(const char *program_name,
+			const struct sarg *cmd,
+			const struct ibnbd_ctx *ctx)
 {
-	cmd_print_usage_descr(cmd, program_name, ctx);
-	print_opt("all", "Print help for all sub-commands as well.");
+	const char *word;
+
+	word = strchr(program_name, ' ');
+	if (word)
+		word++; /* skip space */
+	else
+		word = program_name;
+
+	printf(HP "Execute operations on %ss.\n", word);
 }
 
 static void help_fields(void)
@@ -2724,7 +2735,7 @@ static struct sarg _cmd_help =
 		"Display help on",
 		"s",
 		"Display help message and exit.",
-		NULL, NULL, help_help};
+		NULL, NULL, help_object};
 static struct sarg _cmd_null =
 		{ 0 };
 
@@ -3274,7 +3285,7 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 		case TOK_HELP:
 			parse_help(argc, argv, -1, NULL, ctx);
 			print_help(_help_context,
-				   cmds_client_sessions_help, ctx);
+				   cmd, cmds_client_sessions_help, ctx);
 			break;
 		default:
 			print_usage(_help_context,
@@ -3460,7 +3471,7 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, -1, NULL, ctx);
-			print_help(_help_context, cmds_client_devices, ctx);
+			print_help(_help_context, cmd, cmds_client_devices, ctx);
 			break;
 		default:
 			print_usage(_help_context, cmds_client_devices, ctx);
@@ -3652,7 +3663,7 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, -1, NULL, ctx);
-			print_help(_help_context, cmds_client_paths_help, ctx);
+			print_help(_help_context, cmd, cmds_client_paths_help, ctx);
 			break;
 		default:
 			print_usage(_help_context, cmds_client_paths_help, ctx);
@@ -3736,7 +3747,7 @@ int cmd_server_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, -1, NULL, ctx);
-			print_help(_help_context,
+			print_help(_help_context, cmd,
 				   cmds_server_sessions_help, ctx);
 			break;
 		default:
@@ -3799,7 +3810,8 @@ int cmd_server_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, -1, NULL, ctx);
-			print_help(_help_context, cmds_server_devices, ctx);
+			print_help(_help_context, cmd,
+				   cmds_server_devices, ctx);
 			break;
 		default:
 			print_usage(_help_context, cmds_server_devices, ctx);
@@ -3880,7 +3892,8 @@ int cmd_server_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, -1, NULL, ctx);
-			print_help(_help_context, cmds_server_paths_help, ctx);
+			print_help(_help_context, cmd,
+				   cmds_server_paths_help, ctx);
 			break;
 		default:
 			print_usage(_help_context, cmds_server_paths_help, ctx);
