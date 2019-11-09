@@ -45,7 +45,7 @@ struct sarg {
 	const char *short_d2;
 	const char *descr;
 	const char *params;
-	int (*parse)(int argc, const char *argv[], int i,
+	int (*parse)(int argc, const char *argv[],
 		     const struct sarg *sarg, struct ibnbd_ctx *ctx);
 	void (*help)(const char *program_name,
 		     const struct sarg *cmd,
@@ -54,37 +54,37 @@ struct sarg {
 	int dist;
 };
 
-static int parse_fmt(int argc, const char *argv[], int i,
+static int parse_fmt(int argc, const char *argv[],
 		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
-	if (!strcasecmp(argv[i], "csv"))
+	if (!strcasecmp(*argv, "csv"))
 		ctx->fmt = FMT_CSV;
-	else if (!strcasecmp(argv[i], "json"))
+	else if (!strcasecmp(*argv, "json"))
 		ctx->fmt = FMT_JSON;
-	else if (!strcasecmp(argv[i], "xml"))
+	else if (!strcasecmp(*argv, "xml"))
 		ctx->fmt = FMT_XML;
-	else if (!strcasecmp(argv[i], "term"))
+	else if (!strcasecmp(*argv, "term"))
 		ctx->fmt = FMT_TERM;
 	else
-		return i;
+		return 0;
 
 	ctx->fmt_set = true;
 
-	return i + 1;
+	return 1;
 }
 
-static int parse_io_mode(int argc, const char *argv[], int i,
+static int parse_io_mode(int argc, const char *argv[],
 			 const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
-	if (strcasecmp(argv[i], "blockio") &&
-	    strcasecmp(argv[i], "fileio"))
-		return i;
+	if (strcasecmp(*argv, "blockio") &&
+	    strcasecmp(*argv, "fileio"))
+		return 0;
 
-	strcpy(ctx->io_mode, argv[i]);
+	strcpy(ctx->io_mode, *argv);
 
 	ctx->io_mode_set = true;
 
-	return i + 1;
+	return 1;
 }
 
 enum lstmode {
@@ -93,56 +93,54 @@ enum lstmode {
 	LST_PATHS
 };
 
-static int parse_lst(int argc, const char *argv[], int i,
+static int parse_lst(int argc, const char *argv[],
 		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
-	if (!strcasecmp(argv[i], "devices") ||
-	    !strcasecmp(argv[i], "device") ||
-	    !strcasecmp(argv[i], "devs") ||
-	    !strcasecmp(argv[i], "dev"))
+	if (!strcasecmp(*argv, "devices") ||
+	    !strcasecmp(*argv, "device") ||
+	    !strcasecmp(*argv, "devs") ||
+	    !strcasecmp(*argv, "dev"))
 		ctx->lstmode = LST_DEVICES;
-	else if (!strcasecmp(argv[i], "sessions") ||
-		 !strcasecmp(argv[i], "session") ||
-		 !strcasecmp(argv[i], "sess"))
+	else if (!strcasecmp(*argv, "sessions") ||
+		 !strcasecmp(*argv, "session") ||
+		 !strcasecmp(*argv, "sess"))
 		ctx->lstmode = LST_SESSIONS;
-	else if (!strcasecmp(argv[i], "paths") ||
-		 !strcasecmp(argv[i], "path"))
+	else if (!strcasecmp(*argv, "paths") ||
+		 !strcasecmp(*argv, "path"))
 		ctx->lstmode = LST_PATHS;
 	else
-		return i;
+		return 0;
 
 	ctx->lstmode_set = true;
 
-	return i + 1;
+	return 1;
 }
 
-static int parse_from(int argc, const char *argv[], int i,
+static int parse_from(int argc, const char *argv[],
 		      const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
-	int j = i + 1;
-
-	if (j >= argc) {
+	if (argc < 1) {
 		ERR(ctx->trm, "Please specify the destination to map from\n");
-		return i;
+		return 0;
 	}
 
-	ctx->from = argv[j];
+	ctx->from = *argv;
 	ctx->from_set = 1;
 
-	return j + 1;
+	return 1;
 }
 
-static int parse_help(int argc, const char *argv[], int i,
+static int parse_help(int argc, const char *argv[],
 		      const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
 	ctx->help_set = true;
 
-	if (i + 1 < argc) {
+	if (argc > 1) {
 
-		ctx->help_arg = argv[i + 1];
+		ctx->help_arg = argv[1];
 		ctx->help_arg_set = 1;
 	}
-	return i + 1;
+	return 1;
 }
 
 static int parse_argv0(const char *argv0, struct ibnbd_ctx *ctx)
@@ -171,35 +169,35 @@ static int parse_argv0(const char *argv0, struct ibnbd_ctx *ctx)
 	return 1;
 }
 
-static int parse_mode(int argc, const char *argv[], int i,
+static int parse_mode(int argc, const char *argv[],
 		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
-	if (!strcasecmp(argv[i], "client") || !strcasecmp(argv[i], "clt"))
+	if (!strcasecmp(*argv, "client") || !strcasecmp(*argv, "clt"))
 		ctx->ibnbdmode = IBNBD_CLIENT;
-	else if (!strcasecmp(argv[i], "server") || !strcasecmp(argv[i], "srv"))
+	else if (!strcasecmp(*argv, "server") || !strcasecmp(*argv, "srv"))
 		ctx->ibnbdmode = IBNBD_SERVER;
-	else if (!strcasecmp(argv[i], "both"))
+	else if (!strcasecmp(*argv, "both"))
 		ctx->ibnbdmode = IBNBD_BOTH;
 	else
-		return i;
+		return 0;
 
 	ctx->ibnbdmode_set = true;
 
-	return i + 1;
+	return 1;
 }
 
-static int parse_rw(int argc, const char *argv[], int i,
+static int parse_rw(int argc, const char *argv[],
 		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
-	if (strcasecmp(argv[i], "ro") &&
-	    strcasecmp(argv[i], "rw") &&
-	    strcasecmp(argv[i], "migration"))
-		return i;
+	if (strcasecmp(*argv, "ro") &&
+	    strcasecmp(*argv, "rw") &&
+	    strcasecmp(*argv, "migration"))
+		return 0;
 
-	ctx->access_mode = argv[i];
+	ctx->access_mode = *argv;
 	ctx->access_mode_set = true;
 
-	return i + 1;
+	return 1;
 }
 
 static int clm_set_hdr_unit(struct table_column *clm, char const *unit)
@@ -215,14 +213,14 @@ static int clm_set_hdr_unit(struct table_column *clm, char const *unit)
 	return 0;
 }
 
-static int parse_unit(int argc, const char *argv[], int i,
+static int parse_unit(int argc, const char *argv[],
 		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
 	int rc;
 
 	rc = get_unit_index(sarg->sarg_str, &ctx->unit_id);
 	if (rc < 0)
-		return i;
+		return 0;
 
 	clm_set_hdr_unit(&clm_ibnbd_dev_rx_sect, sarg->descr);
 	clm_set_hdr_unit(&clm_ibnbd_dev_tx_sect, sarg->descr);
@@ -232,10 +230,10 @@ static int parse_unit(int argc, const char *argv[], int i,
 	clm_set_hdr_unit(&clm_ibnbd_path_tx_bytes, sarg->descr);
 
 	ctx->unit_set = true;
-	return i + 1;
+	return 1;
 }
 
-static int parse_all(int argc, const char *argv[], int i,
+static int parse_all(int argc, const char *argv[],
 		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
 	memcpy(&ctx->clms_devices_clt, &all_clms_devices_clt,
@@ -251,24 +249,24 @@ static int parse_all(int argc, const char *argv[], int i,
 	memcpy(&ctx->clms_paths_srv, &all_clms_paths_srv,
 	       ARRSIZE(all_clms_paths_srv) * sizeof(all_clms_paths[0]));
 
-	return i + 1;
+	return 1;
 }
 
-static int parse_flag(int argc, const char *argv[], int i,
+static int parse_flag(int argc, const char *argv[],
 		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
 	*(short *)(((char *)ctx)+(sarg->offset)) = 1;
 
-	return i + 1;
+	return 1;
 }
 
-static int parse_debug(int argc, const char *argv[], int i,
+static int parse_debug(int argc, const char *argv[],
 		     const struct sarg *sarg, struct ibnbd_ctx *ctx)
 {
 	ctx->debug_set = true;
 	ctx->verbose_set = true;
 
-	return i + 1;
+	return 1;
 }
 
 static struct sarg _sargs_from =
@@ -1562,7 +1560,7 @@ static int parse_name_help(int argc, const char *argv[], const char *what,
 		return -EINVAL;
 	}
 	if (!strcmp(*argv, "help")) {
-		parse_help(argc, argv, 0, NULL, ctx);
+		parse_help(argc, argv, NULL, ctx);
 
 		cmd->help(what, cmd, ctx);
 		return -EAGAIN;
@@ -3203,7 +3201,7 @@ int parse_list_parameters(int argc, const char *argv[], struct ibnbd_ctx *ctx,
 		/* parse the list flags */
 		sarg = find_sarg(*argv, sargs_list_parameters);
 		if (sarg) {
-			err = sarg->parse(argc, argv, 0, sarg, ctx);
+			err = sarg->parse(argc, argv, sarg, ctx);
 			if (err > 0) {
 				argc -= err; argv += err;
 				continue;
@@ -3245,7 +3243,7 @@ int parse_cmd_parameters(int argc, const char *argv[],
 	while (argc && err >= 0) {
 		sarg = find_sarg(*argv, sargs);
 		if (sarg)
-			err = sarg->parse(argc, argv, 0, sarg, ctx);
+			err = sarg->parse(argc, argv, sarg, ctx);
 
 		if (!sarg || err <= 0)
 			break;
@@ -3272,7 +3270,7 @@ int parse_map_parameters(int argc, const char *argv[], int *accepted,
 	while (argc && err >= 0) {
 		sarg = find_sarg(*argv, sargs);
 		if (sarg) {
-			err = sarg->parse(argc, argv, 0, sarg, ctx);
+			err = sarg->parse(argc, argv, sarg, ctx);
 		} else {
 			err = parse_path(*argv, ctx);
 			if (err == 0)
@@ -3431,7 +3429,7 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			err = client_session_remap(ctx->name, ctx);
 			break;
 		case TOK_HELP:
-			parse_help(argc, argv, -1, NULL, ctx);
+			parse_help(argc, argv, NULL, ctx);
 			print_help(_help_context,
 				   cmd, cmds_client_sessions_help, ctx);
 			break;
@@ -3587,7 +3585,7 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			err = client_devices_remap(ctx->name, ctx);
 			break;
 		case TOK_HELP:
-			parse_help(argc, argv, -1, NULL, ctx);
+			parse_help(argc, argv, NULL, ctx);
 			print_help(_help_context, cmd, cmds_client_devices, ctx);
 			break;
 		default:
@@ -3779,7 +3777,7 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			err = client_path_readd(ctx->name, ctx);
 			break;
 		case TOK_HELP:
-			parse_help(argc, argv, -1, NULL, ctx);
+			parse_help(argc, argv, NULL, ctx);
 			print_help(_help_context, cmd, cmds_client_paths_help, ctx);
 			break;
 		default:
@@ -3863,7 +3861,7 @@ int cmd_server_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 						   ctx);
 			break;
 		case TOK_HELP:
-			parse_help(argc, argv, -1, NULL, ctx);
+			parse_help(argc, argv, NULL, ctx);
 			print_help(_help_context, cmd,
 				   cmds_server_sessions_help, ctx);
 			break;
@@ -3926,7 +3924,7 @@ int cmd_server_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			err = show_devices(ctx->name, ctx);
 			break;
 		case TOK_HELP:
-			parse_help(argc, argv, -1, NULL, ctx);
+			parse_help(argc, argv, NULL, ctx);
 			print_help(_help_context, cmd,
 				   cmds_server_devices, ctx);
 			break;
@@ -4008,7 +4006,7 @@ int cmd_server_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			err = server_path_disconnect(ctx->name, ctx);
 			break;
 		case TOK_HELP:
-			parse_help(argc, argv, -1, NULL, ctx);
+			parse_help(argc, argv, NULL, ctx);
 			print_help(_help_context, cmd,
 				   cmds_server_paths_help, ctx);
 			break;
@@ -4042,7 +4040,7 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			handle_unknown_sarg(*argv, sargs_object_type_client);
 			err = -EINVAL;
 		} else if (sarg->parse) {
-			(void) sarg->parse(argc, argv, 0, sarg, ctx);
+			(void) sarg->parse(argc, argv, sarg, ctx);
 		}
 	}
 
@@ -4117,7 +4115,7 @@ int cmd_server(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			handle_unknown_sarg(*argv, sargs_object_type_server);
 			err = -EINVAL;
 		} else if (sarg->parse) {
-			(void) sarg->parse(argc, argv, 0, sarg, ctx);
+			(void) sarg->parse(argc, argv, sarg, ctx);
 		}
 	}
 
@@ -4187,7 +4185,7 @@ int cmd_both(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			usage_sarg(ctx->pname, sargs_both_help, ctx);
 			err = -EINVAL;
 		} else if (sarg->parse) {
-			(void) sarg->parse(argc, argv, 0, sarg, ctx);
+			(void) sarg->parse(argc, argv, sarg, ctx);
 		}
 	}
 
@@ -4275,7 +4273,7 @@ int cmd_start(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 				err = -EINVAL;
 			}
 		} else if (sarg->parse) {
-			(void) sarg->parse(argc, argv, 0, sarg, ctx);
+			(void) sarg->parse(argc, argv, sarg, ctx);
 		}
 	}
 
