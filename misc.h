@@ -184,6 +184,7 @@ enum ibnbd_token {
 	TOK_PATHS,
 
 	/* commands */
+	TOK_DUMP,
 	TOK_LIST,
 	TOK_SHOW,
 	TOK_MAP,
