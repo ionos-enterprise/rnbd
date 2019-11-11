@@ -766,13 +766,13 @@ static int list_devices(struct ibnbd_sess_dev **d_clt, int d_clt_cnt,
 
 	switch (ctx->fmt) {
 	case FMT_CSV:
-		if (d_clt_cnt && d_srv_cnt)
+		if ((d_clt_cnt && d_srv_cnt) || ctx->ibnbdmode == IBNBD_BOTH)
 			printf("Imports:\n");
 
 		if (d_clt_cnt)
 			list_devices_csv(d_clt, ctx->clms_devices_clt, ctx);
 
-		if (d_clt_cnt && d_srv_cnt)
+		if ((d_clt_cnt && d_srv_cnt) || ctx->ibnbdmode == IBNBD_BOTH)
 			printf("Exports:\n");
 
 		if (d_srv_cnt)
@@ -782,20 +782,26 @@ static int list_devices(struct ibnbd_sess_dev **d_clt, int d_clt_cnt,
 	case FMT_JSON:
 		printf("{\n");
 
-		if (d_clt_cnt) {
+		if ((d_clt_cnt && d_srv_cnt) || ctx->ibnbdmode == IBNBD_BOTH)
 			printf("\t\"imports\": ");
+
+		if (d_clt_cnt)
 			list_devices_json(d_clt, ctx->clms_devices_clt, ctx);
-		}
 
 		if (d_clt_cnt && d_srv_cnt)
-			printf(",");
+			printf(",\n");
+		else if (!d_clt_cnt && ctx->ibnbdmode == IBNBD_BOTH)
+			printf("null,\n");
+		else
+			printf("\n");
 
-		printf("\n");
-
-		if (d_srv_cnt) {
+		if ((d_clt_cnt && d_srv_cnt) || ctx->ibnbdmode == IBNBD_BOTH)
 			printf("\t\"exports\": ");
+
+		if (d_srv_cnt)
 			list_devices_json(d_srv, ctx->clms_devices_srv, ctx);
-		}
+		else if (ctx->ibnbdmode == IBNBD_BOTH)
+			printf("null");
 
 		printf("\n}\n");
 
@@ -815,14 +821,16 @@ static int list_devices(struct ibnbd_sess_dev **d_clt, int d_clt_cnt,
 		break;
 	case FMT_TERM:
 	default:
-		if (d_clt_cnt && d_srv_cnt && !ctx->noheaders_set)
+		if (((d_clt_cnt && d_srv_cnt) || ctx->ibnbdmode == IBNBD_BOTH)
+		    && !ctx->noheaders_set)
 			printf("%s%s%s\n",
 			       CLR(ctx->trm, CDIM, "Imported devices"));
 
 		if (d_clt_cnt)
 			list_devices_term(d_clt, ctx->clms_devices_clt, ctx);
 
-		if (d_clt_cnt && d_srv_cnt && !ctx->noheaders_set)
+		if (((d_clt_cnt && d_srv_cnt) || ctx->ibnbdmode == IBNBD_BOTH)
+		    && !ctx->noheaders_set)
 			printf("%s%s%s\n",
 			       CLR(ctx->trm, CDIM, "Exported devices"));
 
@@ -2658,8 +2666,9 @@ static struct sarg *sargs_mode_help[] = {
 };
 
 static struct sarg *sargs_both[] = {
-	&_cmd_map,
+	&_cmd_list_devices,
 	&_cmd_show,
+	&_cmd_map,
 	&_sargs_help,
 	&_sargs_null
 };
@@ -2679,8 +2688,9 @@ static struct sarg *sargs_object_type_client[] = {
 	&_sargs_sess,
 	&_sargs_paths,
 	&_sargs_path,
-	&_cmd_map,
+	&_cmd_list_devices,
 	&_cmd_show,
+	&_cmd_map,
 	&_sargs_help,
 	&_sargs_null
 };
@@ -2695,6 +2705,7 @@ static struct sarg *sargs_object_type_server[] = {
 	&_sargs_sess,
 	&_sargs_paths,
 	&_sargs_path,
+	&_cmd_list_devices,
 	&_cmd_show,
 	&_sargs_help,
 	&_sargs_null
@@ -3033,6 +3044,21 @@ static int parse_srv_clms(const char *arg, struct ibnbd_ctx *ctx)
 
 	tmp_err = table_extend_columns(arg, comma, all_clms_paths_srv,
 				       ctx->clms_paths_srv, CLM_MAX_CNT);
+	if (!tmp_err && err)
+		err = tmp_err;
+
+	/* if any of the parse commands succeed return success */
+	return err;
+}
+
+static int parse_both_devices_clms(const char *arg, struct ibnbd_ctx *ctx)
+{
+	int tmp_err, err;
+
+	err = table_extend_columns(arg, comma, all_clms_devices_clt,
+				    ctx->clms_devices_clt, CLM_MAX_CNT);
+	tmp_err = table_extend_columns(arg, comma, all_clms_devices_srv,
+				    ctx->clms_devices_srv, CLM_MAX_CNT);
 	if (!tmp_err && err)
 		err = tmp_err;
 
@@ -4057,8 +4083,16 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 		case TOK_PATHS:
 			err = cmd_client_paths(argc, argv, ctx);
 			break;
-		case TOK_MAP:
-			err = cmd_map(argc, argv, sarg, _help_context, ctx);
+		case TOK_LIST:
+
+			err = parse_list_parameters(argc, argv, ctx,
+						    parse_clt_devices_clms,
+						    sarg, _help_context);
+			if (err < 0)
+				break;
+
+			err = list_devices(sds_clt, sds_clt_cnt - 1,
+					   NULL, 0, ctx);
 			break;
 		case TOK_SHOW:
 			err = parse_name_help(argc--, argv++,
@@ -4073,6 +4107,9 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 				break;
 
 			err = show_all(ctx->name, ctx);
+			break;
+		case TOK_MAP:
+			err = cmd_map(argc, argv, sarg, _help_context, ctx);
 			break;
 		case TOK_HELP:
 			if (ctx->pname_with_mode
@@ -4131,6 +4168,17 @@ int cmd_server(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		case TOK_PATHS:
 			err = cmd_server_paths(argc, argv, ctx);
+			break;
+		case TOK_LIST:
+
+			err = parse_list_parameters(argc, argv, ctx,
+						    parse_srv_devices_clms,
+						    sarg, _help_context);
+			if (err < 0)
+				break;
+
+			err = list_devices(NULL, 0, sds_srv,
+					   sds_srv_cnt - 1, ctx);
 			break;
 		case TOK_SHOW:
 			err = parse_name_help(argc--, argv++,
@@ -4200,6 +4248,17 @@ int cmd_both(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 		*/
 		case TOK_MAP:
 			err = cmd_map(argc, argv, sarg, "", ctx);
+			break;
+		case TOK_LIST:
+
+			err = parse_list_parameters(argc, argv, ctx,
+						    parse_both_devices_clms,
+						    sarg, "");
+			if (err < 0)
+				break;
+
+			err = list_devices(sds_clt, sds_clt_cnt - 1,
+					   sds_srv, sds_srv_cnt - 1, ctx);
 			break;
 		case TOK_SHOW:
 			err = parse_name_help(argc--, argv++,
