@@ -119,15 +119,15 @@ static int parse_lst(int argc, const char *argv[],
 static int parse_from(int argc, const char *argv[],
 		      const struct param *param, struct ibnbd_ctx *ctx)
 {
-	if (argc < 1) {
+	if (argc < 2) {
 		ERR(ctx->trm, "Please specify the destination to map from\n");
 		return 0;
 	}
 
-	ctx->from = *argv;
+	ctx->from = argv[1];
 	ctx->from_set = 1;
 
-	return 1;
+	return 2;
 }
 
 static int parse_help(int argc, const char *argv[],
