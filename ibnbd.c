@@ -521,10 +521,16 @@ static bool help_print_fields(const struct ibnbd_ctx *ctx)
 static void cmd_print_usage_short(const struct param *cmd, const char *a,
 			    const struct ibnbd_ctx *ctx)
 {
-	printf("Usage: %s%s%s %s%s%s %s%s%s",
-	       CLR(ctx->trm, CBLD, ctx->pname),
-	       CLR(ctx->trm, CBLD, a),
-	       CLR(ctx->trm, CBLD, cmd->param_str));
+	if (a && *a)
+		printf("Usage: %s%s%s %s%s%s %s%s%s",
+		       CLR(ctx->trm, CBLD, ctx->pname),
+		       CLR(ctx->trm, CBLD, a),
+		       CLR(ctx->trm, CBLD, cmd->param_str));
+	else
+		printf("Usage: %s%s%s %s%s%s",
+		       CLR(ctx->trm, CBLD, ctx->pname),
+		       CLR(ctx->trm, CBLD, cmd->param_str));
+
 	if (cmd->params)
 		printf(" %s", cmd->params);
 	printf(" [OPTIONS]\n\n");
