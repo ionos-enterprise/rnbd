@@ -164,6 +164,9 @@ int path_to_shortdesc(char *str, size_t len, const struct ibnbd_ctx *ctx,
 
 bool is_path_addr(const char *arg);
 
+int addr_to_norm(char *str, size_t len, const struct ibnbd_ctx *ctx,
+		 enum color *clr, void *v, bool humanize);
+
 bool match_path_addr(const char *left, const char *right);
 
 #define container_of(ptr, type, member) ({                      \

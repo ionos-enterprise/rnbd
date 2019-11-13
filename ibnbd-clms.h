@@ -244,6 +244,14 @@ static struct table_column clm_ibnbd_path_sessname =
 	_CLM_P("sessname", sess, "Sessname", FLD_STR, path_to_sessname, 'l',
 	       CNRM, CNRM, "Name of the session.");
 
+static struct table_column clm_ibnbd_path_src_addr_n =
+	_CLM_P("src_addr_s", src_addr, "Client Addr", FLD_STR, addr_to_norm,
+	       'l', CNRM, CNRM, "Normalized client address.");
+
+static struct table_column clm_ibnbd_path_dst_addr_n =
+	_CLM_P("dst_addr_s", dst_addr, "Server Addr", FLD_STR, addr_to_norm,
+	       'l', CNRM, CNRM, "Normalized server address.");
+
 static struct table_column clm_ibnbd_path_shortdesc =
 	_CLM_P("shortdesc", sess, "Short", FLD_STR,
 	       path_to_shortdesc, 'l', CNRM, CNRM, "Short description");
@@ -257,7 +265,9 @@ static struct table_column *all_clms_paths[] = {
 	&clm_ibnbd_path_sessname,
 	&clm_ibnbd_path_pathname,
 	&clm_ibnbd_path_src_addr,
+	&clm_ibnbd_path_src_addr_n,
 	&clm_ibnbd_path_dst_addr,
+	&clm_ibnbd_path_dst_addr_n,
 	&clm_ibnbd_path_hca_name,
 	&clm_ibnbd_path_hca_port,
 	&clm_ibnbd_path_state,
@@ -303,7 +313,7 @@ static struct table_column *def_clms_paths_clt[] = {
 	&clm_ibnbd_path_sessname,
 	&clm_ibnbd_path_hca_name,
 	&clm_ibnbd_path_hca_port,
-	&clm_ibnbd_path_dst_addr,
+	&clm_ibnbd_path_dst_addr_n,
 	&clm_ibnbd_path_state,
 	&clm_ibnbd_path_tx_bytes,
 	&clm_ibnbd_path_rx_bytes,
@@ -316,7 +326,7 @@ static struct table_column *def_clms_paths_srv[] = {
 	&clm_ibnbd_path_sessname,
 	&clm_ibnbd_path_hca_name,
 	&clm_ibnbd_path_hca_port,
-	&clm_ibnbd_path_src_addr,
+	&clm_ibnbd_path_src_addr_n,
 	&clm_ibnbd_path_tx_bytes,
 	&clm_ibnbd_path_rx_bytes,
 	&clm_ibnbd_path_inflights,

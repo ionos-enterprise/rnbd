@@ -202,6 +202,48 @@ int ibnbd_path_state_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 	return snprintf(str, len, "%s", p->state);
 }
 
+static bool is_gid(const char *arg)
+{
+	if (strncmp("gid:", arg, 4) == 0)
+		return true;
+	else
+		return false;
+}
+
+int ibnbd_addr_to_norm(char *str, size_t len, char *v)
+{
+	char addr[16];
+	int cnt, af;
+
+	if (is_gid(v))
+		cnt = sprintf(str, "%s", "gid:");
+	else
+		cnt = sprintf(str, "%s", "ip:");
+
+	if (inet_pton(af = AF_INET6, v + cnt,  addr) < 1)
+		if (inet_pton(af = AF_INET, v + cnt, addr) < 1)
+			goto out;
+
+	if (!inet_ntop(af, addr, str + cnt, len - cnt))
+		goto out;
+
+	return strlen(str);
+
+out:
+	return snprintf(str, len, "%s", v);
+}
+
+int addr_to_norm(char *str, size_t len, const struct ibnbd_ctx *ctx,
+		 enum color *clr, void *v, bool humanize)
+{
+	*clr = CNRM;
+
+	if (!humanize)
+		return snprintf(str, len, "%s", (char *) v);
+
+	return ibnbd_addr_to_norm(str, len, v);
+}
+
 int path_to_sessname(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		     enum color *clr, void *v, bool humanize)
 {
@@ -339,14 +381,6 @@ static bool is_ipv6_addr(const char *arg)
 	char addr[16];
 
 	return inet_pton(AF_INET6, arg, addr);
-}
-
-static bool is_gid(const char *arg)
-{
-	if (strncmp("gid:", arg, 4) == 0)
-		return true;
-	else
-		return false;
 }
 
 bool is_path_addr(const char *arg)
