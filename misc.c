@@ -233,6 +233,27 @@ out:
 	return snprintf(str, len, "%s", v);
 }
 
+int ibnbd_pathname_to_norm(char *str, size_t len, char *v)
+{
+	char *s, *at;
+	int cnt;
+
+	s = strdup(v);
+
+	at = strchr(s, '@');
+	if (!at)
+		return snprintf(str, len, "%s", v);
+
+	*at = 0;
+	cnt = ibnbd_addr_to_norm(str, len, s);
+	cnt += snprintf(str + cnt, len - cnt, "%s", "@");
+	cnt += ibnbd_addr_to_norm(str + cnt, len - cnt, at + 1);
+
+	free(s);
+
+	return cnt;
+}
+
 int addr_to_norm(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		 enum color *clr, void *v, bool humanize)
 {
@@ -295,6 +316,7 @@ int path_to_shortdesc(char *str, size_t len, const struct ibnbd_ctx *ctx,
 {
 	struct ibnbd_path *p = container_of(v, struct ibnbd_path, sess);
 	enum color c;
+	char path_short[NAME_MAX];
 
 	*clr = CDIM;
 
@@ -307,8 +329,10 @@ int path_to_shortdesc(char *str, size_t len, const struct ibnbd_ctx *ctx,
 	else
 		c = CRED;
 
+	ibnbd_pathname_to_norm(path_short, sizeof(path_short), p->pathname);
+
 	return snprintf(str, len, "%s %d %s%s%s", p->hca_name, p->hca_port,
-			CLR(ctx->trm, c, p->pathname));
+			CLR(ctx->trm, c, path_short));
 }
 
 int act_path_cnt_to_state(char *str, size_t len, const struct ibnbd_ctx *ctx,
