@@ -336,7 +336,7 @@ static struct table_column *def_clms_paths_srv[] = {
 static struct table_column *clms_paths_sess_clt[] = {
 	&clm_ibnbd_path_hca_name,
 	&clm_ibnbd_path_hca_port,
-	&clm_ibnbd_path_dst_addr,
+	&clm_ibnbd_path_dst_addr_n,
 	&clm_ibnbd_path_state,
 	NULL
 };
@@ -344,7 +344,7 @@ static struct table_column *clms_paths_sess_clt[] = {
 static struct table_column *clms_paths_sess_srv[] = {
 	&clm_ibnbd_path_hca_name,
 	&clm_ibnbd_path_hca_port,
-	&clm_ibnbd_path_src_addr,
+	&clm_ibnbd_path_src_addr_n,
 	NULL
 };
 
