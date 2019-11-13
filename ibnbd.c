@@ -831,16 +831,16 @@ static int list_devices(struct ibnbd_sess_dev **d_clt, int d_clt_cnt,
 		break;
 	case FMT_TERM:
 	default:
-		if (((d_clt_cnt && d_srv_cnt) || ctx->ibnbdmode == IBNBD_BOTH)
-		    && !ctx->noheaders_set)
+		if ((d_clt_cnt && d_srv_cnt && !ctx->noheaders_set)
+		    || (d_clt_cnt && is_dump))
 			printf("%s%s%s\n",
 			       CLR(ctx->trm, CDIM, "Imported devices"));
 
 		if (d_clt_cnt)
 			list_devices_term(d_clt, ctx->clms_devices_clt, ctx);
 
-		if (((d_clt_cnt && d_srv_cnt) || ctx->ibnbdmode == IBNBD_BOTH)
-		    && !ctx->noheaders_set)
+		if ((d_clt_cnt && d_srv_cnt && !ctx->noheaders_set)
+		    || (d_srv_cnt && is_dump))
 			printf("%s%s%s\n",
 			       CLR(ctx->trm, CDIM, "Exported devices"));
 
@@ -865,13 +865,13 @@ static int list_sessions(struct ibnbd_sess **s_clt, int clt_s_num,
 	switch (ctx->fmt) {
 	case FMT_CSV:
 		if (clt_s_num && srv_s_num)
-			printf("Outgoing:\n");
+			printf("Outgoing sessions:\n");
 
 		if (clt_s_num)
 			list_sessions_csv(s_clt, ctx->clms_sessions_clt, ctx);
 
 		if (clt_s_num && srv_s_num)
-			printf("Incoming:\n");
+			printf("Incoming sessions:\n");
 
 		if (srv_s_num)
 			list_sessions_csv(s_srv, ctx->clms_sessions_srv, ctx);
@@ -880,7 +880,7 @@ static int list_sessions(struct ibnbd_sess **s_clt, int clt_s_num,
 		if (!is_dump)
 			printf("{\n");
 
-		printf("\t\"outgoing\": ");
+		printf("\t\"outgoing sessions\": ");
 		if (clt_s_num)
 			list_sessions_json(s_clt, ctx->clms_sessions_clt, ctx);
 		else if (ctx->ibnbdmode == IBNBD_BOTH)
@@ -891,7 +891,7 @@ static int list_sessions(struct ibnbd_sess **s_clt, int clt_s_num,
 
 		printf("\n");
 
-		printf("\t\"incoming\": ");
+		printf("\t\"incoming sessions\": ");
 		if (srv_s_num)
 			list_sessions_json(s_srv, ctx->clms_sessions_srv, ctx);
 		else if (ctx->ibnbdmode == IBNBD_BOTH)
@@ -905,28 +905,29 @@ static int list_sessions(struct ibnbd_sess **s_clt, int clt_s_num,
 		break;
 	case FMT_XML:
 		if (clt_s_num) {
-			printf("<outgoing>\n");
+			printf("<outgoing-sessions>\n");
 			list_sessions_xml(s_clt, ctx->clms_sessions_clt, ctx);
-			printf("</outgoing>\n");
+			printf("</outgoing-sessions>\n");
 		}
 		if (srv_s_num) {
-			printf("\t\"outgoing\": ");
-			printf("<incoming>\n");
+			printf("<incoming-sessions>\n");
 			list_sessions_xml(s_srv, ctx->clms_sessions_srv, ctx);
-			printf("</incoming>\n");
+			printf("</incoming-sessions>\n");
 		}
 
 		break;
 	case FMT_TERM:
 	default:
-		if (clt_s_num && srv_s_num && !ctx->noheaders_set)
+		if ((clt_s_num && srv_s_num && !ctx->noheaders_set)
+		    || (clt_s_num && is_dump))
 			printf("%s%s%s\n",
 			       CLR(ctx->trm, CDIM, "Outgoing sessions"));
 
 		if (clt_s_num)
 			list_sessions_term(s_clt, ctx->clms_sessions_clt, ctx);
 
-		if (clt_s_num && srv_s_num && !ctx->noheaders_set)
+		if ((clt_s_num && srv_s_num && !ctx->noheaders_set)
+		    || (srv_s_num && is_dump))
 			printf("%s%s%s\n",
 			       CLR(ctx->trm, CDIM, "Incoming sessions"));
 
@@ -987,20 +988,21 @@ static int list_paths(struct ibnbd_path **p_clt, int clt_p_num,
 		break;
 	case FMT_XML:
 		if (clt_p_num) {
-			printf("<outgoing paths>\n");
+			printf("<outgoing-paths>\n");
 			list_paths_xml(p_clt, ctx->clms_paths_clt, ctx);
-			printf("</outgoing paths>\n");
+			printf("</outgoing-paths>\n");
 		}
 		if (srv_p_num) {
-			printf("<incoming paths>\n");
+			printf("<incoming-paths>\n");
 			list_paths_xml(p_srv, ctx->clms_paths_srv, ctx);
-			printf("</incoming paths>\n");
+			printf("</incoming-paths>\n");
 		}
 
 		break;
 	case FMT_TERM:
 	default:
-		if (clt_p_num && srv_p_num && !ctx->noheaders_set)
+		if ((clt_p_num && srv_p_num && !ctx->noheaders_set)
+		    || (clt_p_num && is_dump))
 			printf("%s%s%s\n",
 			       CLR(ctx->trm, CDIM, "Outgoing paths"));
 
@@ -1008,7 +1010,8 @@ static int list_paths(struct ibnbd_path **p_clt, int clt_p_num,
 			list_paths_term(p_clt, clt_p_num,
 					ctx->clms_paths_clt, 0, ctx);
 
-		if (clt_p_num && srv_p_num && !ctx->noheaders_set)
+		if ((clt_p_num && srv_p_num && !ctx->noheaders_set)
+		    || (srv_p_num && is_dump))
 			printf("%s%s%s\n",
 			       CLR(ctx->trm, CDIM, "Incoming paths"));
 
