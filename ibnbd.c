@@ -839,6 +839,9 @@ static int list_devices(struct ibnbd_sess_dev **d_clt, int d_clt_cnt,
 		if (d_clt_cnt)
 			list_devices_term(d_clt, ctx->clms_devices_clt, ctx);
 
+		if (d_clt_cnt && d_srv_cnt && is_dump)
+			printf("\n");
+		
 		if ((d_clt_cnt && d_srv_cnt && !ctx->noheaders_set)
 		    || (d_srv_cnt && is_dump))
 			printf("%s%s%s\n",
@@ -926,6 +929,9 @@ static int list_sessions(struct ibnbd_sess **s_clt, int clt_s_num,
 		if (clt_s_num)
 			list_sessions_term(s_clt, ctx->clms_sessions_clt, ctx);
 
+		if (clt_s_num && srv_s_num && is_dump)
+			printf("\n");
+
 		if ((clt_s_num && srv_s_num && !ctx->noheaders_set)
 		    || (srv_s_num && is_dump))
 			printf("%s%s%s\n",
@@ -1009,6 +1015,9 @@ static int list_paths(struct ibnbd_path **p_clt, int clt_p_num,
 		if (clt_p_num)
 			list_paths_term(p_clt, clt_p_num,
 					ctx->clms_paths_clt, 0, ctx);
+
+		if (clt_p_num && srv_p_num && is_dump)
+			printf("\n");
 
 		if ((clt_p_num && srv_p_num && !ctx->noheaders_set)
 		    || (srv_p_num && is_dump))
@@ -2815,6 +2824,14 @@ static struct param *params_list_parameters[] = {
 	&_params_null
 };
 
+static struct param *params_fmt_parameters[] = {
+	&_params_xml,
+	&_params_cvs,
+	&_params_json,
+	&_params_term,
+	&_params_null
+};
+
 static struct param *params_map_from_parameters[] = {
 	&_params_from,
 	&_params_help,
@@ -3349,6 +3366,25 @@ int parse_cmd_parameters(int argc, const char *argv[],
 	return err < 0 ? err : start_argc - argc;
 }
 
+int parse_all_parameters(int argc, const char *argv[],
+			 struct param *const params[], struct ibnbd_ctx *ctx,
+			 const struct param *cmd, const char *program_name)
+{
+	int err = 0;
+	const struct param *param;
+
+	while (argc && err >= 0) {
+		param = find_param(*argv, params);
+		if (param)
+			err = param->parse(argc, argv, param, ctx);
+		else
+			err = 1; /* skip unknown parameter */
+
+		argc -= err; argv += err;
+	}
+	return err;
+}
+
 /**
  * Parse parameters for the map command as described by cmd.
  */
@@ -3387,9 +3423,19 @@ int cmd_dump_all(int argc, const char *argv[], const struct param *cmd,
 {
 	int err, tmp_err;
 
-	/* default for dump is to dump all */
-	(void) parse_all(0, NULL, NULL, ctx);
-	
+	err = parse_all_parameters(argc, argv, params_fmt_parameters,
+				   ctx, cmd, "");
+	if (err < 0)
+		return err;
+
+	/* default format for dump is all except when output to terminal */
+	if (ctx->fmt == FMT_TERM) {
+		ctx->notree_set = true;
+		ctx->nototals_set = true;
+	} else	{
+		(void) parse_all(0, NULL, NULL, ctx);
+	}
+	/* parse from beginning again! */
 	err = parse_list_parameters(argc, argv, ctx,
 				    parse_both_clms,
 				    cmd, "");
@@ -3401,11 +3447,20 @@ int cmd_dump_all(int argc, const char *argv[], const struct param *cmd,
 	err = list_devices(sds_clt, sds_clt_cnt - 1, sds_srv,
 			   sds_srv_cnt - 1, true, ctx);
 	
+	if ((sds_clt_cnt - 1 + sds_srv_cnt - 1)
+	    && (sess_clt_cnt - 1 + sess_srv_cnt - 1))
+		printf("\n");
+
 	tmp_err = list_sessions(sess_clt, sess_clt_cnt - 1, sess_srv,
 				sess_srv_cnt - 1, true, ctx);
 	
 	if (!err && tmp_err)
 		err = tmp_err;
+
+	if ((sds_clt_cnt - 1 + sds_srv_cnt - 1
+	     + sess_clt_cnt - 1 + sess_srv_cnt - 1)
+	    && (paths_clt_cnt - 1 + paths_srv_cnt - 1))
+		printf("\n");
 
 	tmp_err = list_paths(paths_clt, paths_clt_cnt - 1, paths_srv,
 			     paths_srv_cnt - 1, true, ctx);
