@@ -34,8 +34,9 @@ ibnbd server devices|sessions|paths|help ...
     help            Display help and exit
 
 
-ibnbd both help ...
+ibnbd both dump|help ...
 
+    dump            Dump information about all ibnbd objects.
     help            Display help and exit
 
 
@@ -44,7 +45,7 @@ The commands of the tool are structured in the following fashion:
 client vs server -> device vs. session vs. path. If the context of
 a command is unambiguous, it can be also called directly.
 For example: ibnbd map (instead of ibnbd client device map), ibnbd session list
-(instead of ibnbd client session list), ibnbd show client@server (instead of ibnbd client session show client@server, etc.
+(instead of ibnbd client session list), ibnbd show client@server (instead of ibnbd client session show client@server), etc.
 .SH SUBCOMMANDS
 .B
 
