@@ -1764,34 +1764,165 @@ static int parse_path(const char *arg,
 	return 0;
 }
 
-static int client_devices_map(const char *from_session, const char *device_name,
+static struct ibnbd_sess *find_single_session(const char *session_name,
+					      struct ibnbd_ctx *ctx,
+					      struct ibnbd_sess **sessions,
+					      int sess_cnt, bool print_err)
+{
+	struct ibnbd_sess **matching_sess, *res = NULL;
+	int match_count;
+
+	if (!sess_cnt) {
+		ERR(ctx->trm,
+		    "Session '%s' not found: no sessions open\n", session_name);
+		return NULL;
+	}
+
+	matching_sess = calloc(sess_cnt, sizeof(*matching_sess));
+
+	if (sess_cnt && !matching_sess) {
+		ERR(ctx->trm, "Failed to alloc memory\n");
+		return NULL;
+	}
+	match_count = find_sessions_match(session_name, sessions,
+					  matching_sess);
+
+	if (match_count == 1) {
+		res = *matching_sess;
+	} else if (print_err) {
+		ERR(ctx->trm, "%s '%s'.\n",
+		    (match_count > 1)  ?
+			"Please specify the session uniquely. There are multiple sessions matching"
+			: "No session found matching",
+		    session_name);
+	}
+
+	free(matching_sess);
+	return res;
+}
+
+static struct ibnbd_path *find_single_path(const char *path_name,
+					   struct ibnbd_ctx *ctx,
+					   struct ibnbd_path **paths,
+					   int path_cnt)
+{
+	struct ibnbd_path **matching_paths, *res = NULL;
+	int match_count;
+
+	if (!path_cnt) {
+		ERR(ctx->trm,
+		    "Path '%s' not found: there exists no paths\n", path_name);
+		return NULL;
+	}
+
+	matching_paths = calloc(path_cnt, sizeof(*matching_paths));
+
+	if (path_cnt && !matching_paths) {
+		ERR(ctx->trm, "Failed to alloc memory\n");
+		return NULL;
+	}
+	match_count = find_paths(path_name, paths, matching_paths);
+
+	if (match_count == 1) {
+		res = *matching_paths;
+	} else {
+		ERR(ctx->trm, "%s '%s'.\n",
+		    (match_count > 1)  ?
+			"Please specify the path uniquely. There are multiple paths matching"
+			: "No path found matching",
+		    path_name);
+	}
+
+	free(matching_paths);
+	return res;
+}
+
+static int client_devices_map(const char *from_name, const char *device_name,
 			      struct ibnbd_ctx *ctx)
 {
 	char cmd[4096], sessname[NAME_MAX];
 	struct ibnbd_sess *sess;
+	struct ibnbd_path *path;
 	int i, cnt = 0, ret;
+	bool existing_session_used = false;
 
-	if (!parse_path(ctx->from, ctx)) {
-		/* user provided only paths to establish
-		 * -> generate sessname
-		 */
-		strcpy(sessname, "clt@srv"); /* TODO */
-	} else
-		strcpy(sessname, from_session);
+	if (!ctx->path_cnt && !parse_path(ctx->from, ctx)) {
+		/* user provided only a path to establish */
+		
+		path = find_single_path(from_name, ctx, paths_clt, paths_clt_cnt);
+		if (path) {
+			sess = path->sess;
+			strcpy(sessname, from_name);
+			INF(ctx->debug_set,
+			    "map matched session %s for path name %s.\n",
+			    sess->sessname, from_name);
+			strcpy(sessname, sess->sessname);
+		} else {
+			ERR(ctx->trm,
+			    "Client session for path '%s' not found. Please provide a session name to establish a new session.\n",
+			    ctx->from);
+			return -EINVAL;
+		}
+	} else {
+		strcpy(sessname, from_name);
+		sess = find_session(sessname, sess_clt);
+		if (sess)
+			existing_session_used = true;
+	}
+	if (!sess && !strchr(from_name, '@')) {
 
-	sess = find_session(sessname, sess_clt);
+		/* if it looks like a host name, try to match a session */
+		sess = find_single_session(from_name, ctx, sess_clt, sds_clt_cnt, false);
 
+		if (sess) {
+			INF(ctx->debug_set,
+			    "map matched session %s for name %s.\n",
+			    sess->sessname, from_name);
+			strcpy(sessname, sess->sessname);
+		} else {
+
+			INF(ctx->debug_set,
+			    "map found no matching session for %s.\n",
+			    from_name);
+
+			/* if still not found, generate the session name */
+			ret = sessname_from_host(from_name, sessname, sizeof(sessname));
+			if (ret) {
+				ERR(ctx->trm, "Failed to generate session name for %s: %s (%d)\n",
+				    from_name, strerror(-ret), ret);
+				return ret;
+			}
+			if (!ctx->path_cnt) {
+
+				/* if no path provided by user, try to resolve from_name as host name */
+				ret = resolve_host(from_name, ctx->paths, ctx);
+				if (ret < 0) {
+					ERR(ctx->trm,
+					    "Failed to resolve host name for %s: %s (%d)\n",
+					    from_name, strerror(-ret), ret);
+					return ret;
+				} else if (ret == 0) {
+					ERR(ctx->trm,
+					    "Found no paths to host %s.\n",
+					    from_name);
+					return ret;
+				} else {
+					ctx->path_cnt = ret;
+				}
+			}
+		}
+	}
 	if (!sess && !ctx->path_cnt) {
 		ERR(ctx->trm,
 		    "Client session '%s' not found. Please provide at least one path to establish a new one.\n",
-		    from_session);
+		    from_name);
 		return -EINVAL;
 	}
 
-	if (sess && ctx->path_cnt)
+	if (existing_session_used && ctx->path_cnt)
 		INF(ctx->verbose_set,
 		    "Session '%s' exists. Provided paths will be ignored by the driver. Please use addpath to add a path to an existsing sesion.\n",
-		    from_session);
+		    from_name);
 
 	cnt = snprintf(cmd, sizeof(cmd), "sessname=%s", sessname);
 	cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, " device_path=%s",
@@ -1825,7 +1956,7 @@ static int client_devices_map(const char *from_session, const char *device_name,
 		    strerror(-ret), ret);
 	else
 		INF(ctx->verbose_set, "Successfully mapped '%s' from '%s'.\n",
-		    device_name, from_session);
+		    device_name, from_name);
 
 	return ret;
 }
@@ -1986,43 +2117,6 @@ static int client_devices_remap(const char *device_name, struct ibnbd_ctx *ctx)
 	return client_device_remap(ds->dev, ctx);
 }
 
-static struct ibnbd_sess *find_single_session(const char *session_name,
-					      struct ibnbd_ctx *ctx,
-					      struct ibnbd_sess **sessions,
-					      int sess_cnt)
-{
-	struct ibnbd_sess **matching_sess, *res = NULL;
-	int match_count;
-
-	if (!sess_cnt) {
-		ERR(ctx->trm,
-		    "Session '%s' not found: no sessions open\n", session_name);
-		return NULL;
-	}
-
-	matching_sess = calloc(sess_cnt, sizeof(*matching_sess));
-
-	if (sess_cnt && !matching_sess) {
-		ERR(ctx->trm, "Failed to alloc memory\n");
-		return NULL;
-	}
-	match_count = find_sessions_match(session_name, sessions,
-					  matching_sess);
-
-	if (match_count == 1) {
-		res = *matching_sess;
-	} else {
-		ERR(ctx->trm, "%s '%s'.\n",
-		    (match_count > 1)  ?
-			"Please specify the session uniquely. There are multiple sessions matching"
-			: "No session found matching",
-		    session_name);
-	}
-
-	free(matching_sess);
-	return res;
-}
-
 static int client_session_remap(const char *session_name,
 				 struct ibnbd_ctx *ctx)
 {
@@ -2036,7 +2130,7 @@ static int client_session_remap(const char *session_name,
 		return -EINVAL;
 	}
 
-	sess = find_single_session(session_name, ctx, sess_clt, sds_clt_cnt);
+	sess = find_single_session(session_name, ctx, sess_clt, sds_clt_cnt, true);
 	if (!sess)
 		return -EINVAL;
 
@@ -2072,10 +2166,12 @@ static int session_do_all_paths(enum ibnbdmode mode,
 
 	if (mode == IBNBD_CLIENT)
 		sess = find_single_session(session_name, ctx,
-					   sess_clt, sess_clt_cnt);
+					   sess_clt, sess_clt_cnt,
+					   true);
 	else
 		sess = find_single_session(session_name, ctx,
-					   sess_srv, sess_srv_cnt);
+					   sess_srv, sess_srv_cnt,
+					   true);
 
 	if (!sess)
 		/*find_single_session has printed an error message*/
@@ -2274,42 +2370,6 @@ static void help_delpath(const char *program_name,
 	printf("\nOptions:\n");
 	print_param_descr("verbose");
 	print_param_descr("help");
-}
-
-static struct ibnbd_path *find_single_path(const char *path_name,
-					   struct ibnbd_ctx *ctx,
-					   struct ibnbd_path **paths,
-					   int path_cnt)
-{
-	struct ibnbd_path **matching_paths, *res = NULL;
-	int match_count;
-
-	if (!path_cnt) {
-		ERR(ctx->trm,
-		    "Path '%s' not found: there exists no paths\n", path_name);
-		return NULL;
-	}
-
-	matching_paths = calloc(path_cnt, sizeof(*matching_paths));
-
-	if (path_cnt && !matching_paths) {
-		ERR(ctx->trm, "Failed to alloc memory\n");
-		return NULL;
-	}
-	match_count = find_paths(path_name, paths, matching_paths);
-
-	if (match_count == 1) {
-		res = *matching_paths;
-	} else {
-		ERR(ctx->trm, "%s '%s'.\n",
-		    (match_count > 1)  ?
-			"Please specify the path uniquely. There are multiple paths matching"
-			: "No path found matching",
-		    path_name);
-	}
-
-	free(matching_paths);
-	return res;
 }
 
 static int client_path_do(const char *path_name, const char *sysfs_entry,

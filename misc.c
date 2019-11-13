@@ -14,11 +14,14 @@
 #include <arpa/inet.h>  /* AF_INET */
 #include <unistd.h>	/* for isatty() */
 #include <stdbool.h>
+#include <dirent.h>	/* for opendir() */
 
 #include "table.h"
 #include "misc.h"
 
 #include "ibnbd-sysfs.h"
+
+#define HCA_DIR "/sys/class/infiniband/"
 
 const struct bit_str bits[] = {
 	{"B", 0, "Byte"}, {"K", 10, "KiB"}, {"M", 20, "MiB"}, {"G", 30, "GiB"},
@@ -495,3 +498,240 @@ bool match_path_addr(const char *left, const char *right)
 
 	return !strcmp(left, right);
 }
+
+int sessname_from_host(const char *from_name, char *out_buf, size_t buf_len)
+{
+	char host_name[HOST_NAME_MAX];
+
+	int res = gethostname(host_name, sizeof(host_name));
+	if (res)
+		return -errno;
+
+	res = snprintf(out_buf, buf_len, "%s@%s", host_name, from_name);
+	if (res < 0)
+		return res;
+
+	if (res >= buf_len)
+		return -ENAMETOOLONG;
+	
+	return 0; /* not res, will be > 0 when snprintf succeeds */
+}
+
+struct port_desc {
+	char hca[NAME_MAX];
+	char port[NAME_MAX];
+	char gid[NAME_MAX];
+};
+	
+
+int read_port_descs(struct port_desc *port_descs, int max_ports)
+{
+	int cnt = 0;
+	char hca_subdir[PATH_MAX];
+	char sysfs_path[PATH_MAX];
+		
+	struct dirent *hca_entry;
+	struct dirent *port_entry;
+	DIR *hca_dirp;
+	DIR *port_dirp;
+
+	hca_dirp = opendir(HCA_DIR);
+	if (!hca_dirp)
+		return -errno;
+
+	for (hca_entry = readdir(hca_dirp);
+	     hca_entry;
+	     hca_entry = readdir(hca_dirp)) {
+
+		if (hca_entry->d_name[0] == '.')
+			continue;
+
+		snprintf(hca_subdir, sizeof(hca_subdir), HCA_DIR "%s/ports/", hca_entry->d_name);
+
+		port_dirp = opendir(hca_subdir);
+		if (!hca_dirp)
+			return -errno; /* TODO continue? */
+
+		for (port_entry = readdir(port_dirp);
+		     port_entry;
+		     port_entry = readdir(port_dirp)) {
+			
+			if (port_entry->d_name[0] == '.')
+				continue;
+
+			if (cnt >= max_ports)
+				return -ENAMETOOLONG;
+
+			strncpy(port_descs[cnt].hca, hca_entry->d_name, sizeof(port_descs[cnt].hca));
+			strncpy(port_descs[cnt].port, port_entry->d_name, sizeof(port_descs[cnt].port));
+
+			snprintf(sysfs_path, sizeof(sysfs_path), HCA_DIR "%s/ports/%s/gids/", hca_entry->d_name, port_entry->d_name);
+			scanf_sysfs(sysfs_path, "0", "%s", port_descs[cnt].gid);
+
+			cnt++;
+		}
+		closedir(port_dirp);
+	}
+	closedir(hca_dirp);
+	
+	return cnt;
+}
+
+int start_shell_exec(FILE **pipe, const char *cmd,
+		     const struct ibnbd_ctx *ctx)
+{
+	int err = 0;
+
+	*pipe = popen(cmd, "re");
+	if (!*pipe) {
+		err = -errno;
+		ERR(ctx->trm,
+		    "failed to execute '%s': %s (%d)\n",
+		    cmd, strerror(-err), err);
+	}
+
+	return err;
+}
+
+
+int stop_shell_exec(FILE *pipe,
+		    const struct ibnbd_ctx *ctx)
+{
+	int err;
+
+	err = pclose(pipe);
+	if (err == -1) {
+		err = -errno;
+		ERR(ctx->trm,
+		    "pclose failed: %s (%d)\n", 
+		    strerror(-err), err);
+	} else if (err) {
+
+		err = -(((unsigned)err) << 8);
+	}
+	return err;
+}
+
+char *trimstr(char *str, char token)
+{
+	char *trimmed = str, *end;
+	int len;
+
+	if (str == NULL || (len = strlen(str)) == 0)
+		return trimmed;
+
+	/* Search from front for symbol != token */
+	while (*str == token)
+		str++;
+
+	if (str != trimmed) {
+		/* trim string from front */
+		len -= (str - trimmed);
+		memmove(trimmed, str, len + 1);
+	}
+
+	if (len) {
+		end = trimmed + len;
+		/* Search from back for symbol != token */
+		while(end > trimmed && *--end == token);
+
+		/* trim string from back */
+		*(end + 1) = '\0';
+	}
+
+	return trimmed;
+}
+
+int ibnbd_resolve(const char *host, const char *hca, const char *port,
+		  const char *client_gid,
+		  struct path *path, int len,
+		  const struct ibnbd_ctx *ctx)
+{
+	int cnt = 0;
+	int err = 0;
+	FILE *pipe;
+	char *read_success = NULL;
+	char cmd[512];
+	char buf[512];
+	char *output;
+	union {
+		unsigned long long u64;
+		struct { /* intel only! */
+			unsigned short w0;
+			unsigned short w1;
+			unsigned short w2;
+			unsigned short w3;
+		};
+	} val;
+		
+
+	snprintf(cmd, sizeof(cmd), 
+		 "saquery -C %s -P %s | grep -wB10 %s |grep port_guid | cut -d'x' -f2",
+		 hca, port, host);
+		
+	err = start_shell_exec(&pipe, cmd, ctx);
+	if (err)
+		return err;
+
+	do {
+		read_success = fgets(buf, sizeof(buf), pipe);
+		if (read_success) {
+			output = trimstr(trimstr(buf, '\n'), ' ');
+			sscanf(output, "%llx", &val.u64);
+			snprintf(buf, sizeof(buf), "gid:%s", client_gid);
+			path[cnt].src = strdup(buf);
+			snprintf(buf, sizeof(buf),
+				"gid:fe80:0000:0000:0000:%.04x:%.04x:%.04x:%.04x",
+				val.w3, val.w2, val.w1, val.w0);
+			path[cnt].dst = strdup(buf);
+			cnt++;
+		}
+	} while (read_success && cnt < len);
+
+	err = stop_shell_exec(pipe, ctx);
+	if (err) {
+		if (((err) < 0 && (err) >= -255))
+			return err;
+		else
+			return -1;
+	}
+
+	return cnt;
+}
+
+int resolve_host(const char *from_name, struct path *path,
+		 const struct ibnbd_ctx *ctx)
+{
+	int err = 0, i, port_cnt, gid_cnt;
+
+	struct port_desc *ports = calloc(MAX_PATHS_PER_SESSION, sizeof(struct port_desc));
+
+	if (!ports)
+		return -ENOMEM;
+
+	err = read_port_descs(ports, MAX_PATHS_PER_SESSION);
+	if (err < 0) {
+
+		free(ports);
+		return err;
+	}
+	port_cnt = err; err = 0;
+	gid_cnt = 0;
+
+	for (i = 0; i < port_cnt && err >= 0; i++) {
+		
+		err = ibnbd_resolve(from_name, ports[i].hca, ports[i].port,
+				    ports[i].gid,
+				    path+gid_cnt, MAX_PATHS_PER_SESSION-gid_cnt,
+				    ctx);
+		if (err >= 0)
+			gid_cnt += err;
+	}
+	if (err >= 0)
+		err = gid_cnt;
+
+	free(ports);
+
+	return err;
+}
+

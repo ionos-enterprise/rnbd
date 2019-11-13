@@ -14,6 +14,7 @@
 #include <stddef.h>
 
 #define ARRSIZE(x) (sizeof(x) / sizeof(*x))
+#define MAX_PATHS_PER_SESSION 32
 
 #define ERR(trm, fmt, ...)			\
 	do { \
@@ -92,7 +93,7 @@ struct ibnbd_ctx {
 	bool nototals_set;
 	bool force_set;
 
-	struct path paths[32]; /* lazy */
+	struct path paths[MAX_PATHS_PER_SESSION]; /* lazy */
 	int path_cnt;
 
 	const char *from;
@@ -168,6 +169,11 @@ int addr_to_norm(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		 enum color *clr, void *v, bool humanize);
 
 bool match_path_addr(const char *left, const char *right);
+
+int sessname_from_host(const char *from_name, char *out_buf, size_t buf_len);
+
+int resolve_host(const char *from_name, struct path *path,
+		 const struct ibnbd_ctx *ctx);
 
 #define container_of(ptr, type, member) ({                      \
 		const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
