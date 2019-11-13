@@ -293,7 +293,9 @@ Options:
                     sessname        Sessname       Name of the session.
                     pathname        Path name      Path name
                     src_addr        Client Addr    Client address of the path
+                    src_addr_s      Client Addr    Normalized client address.
                     dst_addr        Server Addr    Server address of the path
+                    dst_addr_s      Server Addr    Normalized server address.
                     hca_name        HCA            HCA name
                     hca_port        Port           HCA port
                     state           State          Name of the path
@@ -303,7 +305,7 @@ Options:
                     reconnects      Reconnects     Reconnects
                     direction       Direction      Direction of the path: incoming or outgoing
 
-                    Default: sessname,hca_name,hca_port,dst_addr,state,tx_bytes,rx_bytes,inflights,reconnects
+                    Default: sessname,hca_name,hca_port,dst_addr_s,state,tx_bytes,rx_bytes,inflights,reconnects
 
     {format}        Output format: csv|json|xml
     {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
@@ -332,7 +334,9 @@ Options:
                     sessname        Sessname       Name of the session.
                     pathname        Path name      Path name
                     src_addr        Client Addr    Client address of the path
+                    src_addr_s      Client Addr    Normalized client address.
                     dst_addr        Server Addr    Server address of the path
+                    dst_addr_s      Server Addr    Normalized server address.
                     hca_name        HCA            HCA name
                     hca_port        Port           HCA port
                     state           State          Name of the path
@@ -342,7 +346,7 @@ Options:
                     reconnects      Reconnects     Reconnects
                     direction       Direction      Direction of the path: incoming or outgoing
 
-                    Default: sessname,hca_name,hca_port,dst_addr,state,tx_bytes,rx_bytes,inflights,reconnects
+                    Default: sessname,hca_name,hca_port,dst_addr_s,state,tx_bytes,rx_bytes,inflights,reconnects
 
     {format}        Output format: csv|json|xml
     {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
@@ -588,7 +592,9 @@ Options:
                     sessname        Sessname       Name of the session.
                     pathname        Path name      Path name
                     src_addr        Client Addr    Client address of the path
+                    src_addr_s      Client Addr    Normalized client address.
                     dst_addr        Server Addr    Server address of the path
+                    dst_addr_s      Server Addr    Normalized server address.
                     hca_name        HCA            HCA name
                     hca_port        Port           HCA port
                     state           State          Name of the path
@@ -597,7 +603,7 @@ Options:
                     inflights       Inflights      Inflights
                     reconnects      Reconnects     Reconnects
                     direction       Direction      Direction of the path: incoming or outgoing
-                    Default: sessname,hca_name,hca_port,src_addr,tx_bytes,rx_bytes,inflights
+                    Default: sessname,hca_name,hca_port,src_addr_s,tx_bytes,rx_bytes,inflights
 
     {format}        Output format: csv|json|xml
     {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
@@ -626,7 +632,9 @@ Options:
                     sessname        Sessname       Name of the session.
                     pathname        Path name      Path name
                     src_addr        Client Addr    Client address of the path
+                    src_addr_s      Client Addr    Normalized client address.
                     dst_addr        Server Addr    Server address of the path
+                    dst_addr_s      Server Addr    Normalized server address.
                     hca_name        HCA            HCA name
                     hca_port        Port           HCA port
                     state           State          Name of the path
@@ -635,7 +643,7 @@ Options:
                     inflights       Inflights      Inflights
                     reconnects      Reconnects     Reconnects
                     direction       Direction      Direction of the path: incoming or outgoing
-                    Default: sessname,hca_name,hca_port,src_addr,tx_bytes,rx_bytes,inflights
+                    Default: sessname,hca_name,hca_port,src_addr_s,tx_bytes,rx_bytes,inflights
 
     {format}        Output format: csv|json|xml
     {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
