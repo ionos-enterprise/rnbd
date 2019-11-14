@@ -48,7 +48,7 @@ def JSONTree(Tree, Parent, ADictionary, TagList=[]):
 if __name__ == "__main__" :
 
     # load json file
-    if len(argv) < 1:
+    if len(argv) < 2:
         print("Please provide a json file")
         exit(1)
         
