@@ -6,6 +6,8 @@ from sys import argv
 import tkinter as tk
 from tkinter import ttk
 from tkinter import PhotoImage
+import subprocess
+import os
 
 def makeIBNBDDict(key, aList):
     result = {}
@@ -45,14 +47,50 @@ def JSONTree(Tree, Parent, ADictionary, TagList=[]):
                 value = "None"
             Tree.insert(Parent, 'end', uid, text=key, value=value)
 
+def is_host(host):
+    command = "ping -c 1 %s" % (host)
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None,
+                            shell=True)
+    proc.communicate()[0].decode("utf-8").splitlines()
+    ret = proc.wait()
+
+    if ret != 0:
+        return False
+    else:
+        return True
+
+def get_ibnbd_dump(host):
+    user = "root"
+    tool = "/root/dkipnis/ibnbd-tool/ibnbd"
+    command = "ssh %s@%s -C %s dump json all" % \
+              (user, host, tool)
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None,
+                            shell=True)
+    jsonstr = proc.communicate()[0].decode("utf-8")
+    ret = proc.wait()
+
+    if ret != 0 or not jsonstr:
+        return ""
+
+    return jsonstr
+
 if __name__ == "__main__" :
 
     # load json file
     if len(argv) < 2:
-        print("Please provide a json file")
+        print("Please provide a json file or a hostname")
         exit(1)
-        
-    fileName = argv[1]
+
+    if not os.path.isfile(argv[1]) and is_host(argv[1]):
+        jsonstr = get_ibnbd_dump(argv[1])
+    if json:
+        fileName = "%s.json" % (argv[1])
+        jsonFile = open(fileName, "w")
+        jsonFile.write(jsonstr)
+        jsonFile.close()
+    else:
+        fileName = argv[1]
+
     jsonFile = open(fileName, "r")
     jsonDict = json.load(jsonFile)
 
