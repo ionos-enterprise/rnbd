@@ -3,7 +3,7 @@
 import io
 import subprocess
 from functools import partial
-from http.server import SimpleHTTPRequestHandler, test, HTTPStatus
+from http.server import SimpleHTTPRequestHandler, test
 
 
 """
@@ -28,7 +28,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
             f.write(jsonstr)
         f.seek(0)
 
-        self.send_response(HTTPStatus.OK)
+        self.send_response(200)
         self.send_header("Content-type", "application/json; charset=utf-8")
         self.send_header("Content-Length", len(jsonstr.decode('utf-8')))
         self.end_headers()
