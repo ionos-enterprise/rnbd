@@ -154,19 +154,7 @@ static int parse_argv0(const char *argv0, struct ibnbd_ctx *ctx)
 
 	ctx->pname = prog_name;
 
-	if (!strcasecmp(prog_name, "ibnbd-clt2")
-	    || !strcasecmp(prog_name, "ibnbd-clt"))
-		ctx->ibnbdmode = IBNBD_CLIENT;
-	else if (!strcasecmp(prog_name, "ibnbd-srv2")
-		 || !strcasecmp(prog_name, "ibnbd-srv"))
-		ctx->ibnbdmode = IBNBD_SERVER;
-	else
-		return 0;
-
-	ctx->pname_with_mode = true;
-	ctx->ibnbdmode_set = true;
-
-	return 1;
+	return 0;
 }
 
 static int parse_mode(int argc, const char *argv[],
