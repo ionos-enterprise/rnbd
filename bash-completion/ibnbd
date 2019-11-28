@@ -535,6 +535,4 @@ _ibnbd()
 
 complete -F _ibnbd ibnbd
 complete -F _ibnbd rnbd
-complete -F _ibnbd_client ibnbd-clt2
-complete -F _ibnbd_server ibnbd-srv2
 COMP_WORDBREAKS=${COMP_WORDBREAKS//:}
