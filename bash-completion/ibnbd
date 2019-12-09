@@ -1,498 +1,160 @@
 # bash completion for ibnbd
 
-_client_device_names()
+_device_names()
 {
 	local cmd
 
-	cmd='ibnbd client devices list noheaders nototals mapping_path,devname notree'
+	cmd="$2 devices list noheaders nototals mapping_path,devname notree"
 	COMPREPLY=( $( compgen -W "$($cmd)" -- "$1" ) )
 	return 0
 }
 
-_server_device_names()
+_session_names()
 {
 	local cmd
 
-	cmd='ibnbd server devices list noheaders nototals devname notree'
+	cmd="$2 sessions list noheaders nototals sessname notree"
 	COMPREPLY=( $( compgen -W "$($cmd)" -- "$1" ) )
 	return 0
 }
 
-_client_session_names()
+_path_names()
 {
 	local cmd
 
-	cmd='ibnbd client sessions list noheaders nototals sessname notree'
+	cmd="$2 paths list noheaders nototals pathname notree"
 	COMPREPLY=( $( compgen -W "$($cmd)" -- "$1" ) )
-	return 0
-}
-
-_server_session_names()
-{
-	local cmd
-
-	cmd='ibnbd server sessions list noheaders nototals sessname notree'
-	COMPREPLY=( $( compgen -W "$($cmd)" -- "$1" ) )
-	return 0
-}
-
-_client_path_names()
-{
-	local cmd
-
-	cmd='ibnbd client paths list noheaders nototals pathname notree'
-	COMPREPLY=( $( compgen -W "$($cmd)" -- "$1" ) )
-	return 0
-}
-
-_server_path_names()
-{
-	local cmd
-
-	cmd='ibnbd server paths list noheaders nototals pathname notree'
-	COMPREPLY=( $( compgen -W "$($cmd)" -- "$1" ) )
-	return 0
-}
-
-_help_show()
-{
-	local opts="all fields"
-	COMPREPLY=( $( compgen -W "${opts}" -- "$1" ) )
-	return 0
-}
-
-_help_all()
-{
-	local opts="all"
-	COMPREPLY=( $( compgen -W "${opts}" -- "$1" ) )
-	return 0
-}
-
-_list_params()
-{
-	local opts="csv xml json B K M G T P E \
-		  			noheaders nototals help all notree"
-	COMPREPLY=( $( compgen -W "${opts}" -- "$1" ) )
-	return 0
-}
-
-_show_params()
-{
-	local opts
-
-	opts="csv xml json B K M G T P E help all"
-	COMPREPLY=( $( compgen -W "${opts}" -- "$1" ) )
-	return 0
-}
-
-_map_complete()
-{
-	if [[ "$1" == "" ]]; then
-		echo -n "<name of device to map>"
-	fi
-	COMPREPLY=()
-	return 0
-}
-
-_resize_complete()
-{
-	if [[ "$1" == "" ]]; then
-		echo -n "<size to resize device to>"
-	fi
-	COMPREPLY=()
-	return 0
-}
-
-_map_params()
-{
-	local opts
-
-	opts="from fileio blockio ro rw migration verbose help"
-	COMPREPLY=( $( compgen -W "${opts}" -- "$1" ) )
-	return 0
-}
-
-_cmd_params()
-{
-	#TODO correct params for each command
-
-	local cmd cur opts
-	cmd=$1
-	cur=$2
-
-	opts="verbose"
-	COMPREPLY=( $( compgen -W "${opts}" -- "${cur}" ) )
-	return 0
-}
-
-_unmap_remap_params()
-{
-	local cmd cur opts
-	cmd=$1
-	cur=$2
-
-	opts="force verbose"
-	COMPREPLY=( $( compgen -W "${opts}" -- "${cur}" ) )
-	return 0
-}
-
-_cmd_complete()
-{
-	local mode object_type
-	mode=$1
-	object_type=$2
-	cur=$3
-	
-	case ${mode} in
-	client|cli|clt)
-		case ${object_type} in
-		sess|session|sessions)
-			_client_session_names ${cur}
-			return 0
-			;;
-		dev|devs|device|devices)
-			_client_device_names ${cur}
-			return 0
-			;;
-		path|paths)
-			_client_path_names ${cur}
-			return 0
-			;;
-		esac
-		;;
-	server|serv|srv)
-		case ${object_type} in
-		sess|session|sessions)
-			_server_session_names ${cur}
-			return 0
-			;;
-		dev|devs|device|devices)
-			_server_device_names ${cur}
-			return 0
-			;;
-		path|paths)
-			_server_path_names ${cur}
-			return 0
-			;;
-		esac
-		;;
-	esac
-	return 0
-}
-
-_ibnbd_object_type()
-{
-	local opts="device session path help"
-	COMPREPLY=( $( compgen -W "${opts}" -- "$1" ) )
-	return 0
-}
-
-_ibnbd_client_session()
-{
-	local opts="list show reconnect remap help"
-
-	COMPREPLY=( $( compgen -W "${opts}" -- "$1" ) )
-	return 0
-}
-
-_ibnbd_client_device()
-{
-	local opts="list show map resize unmap remap help"
-
-	COMPREPLY=( $( compgen -W "${opts}" -- "$1" ) )
-	return 0
-}
-
-_ibnbd_client_path()
-{
-	local opts="list show disconnect reconnect add readd delete help"
-
-	COMPREPLY=( $( compgen -W "${opts}" -- "$1" ) )
-	return 0
-}
-
-_ibnbd_server_session()
-{
-	local opts="list show disconnect help"
-
-	COMPREPLY=( $( compgen -W "${opts}" -- "$1" ) )
-	return 0
-}
-
-_ibnbd_server_device()
-{
-	local opts="list show help"
-
-	COMPREPLY=( $( compgen -W "${opts}" -- "$1" ) )
-	return 0
-}
-
-_ibnbd_server_path()
-{
-	local opts="list show disconnect help"
-
-	COMPREPLY=( $( compgen -W "${opts}" -- "$1" ) )
-	return 0
-}
-
-_ibnbd_client()
-{
-	local cur prev opts
-
-	cur="${COMP_WORDS[COMP_CWORD]}"
-	prev="${COMP_WORDS[COMP_CWORD-1]}"
-
-	COMPREPLY=()
-
-	if ((COMP_CWORD == 1)); then
-		_ibnbd_object_type ${cur}
-		return 0
-	fi
-	if [[ "${prev}" == "${COMP_WORDS[1]}" ]]; then
-	   case ${prev} in
-	   sess|session|sessions)
-			_ibnbd_client_session ${cur}
-			return 0
-			;;
-		dev|devs|device|devices)
-			_ibnbd_client_device ${cur}
-			return 0
-			;;
-		path|paths)
-			_ibnbd_client_path ${cur}
-			return 0
-			;;
-		esac
-		return 0
-	fi
-	if ((COMP_CWORD == 3)); then
-		case ${prev} in
-		list)
-			_list_params ${cur}
-			return 0
-			;;
-		show)
-			_cmd_complete client ${COMP_WORDS[1]} ${cur}
-			return 0
-			;;
-		map)
-			_map_complete ${cur}
-			return 0
-			;;
-		reconnect|resize|unmap|remap|disconnect|add|delete)
-			_cmd_complete client ${COMP_WORDS[1]} ${cur}
-			return 0
-			;;
-		help)
-			_help_all ${cur}
-			return 0
-			;;
-		esac
-	fi
-
-	case ${COMP_WORDS[2]} in
-	list)
-		_list_params ${cur}
-		return 0
-		;;
-	show)
-		_show_params ${cur}
-		return 0
-		;;
-	map)
-		if [[ "${prev}" == "from" ]]; then
-			_client_session_names $cur
-			return 0
-		fi
-
-		_map_params ${cur}
-		return 0
-		;;
-	unmap|remap)
-		_unmap_remap_params ${cur}
-		return 0
-		;;
-	resize)
-		if ((COMP_CWORD == 4)); then
-			_resize_complete ${cur}
-		else
-			COMPREPLY=()
-		fi
-		return 0
-		;;
-	reconnect|disconnect|add|delete)
-		_cmd_params ${cur}
-		return 0
-		;;
-	esac
-	return 0
-}
-
-_ibnbd_server()
-{
-	local cur prev opts
-
-	cur="${COMP_WORDS[COMP_CWORD]}"
-	prev="${COMP_WORDS[COMP_CWORD-1]}"
-
-	COMPREPLY=()
-
-	if ((COMP_CWORD == 1)); then
-		_ibnbd_object_type ${cur}
-		return 0
-	fi
-	if [[ "${prev}" == "${COMP_WORDS[1]}" ]]; then
-	   case ${prev} in
-	   sess|session|sessions)
-			_ibnbd_server_session ${cur}
-			return 0
-			;;
-		dev|devs|device|devices)
-			_ibnbd_server_device ${cur}
-			return 0
-			;;
-		path|paths)
-			_ibnbd_server_path ${cur}
-			return 0
-			;;
-		esac
-	fi
-	if ((COMP_CWORD == 3)); then
-		case ${prev} in
-		list)
-			_list_params ${cur}
-			return 0
-			;;
-		show)
-			_cmd_complete server ${COMP_WORDS[1]} ${cur}
-			return 0
-			;;
-		disconnect)
-			_cmd_complete server ${COMP_WORDS[1]} ${cur}
-			return 0
-			;;
-		help)
-			_help_all ${cur}
-			return 0
-			;;
-		esac
-	fi
-	case ${COMP_WORDS[2]} in
-	list)
-		_list_params ${cur}
-		return 0
-		;;
-	show)
-		_show_params ${cur}
-		return 0
-		;;
-	disconnect)
-		_cmd_params ${cur}
-		return 0
-		;;
-	esac
-
 	return 0
 }
 
 _ibnbd()
 {
-	local cur prev opts
+	local cur prev pprev cmd opts
 
 	cur="${COMP_WORDS[COMP_CWORD]}"
 	prev="${COMP_WORDS[COMP_CWORD-1]}"
+	pprev="${COMP_WORDS[COMP_CWORD-2]}"
+	opts=""
+	cmd="${COMP_WORDS[@]:0:COMP_CWORD-2} "
 
 	COMPREPLY=()
 
 	if ((COMP_CWORD == 1)); then
-		opts="client server device session path list show help"
+		opts="help list show dump client server device session path map"
 		COMPREPLY=( $( compgen -W "${opts}" -- "${cur}" ) )
 		return 0
 	fi
-	if [[ "${prev}" == "${COMP_WORDS[1]}" ]]; then
-		case ${prev} in
-		client|clt|server|srv|both)
-			opts="device session path list show help"
-			COMPREPLY=( $( compgen -W "${opts}" -- "$1" ) )
-			return 0
-			;;
-		list)
-			_ibnbd_object_type ${cur}
-			opts="device session path help"
-			return 0
-			;;
-		help)
-			opts="all"
-			COMPREPLY=( $( compgen -W "${opts}" -- "$1" ) )
-			return 0
-			;;
-		sess|session|sessions)
-			_ibnbd_client_session ${cur}
-			return 0
-			;;
-		dev|devs|device|devices)
-			_ibnbd_client_device ${cur}
-			_ibnbd_server_device ${cur}
-			return 0
-			;;
-		path|paths)
-			_ibnbd_client_path ${cur}	
-			_ibnbd_server_path ${cur}
-			return 0
-			;;
-		list)
-			_list_params ${cur}
-			return 0
-			;;
-		show)
-			_cmd_complete ${COMP_WORDS[1]} ${COMP_WORDS[2]} ${cur}
-			?_show_params ${cur}
-			return 0
-			;;
-		map)
-			_map_complete ${cur}
-			return 0
-			;;
-		reconnect|resize|unmap|remap|disconnect|add|delete)
-			_cmd_complete ${COMP_WORDS[1]} ${COMP_WORDS[2]} ${cur}
-			return 0
-			;;
-		help)
-			opts="all"
-			COMPREPLY=( $( compgen -W "${opts}" -- "$1" ) )
-			return 0
-			;;
-		map)
-			if [[ "${prev}" == "from" ]]; then
-				_client_session_names $cur
-				return 0
-			fi
 
-			_map_params ${cur}
-			return 0
+	case ${prev} in
+	client|clt)
+		opts="help list show dump device session path map"
+		;;
+	server|srv)
+		opts="help list show dump device session path"
+		;;
+	sess|session|sessions)
+		case ${pprev} in
+		client|clt)
+			opts="help list show reconnect remap"
 			;;
-		unmap|remap)
-			_unmap_remap_params ${cur}
-			return 0
+		server|srv)
+			opts="help list show disconnect"
 			;;
-		resize)
-			if ((COMP_CWORD == 5)); then
-				_resize_complete ${cur}
-			else
-				COMPREPLY=()
-			fi
-			return 0
-			;;
-		reconnect|disconnect|add|delete)
-			_cmd_params ${cur}
-			return 0
+		*)
+			opts="help list show reconnect remap disconnect"
 			;;
 		esac
-		
+		;;
+	dev|devs|device|devices)
+		case ${pprev} in
+		client|clt)
+			opts="help list show map resize unmap remap"
+			;;
+		server|srv)
+			opts="help list show"
+			;;
+		*)
+			opts="help list show reconnect remap disconnect"
+			;;
+		esac
+		;;
+	path|paths)
+		case ${pprev} in
+		client|clt)
+			opts="help list show disconnect reconnect add readd delete"
+			;;
+		server|srv)
+			opts="help list show disconnect"
+			;;
+		*)
+			opts="help list show reconnect add readd delete disconnect"
+			;;
+		esac
+		;;
+	list)
+		opts="help csv xml json B K M G T P noheaders nototals all notree"
+		;;
+	help)
+		opts="all"
+		;;
+	show)
+		case ${pprev} in
+		device|dev)
+			_device_names $cur $cmd
+			;;
+		path)
+			_path_names $cur $cmd
+			;;
+		sess|session)
+			_session_names $cur $cmd
+			;;
+		*)
+			_device_names $cur $cmd
+			local TMP=$COMPREPLY
+			_path_names $cur $cmd
+			TMP="$TMP $COMPREPLY"
+			_session_names $cur $cmd
+			;;
+		esac
+		return 0
+		;;
+	reconnect|resize|unmap|remap|disconnect|add|delete)
+		case ${pprev} in
+		sess|session|sessions)
+			_session_names ${cur} $cmd
+			;;
+		dev|devs|device|devices)
+			_device_names ${cur} $cmd
+			;;
+		path|paths)
+			_path_names ${cur} $cmd
+			;;
+		esac
+		return 0
+		;;
+	from)
+		_session_names $cur "ibnbd client"
+		return 0
+		;;
+	esac
+
+	if [[ -n "$opts" ]]; then
 		COMPREPLY=( $( compgen -W "${opts}" -- "$1" ) )
 		return 0
 	fi
-	return 0
+
+	case $pprev in
+	show)
+		opts="csv xml json B K M G T all"
+		;;
+	from)
+		opts="fileio blockio ro rw migration verbose"
+		;;
+	unmap|remap)
+		opts="force verbose"
+		;;
+	esac
+
 }
 
 complete -F _ibnbd ibnbd
