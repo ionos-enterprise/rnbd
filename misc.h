@@ -81,6 +81,7 @@ struct ibnbd_ctx {
 	bool verbose_set;
 	bool debug_set;
 	bool simulate_set;
+	bool complete_set;
 
 	int unit_id;
 	bool unit_set;

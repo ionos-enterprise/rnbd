@@ -355,11 +355,18 @@ static struct param _params_minus_d =
 static struct param _params_minus_minus_debug =
 	{TOK_VERBOSE, "--debug", "", "", "Debug mode", NULL, parse_debug, 0};
 static struct param _params_minus_s =
-	{TOK_VERBOSE, "-s", "", "", "Simulate", NULL, parse_flag, 0};
+	{TOK_VERBOSE, "-s", "", "", "Simulate",
+	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, simulate_set)};
 static struct param _params_minus_minus_simulate =
 	{TOK_VERBOSE, "--simulate", "", "",
 	 "Only print modifying operations, do not execute",
 	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, simulate_set)};
+static struct param _params_minus_c =
+	{TOK_VERBOSE, "-c", "", "", "Complete",
+	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, complete_set)};
+static struct param _params_minus_minus_complete =
+	{TOK_VERBOSE, "--complete", "", "", "Complete",
+	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, complete_set)};
 static struct param _params_byte =
 	{TOK_BYTE, "B", "", "", "Byte", NULL, parse_unit, 0};
 static struct param _params_kib =
@@ -421,14 +428,20 @@ static const struct param *find_param(const char *str,
 static  void usage_param(const char *str, struct param *const params[],
 			const struct ibnbd_ctx *ctx)
 {
-	printf("Usage: %s%s%s ", CLR(ctx->trm, CBLD, str));
-
-	clr_print(ctx->trm, CBLD, "%s", (*params)->param_str);
-
-	while ((*++params)->param_str)
-		printf("|%s%s%s", CLR(ctx->trm, CBLD, (*params)->param_str));
-
-	printf(" ...\n\n");
+	if (ctx->complete_set) {
+		for (;(*params)->param_str; params++)
+			printf("%s ", (*params)->param_str);
+		printf(" \n");
+	} else {
+		printf("Usage: %s%s%s ", CLR(ctx->trm, CBLD, str));
+		
+		clr_print(ctx->trm, CBLD, "%s", (*params)->param_str);
+		
+		while ((*++params)->param_str)
+			printf("|%s%s%s", CLR(ctx->trm, CBLD, (*params)->param_str));
+		
+		printf(" ...\n\n");
+	}
 }
 
 #define HP "    "
@@ -468,18 +481,26 @@ static  void help_param(const char *str, struct param *const params[],
 static void print_usage(const char *sub_name, struct param * const cmds[],
 			const struct ibnbd_ctx *ctx)
 {
-	if (sub_name)
-		printf("Usage: %s%s%s %s {",
-		       CLR(ctx->trm, CBLD, ctx->pname), sub_name);
-	else
-		printf("Usage: %s%s%s {", CLR(ctx->trm, CBLD, ctx->pname));
-
-	clr_print(ctx->trm, CBLD, "%s", (*cmds)->param_str);
-
-	while ((*++cmds)->param_str)
-		printf("|%s%s%s", CLR(ctx->trm, CBLD, (*cmds)->param_str));
-
-	printf("} [ARGUMENTS]\n\n");
+	if (ctx->complete_set) {
+		for (;(*cmds)->param_str; cmds++)
+			printf("%s ", (*cmds)->param_str);
+		printf(" \n");
+	} else {
+		if (sub_name)
+			printf("Usage: %s%s%s %s {",
+			       CLR(ctx->trm, CBLD, ctx->pname), sub_name);
+		else
+			printf("Usage: %s%s%s {",
+			       CLR(ctx->trm, CBLD, ctx->pname));
+		
+		clr_print(ctx->trm, CBLD, "%s", (*cmds)->param_str);
+		
+		while ((*++cmds)->param_str)
+			printf("|%s%s%s",
+			       CLR(ctx->trm, CBLD, (*cmds)->param_str));
+		
+		printf("} [ARGUMENTS]\n\n");
+	}
 }
 
 static bool help_print_all(const struct ibnbd_ctx *ctx)
@@ -2686,6 +2707,8 @@ static struct param *params_flags[] = {
 	&_params_minus_d,
 	&_params_minus_minus_simulate,
 	&_params_minus_s,
+	&_params_minus_c,
+	&_params_minus_minus_complete,
 	&_params_null
 };
 
@@ -3508,7 +3531,10 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	cmd = find_param(*argv, cmds_client_sessions);
 	if (!cmd) {
 		print_usage(_help_context, cmds_client_sessions_help, ctx);
-		err = -EINVAL;
+		if (ctx->complete_set)
+			err = -EAGAIN;
+		else
+			err = -EINVAL;
 
 		if (argc)
 			handle_unknown_param(*argv, cmds_client_sessions);
@@ -3626,7 +3652,10 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	cmd = find_param(*argv, cmds_client_devices);
 	if (!cmd) {
 		print_usage(_help_context, cmds_client_devices, ctx);
-		err = -EINVAL;
+		if (ctx->complete_set)
+			err = -EAGAIN;
+		else
+			err = -EINVAL;
 
 		if (argc)
 			handle_unknown_param(*argv, cmds_client_devices);
@@ -3779,7 +3808,10 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	cmd = find_param(*argv, cmds_client_paths);
 	if (!cmd) {
 		print_usage(_help_context, cmds_client_paths_help, ctx);
-		err = -EINVAL;
+		if (ctx->complete_set)
+			err = -EAGAIN;
+		else
+			err = -EINVAL;
 
 		if (argc)
 			handle_unknown_param(*argv, cmds_client_paths);
@@ -3972,7 +4004,10 @@ int cmd_server_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	cmd = find_param(*argv, cmds_server_sessions);
 	if (!cmd) {
 		print_usage(_help_context, cmds_server_sessions_help, ctx);
-		err = -EINVAL;
+		if (ctx->complete_set)
+			err = -EAGAIN;
+		else
+			err = -EINVAL;
 
 		if (argc)
 			handle_unknown_param(*argv, cmds_server_sessions);
@@ -4058,7 +4093,10 @@ int cmd_server_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	cmd = find_param(*argv, cmds_server_devices);
 	if (!cmd) {
 		print_usage(_help_context, cmds_server_devices, ctx);
-		err = -EINVAL;
+		if (ctx->complete_set)
+			err = -EAGAIN;
+		else
+			err = -EINVAL;
 
 		if (argc)
 			handle_unknown_param(*argv, cmds_server_devices);
@@ -4120,7 +4158,10 @@ int cmd_server_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	cmd = find_param(*argv, cmds_server_paths);
 	if (!cmd) {
 		print_usage(_help_context, cmds_server_paths_help, ctx);
-		err = -EINVAL;
+		if (ctx->complete_set)
+			err = -EAGAIN;
+		else
+			err = -EINVAL;
 
 		if (argc)
 			handle_unknown_param(*argv, cmds_server_paths);
@@ -4199,8 +4240,12 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 	if (argc < 1) {
 		usage_param("ibnbd client", params_object_type_help_client, ctx);
-		ERR(ctx->trm, "no object specified\n");
-		err = -EINVAL;
+		if (ctx->complete_set) {
+			err = -EAGAIN;
+		} else {
+			ERR(ctx->trm, "no object specified\n");
+			err = -EINVAL;
+		}
 	}
 	if (err >= 0) {
 		param = find_param(*argv, params_object_type_client);
@@ -4288,8 +4333,12 @@ int cmd_server(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 	if (argc < 1) {
 		usage_param("ibnbd server", params_object_type_help_server, ctx);
-		ERR(ctx->trm, "no object specified\n");
-		err = -EINVAL;
+		if (ctx->complete_set) {
+			err = -EAGAIN;
+		} else {
+			ERR(ctx->trm, "no object specified\n");
+			err = -EINVAL;
+		}
 	}
 	if (err >= 0) {
 		param = find_param(*argv, params_object_type_server);
@@ -4374,7 +4423,11 @@ int cmd_both(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 
 	if (argc < 1) {
 		usage_param("ibnbd both", params_both_help, ctx);
-		err = -EINVAL;
+		if (ctx->complete_set) {
+			err = -EAGAIN;
+		} else {
+			err = -EINVAL;
+		}
 	}
 	if (err >= 0) {
 		param = find_param(*argv, params_both);
