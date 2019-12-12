@@ -3,7 +3,6 @@
 _device_names()
 {
 	local cmd
-
 	cmd="$2 devices list noheaders nototals mapping_path,devname notree"
 	COMPREPLY=( $( compgen -W "$($cmd)" -- "$1" ) )
 	return 0
@@ -33,9 +32,11 @@ _ibnbd()
 
 	cur="${COMP_WORDS[COMP_CWORD]}"
 	prev="${COMP_WORDS[COMP_CWORD-1]}"
-	pprev="${COMP_WORDS[COMP_CWORD-2]}"
+	if ((COMP_CWORD > 1)); then
+		pprev="${COMP_WORDS[COMP_CWORD-2]}"
+		ocmd="${COMP_WORDS[0]} -c ${COMP_WORDS[@]:1:COMP_CWORD-1} "
+	fi
 	opts=""
-	cmd="${COMP_WORDS[@]:0:COMP_CWORD-2} "
 
 	COMPREPLY=()
 
@@ -47,49 +48,13 @@ _ibnbd()
 
 	case ${prev} in
 	client|clt)
-		opts="help list show dump device session path map"
+		opts="$($ocmd) list show dump map"
 		;;
 	server|srv)
-		opts="help list show dump device session path"
+		opts="$($ocmd) list show dump"
 		;;
-	sess|session|sessions)
-		case ${pprev} in
-		client|clt)
-			opts="help list show reconnect remap"
-			;;
-		server|srv)
-			opts="help list show disconnect"
-			;;
-		*)
-			opts="help list show reconnect remap disconnect"
-			;;
-		esac
-		;;
-	dev|devs|device|devices)
-		case ${pprev} in
-		client|clt)
-			opts="help list show map resize unmap remap"
-			;;
-		server|srv)
-			opts="help list show"
-			;;
-		*)
-			opts="help list show reconnect remap disconnect"
-			;;
-		esac
-		;;
-	path|paths)
-		case ${pprev} in
-		client|clt)
-			opts="help list show disconnect reconnect add readd delete"
-			;;
-		server|srv)
-			opts="help list show disconnect"
-			;;
-		*)
-			opts="help list show reconnect add readd delete disconnect"
-			;;
-		esac
+	sess|session|sessions|dev|devs|device|devices|path|paths)
+		opts="$($ocmd) "
 		;;
 	list)
 		opts="help csv xml json B K M G T P noheaders nototals all notree"
@@ -98,36 +63,40 @@ _ibnbd()
 		opts="all"
 		;;
 	show)
+		cmd="${COMP_WORDS[@]:0:COMP_CWORD-2} "
 		case ${pprev} in
 		device|dev)
-			_device_names $cur $cmd
+			_device_names "$cur" "$cmd"
 			;;
 		path)
-			_path_names $cur $cmd
+			_path_names "$cur" "$cmd"
 			;;
 		sess|session)
-			_session_names $cur $cmd
+			_session_names "$cur" "$cmd"
 			;;
 		*)
-			_device_names $cur $cmd
-			local TMP=$COMPREPLY
-			_path_names $cur $cmd
-			TMP="$TMP $COMPREPLY"
-			_session_names $cur $cmd
+			cmd="${COMP_WORDS[@]:0:COMP_CWORD-1} "
+			_device_names "$cur" "$cmd"
+			local TMP=( ${COMPREPLY[@]} )
+			_path_names "$cur" "$cmd"
+			TMP=( ${TMP[@]} ${COMPREPLY[@]} )
+			_session_names "$cur" "$cmd"
+			COMPREPLY=( ${TMP[@]} ${COMPREPLY[@]} )
 			;;
 		esac
 		return 0
 		;;
 	reconnect|resize|unmap|remap|disconnect|add|delete)
+		cmd="${COMP_WORDS[@]:0:COMP_CWORD-2} "
 		case ${pprev} in
 		sess|session|sessions)
-			_session_names ${cur} $cmd
+			_session_names "$cur" "$cmd"
 			;;
 		dev|devs|device|devices)
-			_device_names ${cur} $cmd
+			_device_names "$cur" "$cmd"
 			;;
 		path|paths)
-			_path_names ${cur} $cmd
+			_path_names "$cur" "$cmd"
 			;;
 		esac
 		return 0
@@ -137,9 +106,8 @@ _ibnbd()
 		return 0
 		;;
 	esac
-
 	if [[ -n "$opts" ]]; then
-		COMPREPLY=( $( compgen -W "${opts}" -- "$1" ) )
+		COMPREPLY=( $( compgen -W "${opts}" -- "$cur" ) )
 		return 0
 	fi
 
