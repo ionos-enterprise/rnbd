@@ -1,3 +1,9 @@
+ibnbd-tool (1.0.0) jessie stretch; urgency=medium
+
+  * Initial version
+
+ -- Danil Kipnis <danil@cloud.ionos.com>  Mon, 16 Dec 2019 16:27:43 +0100
+
 ibnbd-tool (0.2.1) jessie stretch buster; urgency=medium
 
   * Implement remap of a device or all devices of a session
