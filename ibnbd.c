@@ -2833,6 +2833,9 @@ static struct param *params_both[] = {
 	&_cmd_dump_all,
 	&_cmd_show,
 	&_cmd_map,
+	&_cmd_resize,
+	&_cmd_unmap,
+	&_cmd_remap,
 	&_params_help,
 	&_params_null
 };
@@ -2857,6 +2860,9 @@ static struct param *params_object_type_client[] = {
 	&_cmd_list_devices,
 	&_cmd_show,
 	&_cmd_map,
+	&_cmd_resize,
+	&_cmd_unmap,
+	&_cmd_remap,
 	&_params_help,
 	&_params_null
 };
@@ -3601,6 +3607,84 @@ int cmd_map(int argc, const char *argv[], const struct param *cmd,
 	return err = client_devices_map(ctx->from, ctx->name, ctx);
 }
 
+int cmd_resize(int argc, const char *argv[], const struct param *cmd,
+	       const char *help_context, struct ibnbd_ctx *ctx)
+{
+	int err = parse_name_help(argc--, argv++,
+				  help_context, cmd, ctx);
+	if (err < 0)
+		return err;
+	
+	if (argc > 0)
+		err = parse_size(*argv, ctx);
+	else
+		err = -EINVAL;
+	if (err < 0) {
+		cmd_print_usage_short(cmd, help_context, ctx);
+		ERR(ctx->trm,
+		    "Please provide the size of device to be configured\n");
+		return err;
+	}
+	argc--; argv++;
+	
+	/* TODO allow a unit here and take it into account */
+	/* for the amount to be resized to */
+	if (argc > 0) {
+		
+		handle_unknown_param(*argv, params_default);
+		return -EINVAL;
+	}
+	return client_devices_resize(ctx->name, ctx->size_sect, ctx);
+}
+
+int cmd_unmap(int argc, const char *argv[], const struct param *cmd,
+	      const char *help_context, struct ibnbd_ctx *ctx)
+{
+	int err = parse_name_help(argc--, argv++,
+				  help_context, cmd, ctx);
+	if (err < 0)
+		return err;
+
+	err = parse_cmd_parameters(argc, argv,
+				   params_unmap_parameters,
+				   ctx, cmd, help_context);
+	if (err < 0)
+		return err;
+
+	argc -= err; argv += err;
+	
+	if (argc > 0) {
+
+		handle_unknown_param(*argv,
+				     params_unmap_parameters);
+		return -EINVAL;
+	}
+	return client_devices_unmap(ctx->name, ctx->force_set, ctx);
+}
+
+int cmd_remap(int argc, const char *argv[], const struct param *cmd,
+	      const char *help_context, struct ibnbd_ctx *ctx)
+{
+	int err = parse_name_help(argc--, argv++,
+				  help_context, cmd, ctx);
+	if (err < 0)
+		return err;
+
+	err = parse_cmd_parameters(argc, argv, params_default,
+				   ctx, cmd, help_context);
+	if (err < 0)
+		return err;
+
+	argc -= err; argv += err;
+	
+	if (argc > 0) {
+		
+		handle_unknown_param(*argv, params_default);
+		return -EINVAL;
+	}
+	return client_devices_remap(ctx->name, ctx);
+}
+
 int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 {
 	const char *_help_context = ctx->pname_with_mode
@@ -3774,95 +3858,14 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 		case TOK_MAP:
 			err = cmd_map(argc, argv, cmd, _help_context, ctx);
 			break;
-		/* map-by-host ?
-		case TOK_MAP_BY_HOST:
-			err = parse_name_help(argc--, argv++,
-					_help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			if (argc > 0) {
-
-				handle_unknown_param(*argv, params);
-				err = -EINVAL;
-				break;
-			}
-			err = cmd_client_devices(argc--, argv++, ctx);
-			break;
-		*/
 		case TOK_RESIZE:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			if (argc > 0)
-				err = parse_size(*argv, ctx);
-			else
-				err = -EINVAL;
-			if (err < 0) {
-				cmd_print_usage_short(cmd, _help_context, ctx);
-				ERR(ctx->trm,
-				    "Please provide the size of device to be configured\n");
-				break;
-			}
-			argc--; argv++;
-
-			/* TODO allow a unit here and take it into account */
-			/* for the amount to be resized to */
-			if (argc > 0) {
-
-				handle_unknown_param(*argv, params_default);
-				err = -EINVAL;
-				break;
-			}
-			err = client_devices_resize(ctx->name,
-						    ctx->size_sect, ctx);
+			err = cmd_resize(argc, argv, cmd, _help_context, ctx);
 			break;
 		case TOK_UNMAP:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_cmd_parameters(argc, argv,
-						   params_unmap_parameters,
-						   ctx, cmd, _help_context);
-			if (err < 0)
-				break;
-
-			argc -= err; argv += err;
-
-			if (argc > 0) {
-
-				handle_unknown_param(*argv,
-						    params_unmap_parameters);
-				err = -EINVAL;
-				break;
-			}
-			err = client_devices_unmap(ctx->name,
-						   ctx->force_set, ctx);
+			err = cmd_unmap(argc, argv, cmd, _help_context, ctx);
 			break;
 		case TOK_REMAP:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_cmd_parameters(argc, argv, params_default,
-						   ctx, cmd, _help_context);
-			if (err < 0)
-				break;
-
-			argc -= err; argv += err;
-
-			if (argc > 0) {
-
-				handle_unknown_param(*argv, params_default);
-				err = -EINVAL;
-				break;
-			}
-			err = client_devices_remap(ctx->name, ctx);
+			err = cmd_remap(argc, argv, cmd, _help_context, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, NULL, ctx);
@@ -4384,6 +4387,15 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 		case TOK_MAP:
 			err = cmd_map(argc, argv, param, _help_context, ctx);
 			break;
+		case TOK_RESIZE:
+			err = cmd_resize(argc, argv, param, _help_context, ctx);
+			break;
+		case TOK_UNMAP:
+			err = cmd_unmap(argc, argv, param, _help_context, ctx);
+			break;
+		case TOK_REMAP:
+			err = cmd_remap(argc, argv, param, _help_context, ctx);
+			break;
 		case TOK_HELP:
 			if (ctx->pname_with_mode
 			    && (help_print_flags(ctx) || help_print_all(ctx))) {
@@ -4554,6 +4566,15 @@ int cmd_both(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			break;
 		case TOK_MAP:
 			err = cmd_map(argc, argv, param, "", ctx);
+			break;
+		case TOK_RESIZE:
+			err = cmd_resize(argc, argv, param, "", ctx);
+			break;
+		case TOK_UNMAP:
+			err = cmd_unmap(argc, argv, param, "", ctx);
+			break;
+		case TOK_REMAP:
+			err = cmd_remap(argc, argv, param, "", ctx);
 			break;
 		case TOK_HELP:
 			help_param(ctx->pname, params_both_help, ctx);
