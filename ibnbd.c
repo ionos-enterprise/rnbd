@@ -1341,7 +1341,7 @@ static int show_session(struct ibnbd_sess **ss_clt, struct ibnbd_sess **ss_srv,
 	struct table_column **cs, **ps;
 	struct ibnbd_sess **ss;
 
-	if (ss_clt[0]) {
+	if (ss_clt && ss_clt[0]) {
 		ss = ss_clt;
 		cs = ctx->clms_sessions_clt;
 		ps = clms_paths_sess_clt;
@@ -1488,7 +1488,8 @@ out:
 	return ret;
 }
 
-static int show_sessions(const char *name, struct ibnbd_ctx *ctx)
+#if 0
+static int show_both_sessions(const char *name, struct ibnbd_ctx *ctx)
 {
 	struct ibnbd_sess **ss_clt, **ss_srv;
 	int c_ss_clt, c_ss_srv, c_ss = 0, ret;
@@ -1523,6 +1524,86 @@ static int show_sessions(const char *name, struct ibnbd_ctx *ctx)
 	}
 out:
 	free(ss_clt);
+	free(ss_srv);
+	return ret;
+}
+#endif
+
+static int show_client_sessions(const char *name, struct ibnbd_ctx *ctx)
+{
+	struct ibnbd_sess **ss_clt;
+	int c_ss_clt = 0, ret;
+
+	ss_clt = calloc(sess_clt_cnt, sizeof(*ss_clt));
+
+	if (sess_clt_cnt && !ss_clt) {
+		ERR(ctx->trm, "Failed to alloc memory\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+	ss_clt[0] = find_session(name, sess_clt);
+	if (ss_clt[0]) {
+		c_ss_clt = 1;
+	} else {
+		c_ss_clt = find_sessions_match(name, sess_clt, ss_clt);
+	}
+
+	if (c_ss_clt > 1) {
+		ERR(ctx->trm, "Multiple sessions match '%s'\n", name);
+
+		printf("Sessions:\n");
+		list_sessions(ss_clt, c_ss_clt, NULL, 0, false, ctx);
+
+		ret = -EINVAL;
+		goto out;
+	}
+
+	if (c_ss_clt) {
+		ret = show_session(ss_clt, NULL, ctx);
+	} else {
+		ERR(ctx->trm, "There is no session matching '%s'\n", name);
+		ret = -ENOENT;
+	}
+out:
+	free(ss_clt);
+	return ret;
+}
+
+static int show_server_sessions(const char *name, struct ibnbd_ctx *ctx)
+{
+	struct ibnbd_sess **ss_srv;
+	int c_ss_srv = 0, ret;
+
+	ss_srv = calloc(sess_srv_cnt, sizeof(*ss_srv));
+
+	if (sess_srv_cnt && !ss_srv) {
+		ERR(ctx->trm, "Failed to alloc memory\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+	ss_srv[0] = find_session(name, sess_srv);
+	if (ss_srv[0]) {
+		c_ss_srv = 1;
+	} else {
+		c_ss_srv = find_sessions_match(name, sess_srv, ss_srv);
+	}
+	if (c_ss_srv > 1) {
+		ERR(ctx->trm, "Multiple sessions match '%s'\n", name);
+
+		printf("Sessions:\n");
+		list_sessions(NULL, 0, ss_srv, c_ss_srv, false, ctx);
+
+		ret = -EINVAL;
+		goto out;
+	}
+
+	if (c_ss_srv) {
+		ret = show_session(NULL, ss_srv, ctx);
+	} else {
+		ERR(ctx->trm, "There is no session matching '%s'\n", name);
+		ret = -ENOENT;
+	}
+out:
 	free(ss_srv);
 	return ret;
 }
@@ -3567,7 +3648,7 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = show_sessions(ctx->name, ctx);
+			err = show_client_sessions(ctx->name, ctx);
 			break;
 		case TOK_RECONNECT:
 			err = parse_name_help(argc--, argv++,
@@ -4040,7 +4121,7 @@ int cmd_server_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = show_sessions(ctx->name, ctx);
+			err = show_server_sessions(ctx->name, ctx);
 			break;
 		case TOK_DISCONNECT:
 			err = parse_name_help(argc--, argv++,
