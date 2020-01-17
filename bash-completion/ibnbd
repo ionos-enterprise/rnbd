@@ -41,14 +41,14 @@ _ibnbd()
 	COMPREPLY=()
 
 	if ((COMP_CWORD == 1)); then
-		opts="help list show dump client server device session path map"
+		opts="help list show dump client server device session path map resize unmap remap"
 		COMPREPLY=( $( compgen -W "${opts}" -- "${cur}" ) )
 		return 0
 	fi
 
 	case ${prev} in
 	client|clt)
-		opts="$($ocmd) list show dump map"
+		opts="$($ocmd) list show dump map resize unmap remap"
 		;;
 	server|srv)
 		opts="$($ocmd) list show dump"
@@ -92,8 +92,11 @@ _ibnbd()
 		sess|session|sessions)
 			_session_names "$cur" "$cmd"
 			;;
-		dev|devs|device|devices)
+		cli|client|dev|devs|device|devices)
 			_device_names "$cur" "$cmd"
+			;;
+		*ibnbd)
+			_device_names "$cur" "${COMP_WORDS[@]:0:COMP_CWORD-1} "
 			;;
 		path|paths)
 			_path_names "$cur" "$cmd"
