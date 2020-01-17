@@ -104,6 +104,7 @@ struct ibnbd_ctx {
 };
 
 int get_unit_index(const char *unit, int *index);
+int get_unit_shift(const char *unit, int *shift);
 
 int i_to_str_unit(uint64_t d, char *str, size_t len, int unit, int prec);
 

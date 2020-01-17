@@ -41,6 +41,16 @@ int get_unit_index(const char *unit, int *index)
 	return -ENOENT;
 }
 
+int get_unit_shift(const char *unit, int *shift)
+{
+	int index;
+	if ( get_unit_index(unit, &index) >= 0) {
+		*shift = bits[index].bits;
+		return 0;
+	}
+	return -ENOENT;
+}
+
 int i_to_str_unit(uint64_t d, char *str, size_t len, int unit, int prec)
 {
 	if (unit >= ARRSIZE(bits))

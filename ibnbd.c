@@ -201,8 +201,27 @@ static int clm_set_hdr_unit(struct table_column *clm, char const *unit)
 	return 0;
 }
 
+static int parse_apply_unit(const char *str, struct ibnbd_ctx *ctx)
+{
+	int rc, shift;
+
+	if (!ctx->size_set)
+		return -EINVAL;
+		
+	rc = get_unit_shift(str, &shift);
+	if (rc < 0)
+		return rc;
+
+	ctx->size_sect <<= shift;
+	INF(ctx->debug_set,
+	    "unit %s accepted left shift size_sect by %d.\n",
+	    str, shift);
+
+	return 0;
+}
+
 static int parse_unit(int argc, const char *argv[],
-		     const struct param *param, struct ibnbd_ctx *ctx)
+		      const struct param *param, struct ibnbd_ctx *ctx)
 {
 	int rc;
 
@@ -2135,6 +2154,7 @@ static void help_resize(const char *program_name,
 	printf("\nArguments:\n");
 	print_opt("<device>", "Name of the device to be resized");
 	print_opt("<size>", "New size of the device in bytes");
+	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
 
 	printf("\nOptions:\n");
 	print_param_descr("verbose");
@@ -3627,8 +3647,23 @@ int cmd_resize(int argc, const char *argv[], const struct param *cmd,
 	}
 	argc--; argv++;
 	
-	/* TODO allow a unit here and take it into account */
-	/* for the amount to be resized to */
+	if (argc > 0) {
+		err = parse_apply_unit(*argv, ctx);
+		if (err < 0) {
+			if (!strcmp(*argv, "help")) {
+				parse_help(argc, argv, NULL, ctx);
+				
+				cmd->help(*argv, cmd, ctx);
+				return -EAGAIN;
+			} else {
+				ERR(ctx->trm,
+				    "Please provide a valid unit for size of device to be configured\n");
+				return err;
+			}
+		}
+	}
+	argc--; argv++;
+	
 	if (argc > 0) {
 		
 		handle_unknown_param(*argv, params_default);
