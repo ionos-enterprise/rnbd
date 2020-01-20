@@ -1,4 +1,4 @@
-.TH IBNBD "8" "November 2019" "ibnbd 0.2.1" "System Administration Utilities"
+.TH IBNBD "8" "January 2020" "ibnbd 1.0.0" "System Administration Utilities"
 .SH NAME
 ibnbd - Configuration tool for IBNBD driver and IBTRS library.
 .SH SYNOPSIS
@@ -142,6 +142,7 @@ Change size of a mapped device
 Arguments:
     <device>        Name of the device to be resized
     <size>          New size of the device in bytes
+    {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
 
 Options:
     verbose         Verbose output
@@ -684,7 +685,7 @@ List imported on client devices, show only mapping_path and devpath, output in j
 .B ibnbd client devices list mapping_path,devpath json
 
 .SH COPYRIGHT
-Copyright \(co 2019 IONOS Cloud GmbH. All Rights Reserved
+Copyright \(co 2019 - 2020 IONOS Cloud GmbH. All Rights Reserved
 .SH AUTHORS
 Danil Kipnis <danil.kipnis@cloud.ionos.com>
 .RE
