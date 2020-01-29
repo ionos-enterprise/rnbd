@@ -143,7 +143,7 @@ static int parse_help(int argc, const char *argv[],
 	return 1;
 }
 
-static int parse_argv0(const char *argv0, struct ibnbd_ctx *ctx)
+static void parse_argv0(const char *argv0, struct ibnbd_ctx *ctx)
 {
 	const char *prog_name = strrchr(argv0, '/');
 
@@ -153,8 +153,6 @@ static int parse_argv0(const char *argv0, struct ibnbd_ctx *ctx)
 		prog_name++;
 
 	ctx->pname = prog_name;
-
-	return 0;
 }
 
 static int parse_mode(int argc, const char *argv[],
@@ -4746,89 +4744,7 @@ int main(int argc, const char *argv[])
 
 	init_ibnbd_ctx(&ctx);
 
-	if (parse_argv0(argv[0], &ctx)) {
-
-		if (argc < 2) {
-			ERR(ctx.trm, "no object type specified\n");
-			usage_param(argv[0],
-				   params_object_type_help_client, &ctx);
-			ret = -EINVAL;
-			goto out;
-		}
-
-		ret = ibnbd_sysfs_alloc_all(&sds_clt, &sds_srv,
-					    &sess_clt, &sess_srv,
-					    &paths_clt, &paths_srv,
-					    &sds_clt_cnt, &sds_srv_cnt,
-					    &sess_clt_cnt, &sess_srv_cnt,
-					    &paths_clt_cnt, &paths_srv_cnt);
-		if (ret) {
-			ERR(ctx.trm,
-			    "Failed to alloc memory for sysfs entries: %d\n",
-			    ret);
-			goto out;
-		}
-		ret = ibnbd_sysfs_read_all(sds_clt, sds_srv, sess_clt, sess_srv,
-					   paths_clt, paths_srv);
-		if (ret) {
-			ERR(ctx.trm, "Failed to read sysfs entries: %d\n", ret);
-			goto free;
-		}
-		ibnbd_ctx_default(&ctx);
-
-		ret = parse_cmd_parameters(--argc, ++argv, params_flags,
-					   &ctx, NULL, NULL);
-		if (ret < 0)
-			goto free;
-
-		argc -= ret; argv += ret;
-
-		if (argc && *argv[0] == '-') {
-			handle_unknown_param(*argv, params_flags);
-			help_param(ctx.pname, params_flags_help, &ctx);
-			ret = -EINVAL;
-			goto free;
-		} else if (ctx.help_set) {
-			if (help_print_flags(&ctx) || help_print_all(&ctx)) {
-				help_param(ctx.pname, params_flags_help, &ctx);
-				if (help_print_all(&ctx))
-					printf("\n\n");
-			}
-			if (!help_print_flags(&ctx)) {
-				if (ctx.ibnbdmode == IBNBD_CLIENT)
-					help_mode("client",
-						  params_object_type_help_client,
-						  &ctx);
-				else
-					help_mode("server",
-						  params_object_type_help_server,
-						  &ctx);
-			}
-			ret = -EINVAL;
-			goto free;
-		}
-		if (argc && *argv[0] == '-') {
-			help_param(ctx.pname, params_flags_help, &ctx);
-			ret = -EINVAL;
-			goto free;
-		}
-
-		switch (ctx.ibnbdmode) {
-		case IBNBD_CLIENT:
-			ret = cmd_client(argc, argv, &ctx);
-			break;
-		case IBNBD_SERVER:
-			ret = cmd_server(argc, argv, &ctx);
-			break;
-		default:
-			ERR(ctx.trm,
-			    "either client or server mode have to be specified\n");
-			print_usage(NULL, params_mode_help, &ctx);
-			ret = -EINVAL;
-			break;
-		}
-		goto free;
-	}
+	parse_argv0(argv[0], &ctx);
 
 	ret = ibnbd_sysfs_alloc_all(&sds_clt, &sds_srv,
 				    &sess_clt, &sess_srv,
