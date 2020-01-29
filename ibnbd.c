@@ -353,6 +353,9 @@ static struct param _params_fileio =
 static struct param _params_help =
 	{TOK_HELP, "help", "", "", "Display help and exit",
 	 NULL, parse_help, NULL, offsetof(struct ibnbd_ctx, help_set)};
+static struct param _params_version =
+	{TOK_VERSION, "version", "", "", "Display version of this tool and exit",
+	 NULL, NULL, NULL, 0};
 static struct param _params_verbose =
 	{TOK_VERBOSE, "verbose", "", "", "Verbose output",
 	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, verbose_set)};
@@ -2856,6 +2859,7 @@ static struct param *params_mode[] = {
 	&_params_srv,
 	&_params_both,
 	&_params_help,
+	&_params_version,
 	&_params_null
 };
 
@@ -2864,6 +2868,7 @@ static struct param *params_mode_help[] = {
 	&_params_server,
 	&_params_both,
 	&_params_help,
+	&_params_version,
 	&_params_null
 };
 
@@ -3422,6 +3427,12 @@ static void help_start(const struct ibnbd_ctx *ctx)
 		printf("\n\n");
 		help_mode("both", params_both_help, ctx);
 	}
+}
+
+static void print_version(const struct ibnbd_ctx *ctx)
+{
+	printf("%s version %s%s%s\n", ctx->pname,
+	       CLR(ctx->trm, CBLD, PACKAGE_VERSION));
 }
 
 /**
@@ -4712,8 +4723,10 @@ int cmd_start(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			err = cmd_both(--argc, ++argv, ctx);
 			break;
 		case TOK_HELP:
-
 			help_start(ctx);
+			break;
+		case TOK_VERSION:
+			print_version(ctx);
 			break;
 		default:
 			handle_unknown_param(*argv, params_mode);

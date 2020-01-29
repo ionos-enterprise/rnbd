@@ -229,6 +229,7 @@ enum ibnbd_token {
 	/* output */
 	TOK_HELP,
 	TOK_VERBOSE,
+	TOK_VERSION,
 
 	/* units */
 	TOK_BYTE,
