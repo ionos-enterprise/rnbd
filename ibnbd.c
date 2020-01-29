@@ -461,7 +461,7 @@ static  void usage_param(const char *str, struct param *const params[],
 			printf("|%s%s%s",
 			       CLR(ctx->trm, CBLD, (*params)->param_str));
 
-		printf("...\n\n");
+		printf(" ...\n\n");
 	}
 }
 
