@@ -44,7 +44,8 @@ int get_unit_index(const char *unit, int *index)
 int get_unit_shift(const char *unit, int *shift)
 {
 	int index;
-	if ( get_unit_index(unit, &index) >= 0) {
+
+	if (get_unit_index(unit, &index) >= 0) {
 		*shift = bits[index].bits;
 		return 0;
 	}
@@ -523,7 +524,7 @@ int sessname_from_host(const char *from_name, char *out_buf, size_t buf_len)
 
 	if (res >= buf_len)
 		return -ENAMETOOLONG;
-	
+
 	return 0; /* not res, will be > 0 when snprintf succeeds */
 }
 
@@ -532,14 +533,13 @@ struct port_desc {
 	char port[NAME_MAX];
 	char gid[NAME_MAX];
 };
-	
 
 int read_port_descs(struct port_desc *port_descs, int max_ports)
 {
 	int cnt = 0;
 	char hca_subdir[PATH_MAX];
 	char sysfs_path[PATH_MAX];
-		
+
 	struct dirent *hca_entry;
 	struct dirent *port_entry;
 	DIR *hca_dirp;
@@ -556,7 +556,8 @@ int read_port_descs(struct port_desc *port_descs, int max_ports)
 		if (hca_entry->d_name[0] == '.')
 			continue;
 
-		snprintf(hca_subdir, sizeof(hca_subdir), HCA_DIR "%s/ports/", hca_entry->d_name);
+		snprintf(hca_subdir, sizeof(hca_subdir),
+			 HCA_DIR "%s/ports/", hca_entry->d_name);
 
 		port_dirp = opendir(hca_subdir);
 		if (!hca_dirp)
@@ -565,17 +566,21 @@ int read_port_descs(struct port_desc *port_descs, int max_ports)
 		for (port_entry = readdir(port_dirp);
 		     port_entry;
 		     port_entry = readdir(port_dirp)) {
-			
+
 			if (port_entry->d_name[0] == '.')
 				continue;
 
 			if (cnt >= max_ports)
 				return -ENAMETOOLONG;
 
-			strncpy(port_descs[cnt].hca, hca_entry->d_name, sizeof(port_descs[cnt].hca));
-			strncpy(port_descs[cnt].port, port_entry->d_name, sizeof(port_descs[cnt].port));
+			strncpy(port_descs[cnt].hca, hca_entry->d_name,
+				sizeof(port_descs[cnt].hca));
+			strncpy(port_descs[cnt].port, port_entry->d_name,
+				sizeof(port_descs[cnt].port));
 
-			snprintf(sysfs_path, sizeof(sysfs_path), HCA_DIR "%s/ports/%s/gids/", hca_entry->d_name, port_entry->d_name);
+			snprintf(sysfs_path, sizeof(sysfs_path),
+				 HCA_DIR "%s/ports/%s/gids/",
+				 hca_entry->d_name, port_entry->d_name);
 			scanf_sysfs(sysfs_path, "0", "%s", port_descs[cnt].gid);
 
 			cnt++;
@@ -583,7 +588,7 @@ int read_port_descs(struct port_desc *port_descs, int max_ports)
 		closedir(port_dirp);
 	}
 	closedir(hca_dirp);
-	
+
 	return cnt;
 }
 
@@ -613,11 +618,11 @@ int stop_shell_exec(FILE *pipe,
 	if (err == -1) {
 		err = -errno;
 		ERR(ctx->trm,
-		    "pclose failed: %s (%d)\n", 
+		    "pclose failed: %s (%d)\n",
 		    strerror(-err), err);
 	} else if (err) {
 
-		err = -(((unsigned)err) << 8);
+		err = -(((unsigned int)err) << 8);
 	}
 	return err;
 }
@@ -643,7 +648,7 @@ char *trimstr(char *str, char token)
 	if (len) {
 		end = trimmed + len;
 		/* Search from back for symbol != token */
-		while(end > trimmed && *--end == token);
+		while (end > trimmed && *--end == token);
 
 		/* trim string from back */
 		*(end + 1) = '\0';
@@ -673,12 +678,11 @@ int ibnbd_resolve(const char *host, const char *hca, const char *port,
 			unsigned short w3;
 		};
 	} val;
-		
 
-	snprintf(cmd, sizeof(cmd), 
+	snprintf(cmd, sizeof(cmd),
 		 "saquery -C %s -P %s | grep -wB10 %s |grep port_guid | cut -d'x' -f2",
 		 hca, port, host);
-		
+
 	err = start_shell_exec(&pipe, cmd, ctx);
 	if (err)
 		return err;
@@ -714,7 +718,8 @@ int resolve_host(const char *from_name, struct path *path,
 {
 	int err = 0, i, port_cnt, gid_cnt;
 
-	struct port_desc *ports = calloc(MAX_PATHS_PER_SESSION, sizeof(struct port_desc));
+	struct port_desc *ports = calloc(MAX_PATHS_PER_SESSION,
+					 sizeof(struct port_desc));
 
 	if (!ports)
 		return -ENOMEM;
@@ -729,7 +734,7 @@ int resolve_host(const char *from_name, struct path *path,
 	gid_cnt = 0;
 
 	for (i = 0; i < port_cnt && err >= 0; i++) {
-		
+
 		err = ibnbd_resolve(from_name, ports[i].hca, ports[i].port,
 				    ports[i].gid,
 				    path+gid_cnt, MAX_PATHS_PER_SESSION-gid_cnt,

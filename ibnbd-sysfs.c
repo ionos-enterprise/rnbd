@@ -538,7 +538,8 @@ static int ibnbd_sysfs_read_srv(struct ibnbd_sess_dev **sds,
 			if (!s)
 				return -ENOMEM;
 
-			sd = add_sess_dev(dent->d_name, sds, s, d, IBNBD_SERVER);
+			sd = add_sess_dev(dent->d_name, sds,
+					  s, d, IBNBD_SERVER);
 			if (!sd)
 				return -ENOMEM;
 		}
@@ -576,15 +577,15 @@ enum ibnbdmode mode_for_host(void)
 {
 	enum ibnbdmode mode = IBNBD_NONE;
 
-	if (faccessat(AT_FDCWD, PATH_IBNBD_CLT, F_OK, AT_EACCESS) == 0) {
+	if (faccessat(AT_FDCWD, PATH_IBNBD_CLT, F_OK, AT_EACCESS) == 0)
 		mode |= IBNBD_CLIENT;
-	}
+
 	/* else we are not interested in any error diagnossis here  */
 	/* if we can not deduce the mode, than we just know nothing */
 
-	if (faccessat(AT_FDCWD, PATH_IBNBD_SRV, F_OK, AT_EACCESS) == 0) {
+	if (faccessat(AT_FDCWD, PATH_IBNBD_SRV, F_OK, AT_EACCESS) == 0)
 		mode |= IBNBD_SERVER;
-	}
+
 	return mode;
 }
 
