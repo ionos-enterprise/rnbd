@@ -41,7 +41,7 @@ _ibnbd()
 	COMPREPLY=()
 
 	if ((COMP_CWORD == 1)); then
-		opts="help list show dump client server device session path map resize unmap remap"
+		opts="help list show dump client server device session path map resize unmap remap version"
 		COMPREPLY=( $( compgen -W "${opts}" -- "${cur}" ) )
 		return 0
 	fi
