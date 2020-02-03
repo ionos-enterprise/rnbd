@@ -86,7 +86,16 @@ _ibnbd()
 		esac
 		return 0
 		;;
-	reconnect|resize|unmap|remap|disconnect|add|delete)
+	add)
+		cmd="${COMP_WORDS[@]:0:COMP_CWORD-2} "
+		case ${pprev} in
+		path|paths)
+			_session_names "$cur" "$cmd"
+			;;
+		esac
+		return 0
+		;;
+	reconnect|resize|unmap|remap|disconnect|delete)
 		cmd="${COMP_WORDS[@]:0:COMP_CWORD-2} "
 		case ${pprev} in
 		sess|session|sessions)
