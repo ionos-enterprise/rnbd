@@ -297,7 +297,7 @@ static struct ibnbd_dev *find_or_add_dev(const char *syspath,
 
 	strcpy(devs[i]->devname, devname);
 	sprintf(devs[i]->devpath, "/dev/%s", devname);
-	scanf_sysfs(rpath, "stat", "%d %*d %*d %*d %d", &devs[i]->rx_sect,
+	scanf_sysfs(rpath, "stat", "%*d %*d %d %*d %*d %*d %d", &devs[i]->rx_sect,
 		    &devs[i]->tx_sect);
 
 	if (side == IBNBD_CLIENT) {
