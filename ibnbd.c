@@ -2718,14 +2718,14 @@ static struct param _cmd_disconnect_path =
 	{TOK_DISCONNECT, "disconnect",
 		"Disconnect a",
 		"",
-		"Disconnect a path a given session",
-		"<session>",
+		"Disconnect a path of a given session",
+		"<path>",
 		NULL, help_disconnect_path};
 static struct param _cmd_dis_path =
 	{TOK_DISCONNECT, "dis",
 		"Disconnect a",
 		"",
-		"Disconnect a path a given session",
+		"Disconnect a path of a given session",
 		"<path>",
 		NULL, help_disconnect_path};
 static struct param _cmd_reconnect_session =
