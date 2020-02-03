@@ -28,7 +28,7 @@ _path_names()
 
 _ibnbd()
 {
-	local cur prev pprev cmd opts
+	local cur prev pprev ppprev cmd opts
 
 	cur="${COMP_WORDS[COMP_CWORD]}"
 	prev="${COMP_WORDS[COMP_CWORD-1]}"
@@ -36,6 +36,10 @@ _ibnbd()
 		pprev="${COMP_WORDS[COMP_CWORD-2]}"
 		ocmd="${COMP_WORDS[0]} -c ${COMP_WORDS[@]:1:COMP_CWORD-1} "
 	fi
+	if ((COMP_CWORD > 2)); then
+		ppprev="${COMP_WORDS[COMP_CWORD-2]}"
+	fi
+
 	opts=""
 
 	COMPREPLY=()
@@ -118,15 +122,8 @@ _ibnbd()
 		return 0
 		;;
 	esac
-	if [[ -n "$opts" ]]; then
-		COMPREPLY=( $( compgen -W "${opts}" -- "$cur" ) )
-		return 0
-	fi
 
 	case $pprev in
-	map)
-		opts="from"
-		;;
 	show)
 		opts="csv xml json B K M G T all"
 		;;
@@ -138,6 +135,16 @@ _ibnbd()
 		;;
 	esac
 
+	case $ppprev in
+	map)
+		opts="from"
+		;;
+	esac
+
+	if [[ -n "$opts" ]]; then
+		COMPREPLY=( $( compgen -W "${opts}" -- "$cur" ) )
+		return 0
+	fi
 }
 
 complete -F _ibnbd ibnbd
