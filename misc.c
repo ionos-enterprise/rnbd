@@ -136,16 +136,6 @@ int byte_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 	return i_to_byte_unit(str, len, ctx, *(uint64_t *)v, humanize);
 }
 
-int sdd_io_mode_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
-		       enum color *clr, void *v, bool humanize)
-{
-	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
-						 sess);
-	*clr = CNRM;
-
-	return snprintf(str, len, "%s", sd->dev->io_mode);
-}
-
 int sd_devname_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		      enum color *clr, void *v, bool humanize)
 {

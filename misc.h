@@ -50,9 +50,6 @@ struct ibnbd_ctx {
 	enum fmt_type fmt;
 	bool fmt_set;
 
-	char io_mode[64];
-	bool io_mode_set;
-
 	unsigned int lstmode;
 	bool lstmode_set;
 
@@ -126,9 +123,6 @@ int byte_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 
 int sd_state_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		    enum color *clr, void *v, bool humanize);
-
-int sdd_io_mode_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
-		       enum color *clr, void *v, bool humanize);
 
 int sd_devname_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		      enum color *clr, void *v, bool humanize);

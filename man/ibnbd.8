@@ -1,4 +1,4 @@
-.TH IBNBD "8" "January 2020" "ibnbd 1.0.0" "System Administration Utilities"
+.TH IBNBD "8" "Februar 2020" "ibnbd 1.0.0" "System Administration Utilities"
 .SH NAME
 ibnbd - Configuration tool for IBNBD driver and IBTRS library.
 .SH SYNOPSIS
@@ -66,12 +66,11 @@ Options:
                     devpath         Device path    Device path under /dev/. I.e. /dev/ibnbd0
                     state           State          State of the IBNBD device. (client only)
                     access_mode     Access Mode    RW mode of the device: ro, rw or migration
-                    io_mode         IO mode        IO submission mode of the target device: file/block
                     rx_sect         RX             Amount of data read from the device
                     tx_sect         TX             Amount of data written to the device
                     direction       Direction      Direction of data transfer: imported or exported
 
-                    Default: sessname,mapping_path,devname,state,access_mode,io_mode
+                    Default: sessname,mapping_path,devname,state,access_mode
 
     {format}        Output format: csv|json|xml
     {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
@@ -103,12 +102,11 @@ Options:
                     devpath         Device path    Device path under /dev/. I.e. /dev/ibnbd0
                     state           State          State of the IBNBD device. (client only)
                     access_mode     Access Mode    RW mode of the device: ro, rw or migration
-                    io_mode         IO mode        IO submission mode of the target device: file/block
                     rx_sect         RX             Amount of data read from the device
                     tx_sect         TX             Amount of data written to the device
                     direction       Direction      Direction of data transfer: imported or exported
 
-                    Default: sessname,mapping_path,devname,state,access_mode,io_mode
+                    Default: sessname,mapping_path,devname,state,access_mode
 
     {format}        Output format: csv|json|xml
     {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
@@ -128,7 +126,6 @@ Arguments:
 Options:
     <path>          Path(s) to establish: [src_addr@]dst_addr
                     Address is [ip:]<ipv4>, [ip:]<ipv6> or gid:<gid>
-    {io_mode}       IO Mode to use on server side: fileio|blockio. Default: blockio
     {rw}            Access permission on server side: ro|rw|migration. Default: rw
     verbose         Verbose output
     help            Display help and exit
@@ -449,11 +446,10 @@ Options:
                     devpath         Device path    Device path under /dev/. I.e. /dev/ibnbd0
                     state           State          State of the IBNBD device. (client only)
                     access_mode     Access Mode    RW mode of the device: ro, rw or migration
-                    io_mode         IO mode        IO submission mode of the target device: file/block
                     rx_sect         RX             Amount of data read from the device
                     tx_sect         TX             Amount of data written to the device
                     direction       Direction      Direction of data transfer: imported or exported
-                    Default: sessname,mapping_path,devname,access_mode,io_mode
+                    Default: sessname,mapping_path,devname,access_mode
 
     {format}        Output format: csv|json|xml
     {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
@@ -485,11 +481,10 @@ Options:
                     devpath         Device path    Device path under /dev/. I.e. /dev/ibnbd0
                     state           State          State of the IBNBD device. (client only)
                     access_mode     Access Mode    RW mode of the device: ro, rw or migration
-                    io_mode         IO mode        IO submission mode of the target device: file/block
                     rx_sect         RX             Amount of data read from the device
                     tx_sect         TX             Amount of data written to the device
                     direction       Direction      Direction of data transfer: imported or exported
-                    Default: sessname,mapping_path,devname,access_mode,io_mode
+                    Default: sessname,mapping_path,devname,access_mode
 
     {format}        Output format: csv|json|xml
     {unit}          Units to use for size (in binary): B|K|M|G|T|P|E

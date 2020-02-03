@@ -73,20 +73,6 @@ static int parse_fmt(int argc, const char *argv[],
 	return 1;
 }
 
-static int parse_io_mode(int argc, const char *argv[],
-			 const struct param *param, struct ibnbd_ctx *ctx)
-{
-	if (strcasecmp(*argv, "blockio") &&
-	    strcasecmp(*argv, "fileio"))
-		return 0;
-
-	strcpy(ctx->io_mode, *argv);
-
-	ctx->io_mode_set = true;
-
-	return 1;
-}
-
 enum lstmode {
 	LST_DEVICES,
 	LST_SESSIONS,
@@ -342,12 +328,6 @@ static struct param _params_rw =
 static struct param _params_migration =
 	{TOK_MIGRATION, "migration", "", "", "Writable (migration)",
 	 NULL, parse_rw, 0};
-static struct param _params_blockio =
-	{TOK_BLOCKIO, "blockio", "", "", "Block IO mode",
-	 NULL, parse_io_mode, 0};
-static struct param _params_fileio =
-	{TOK_FILEIO, "fileio", "", "", "File IO mode",
-	 NULL, parse_io_mode, 0};
 static struct param _params_help =
 	{TOK_HELP, "help", "", "", "Display help and exit",
 	 NULL, parse_help, NULL, offsetof(struct ibnbd_ctx, help_set)};
@@ -1878,8 +1858,6 @@ static void help_map(const char *program_name,
 	print_opt("<path>", "Path(s) to establish: [src_addr@]dst_addr");
 	print_opt("", "Address is [ip:]<ipv4>, [ip:]<ipv6> or gid:<gid>");
 
-	print_opt("{io_mode}",
-		  "IO Mode to use on server side: fileio|blockio. Default: blockio");
 	print_opt("{rw}",
 		  "Access permission on server side: ro|rw|migration. Default: rw");
 	print_param_descr("verbose");
@@ -2081,10 +2059,6 @@ static int client_devices_map(const char *from_name, const char *device_name,
 			cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt,
 					" path=%s@%s", sess->paths[i]->src_addr,
 					sess->paths[i]->dst_addr);
-
-	if (ctx->io_mode_set)
-		cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, " io_mode=%s",
-				ctx->io_mode);
 
 	if (ctx->access_mode_set)
 		cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, " access_mode=%s",
@@ -2985,8 +2959,6 @@ static struct param *params_map_parameters[] = {
 	&_params_ro,
 	&_params_rw,
 	&_params_migration,
-	&_params_blockio,
-	&_params_fileio,
 	&_params_help,
 	&_params_verbose,
 	&_params_minus_v,
@@ -2999,8 +2971,6 @@ static struct param *params_map_parameters_help[] = {
 	&_params_ro,
 	&_params_rw,
 	&_params_migration,
-	&_params_blockio,
-	&_params_fileio,
 	&_params_help,
 	&_params_verbose,
 	&_params_minus_v,

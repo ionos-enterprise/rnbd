@@ -33,11 +33,6 @@ static struct table_column clm_ibnbd_dev_devpath =
 	_CLM_SD("devpath", sess, "Device path", FLD_STR, sd_devpath_to_str, 'l',
 		CNRM, CNRM, "Device path under /dev/. I.e. /dev/ibnbd0");
 
-static struct table_column clm_ibnbd_dev_io_mode =
-	_CLM_SD("io_mode", sess, "IO mode", FLD_STR,
-		sdd_io_mode_to_str, 'l', CNRM, CNRM,
-		"IO submission mode of the target device: file/block");
-
 static struct table_column clm_ibnbd_dev_rx_sect =
 	_CLM_SD("rx_sect", sess, "RX", FLD_LLU, sd_rx_to_str, 'r', CNRM, CNRM,
 	"Amount of data read from the device");
@@ -66,7 +61,6 @@ static struct table_column *all_clms_devices[] = {
 	&clm_ibnbd_dev_devpath,
 	&clm_ibnbd_dev_state,
 	&clm_ibnbd_sess_dev_access_mode,
-	&clm_ibnbd_dev_io_mode,
 	&clm_ibnbd_dev_rx_sect,
 	&clm_ibnbd_dev_tx_sect,
 	&clm_ibnbd_sess_dev_direction,
@@ -80,7 +74,6 @@ static struct table_column *all_clms_devices_clt[] = {
 	&clm_ibnbd_dev_devpath,
 	&clm_ibnbd_dev_state,
 	&clm_ibnbd_sess_dev_access_mode,
-	&clm_ibnbd_dev_io_mode,
 	&clm_ibnbd_dev_rx_sect,
 	&clm_ibnbd_dev_tx_sect,
 	&clm_ibnbd_sess_dev_direction,
@@ -93,7 +86,6 @@ static struct table_column *all_clms_devices_srv[] = {
 	&clm_ibnbd_dev_devname,
 	&clm_ibnbd_dev_devpath,
 	&clm_ibnbd_sess_dev_access_mode,
-	&clm_ibnbd_dev_io_mode,
 	&clm_ibnbd_dev_rx_sect,
 	&clm_ibnbd_dev_tx_sect,
 	&clm_ibnbd_sess_dev_direction,
@@ -106,7 +98,6 @@ static struct table_column *def_clms_devices_clt[] = {
 	&clm_ibnbd_dev_devname,
 	&clm_ibnbd_dev_state,
 	&clm_ibnbd_sess_dev_access_mode,
-	&clm_ibnbd_dev_io_mode,
 	NULL
 };
 
@@ -115,7 +106,6 @@ static struct table_column *def_clms_devices_srv[] = {
 	&clm_ibnbd_sess_dev_mapping_path,
 	&clm_ibnbd_dev_devname,
 	&clm_ibnbd_sess_dev_access_mode,
-	&clm_ibnbd_dev_io_mode,
 	NULL
 };
 

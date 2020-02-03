@@ -302,10 +302,7 @@ static struct ibnbd_dev *find_or_add_dev(const char *syspath,
 
 	if (side == IBNBD_CLIENT) {
 		strcat(rpath, "/ibnbd/");
-		scanf_sysfs(rpath, "io_mode", "%s", devs[i]->io_mode);
 		scanf_sysfs(rpath, "state", "%s", devs[i]->state);
-	} else {
-		scanf_sysfs(dirname(tmp), "io_mode", "%s", devs[i]->io_mode);
 	}
 
 	return devs[i];
