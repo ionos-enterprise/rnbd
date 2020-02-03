@@ -1669,7 +1669,7 @@ static int parse_name_help(int argc, const char *argv[], const char *what,
 			word++; /* skip space */
 		else
 			word = what;
-		cmd_print_usage_short(cmd, 0, ctx);
+		cmd_print_usage_short(cmd, what, ctx);
 		ERR(ctx->trm, "Please specify the %s argument\n", word);
 		return -EINVAL;
 	}
