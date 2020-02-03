@@ -166,7 +166,10 @@ int sd_rx_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 
 	*clr = CNRM;
 
-	return i_to_byte_unit(str, len, ctx, sd->dev->rx_sect << 9, humanize);
+	if (humanize)
+		return i_to_byte_unit(str, len, ctx, sd->dev->rx_sect << 9, humanize);
+	else
+		return snprintf(str, len, "%" PRIu64, sd->dev->rx_sect);
 }
 
 int sd_tx_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
@@ -177,7 +180,10 @@ int sd_tx_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 
 	*clr = CNRM;
 
-	return i_to_byte_unit(str, len, ctx, sd->dev->tx_sect << 9, humanize);
+	if (humanize)
+		return i_to_byte_unit(str, len, ctx, sd->dev->tx_sect << 9, humanize);
+	else
+		return snprintf(str, len, "%" PRIu64, sd->dev->tx_sect);
 }
 
 int dev_sessname_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
