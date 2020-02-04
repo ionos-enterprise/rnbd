@@ -2320,6 +2320,26 @@ static void help_remap(const char *program_name,
 	print_param_descr("help");
 }
 
+static void help_remap_device_or_session(const char *program_name,
+					 const struct param *cmd,
+					 const struct ibnbd_ctx *ctx)
+{
+	if (!program_name)
+		program_name = "<name> ";
+
+	cmd_print_usage_descr(cmd, program_name, ctx);
+
+	printf("\nArguments:\n");
+	print_opt("<identifier>", "Identifier of a device or session to be remapped.");
+	print_opt("", "If identifier designates a session,");
+	print_opt("", "all devices of this particular session will be remapped.");
+
+	printf("\nOptions:\n");
+	print_param_descr("force");
+	print_param_descr("verbose");
+	print_param_descr("help");
+}
+
 static void help_remap_session(const char *program_name,
 			       const struct param *cmd,
 			       const struct ibnbd_ctx *ctx)
@@ -2693,6 +2713,13 @@ static struct param _cmd_remap =
 		"Unmap and map again an imported device",
 		"<device>",
 		 NULL, help_remap};
+static struct param _cmd_remap_device_or_session =
+	{TOK_REMAP, "remap",
+		"Remap a",
+		"",
+		"Unmap and map again a devices or all devices of a given session",
+		"<device|session>",
+		 NULL, help_remap_device_or_session};
 static struct param _cmd_remap_session =
 	{TOK_REMAP, "remap",
 		"Remap all devicess on a",
@@ -2878,7 +2905,7 @@ static struct param *params_object_type_client[] = {
 	&_cmd_map,
 	&_cmd_resize,
 	&_cmd_unmap,
-	&_cmd_remap,
+	&_cmd_remap_device_or_session,
 	&_params_help,
 	&_params_null
 };
@@ -3698,7 +3725,7 @@ int cmd_unmap(int argc, const char *argv[], const struct param *cmd,
 }
 
 int cmd_remap(int argc, const char *argv[], const struct param *cmd,
-	      const char *help_context, struct ibnbd_ctx *ctx)
+	      bool allowSession, const char *help_context, struct ibnbd_ctx *ctx)
 {
 	int err = parse_name_help(argc--, argv++,
 				  help_context, cmd, ctx);
@@ -3717,6 +3744,11 @@ int cmd_remap(int argc, const char *argv[], const struct param *cmd,
 		handle_unknown_param(*argv, params_default);
 		return -EINVAL;
 	}
+	if (allowSession
+	    && find_single_session(ctx->name, ctx, sess_clt,
+				   sds_clt_cnt, false))
+		    return client_session_remap(ctx->name, ctx);
+
 	return client_devices_remap(ctx->name, ctx);
 }
 
@@ -3900,7 +3932,7 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			err = cmd_unmap(argc, argv, cmd, _help_context, ctx);
 			break;
 		case TOK_REMAP:
-			err = cmd_remap(argc, argv, cmd, _help_context, ctx);
+			err = cmd_remap(argc, argv, cmd, false, _help_context, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, NULL, ctx);
@@ -4434,7 +4466,7 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			err = cmd_unmap(argc, argv, param, _help_context, ctx);
 			break;
 		case TOK_REMAP:
-			err = cmd_remap(argc, argv, param, _help_context, ctx);
+			err = cmd_remap(argc, argv, param, true, _help_context, ctx);
 			break;
 		case TOK_HELP:
 			if (ctx->pname_with_mode
@@ -4615,7 +4647,7 @@ int cmd_both(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			err = cmd_unmap(argc, argv, param, "", ctx);
 			break;
 		case TOK_REMAP:
-			err = cmd_remap(argc, argv, param, "", ctx);
+			err = cmd_remap(argc, argv, param, false, "", ctx);
 			break;
 		case TOK_HELP:
 			help_param(ctx->pname, params_both_help, ctx);
