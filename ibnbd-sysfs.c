@@ -497,18 +497,45 @@ static int ibnbd_sysfs_read_clt(struct ibnbd_sess_dev **sds,
 	return 0;
 }
 
+static int ibnbd_sysfs_read_srv_sess_path(
+		struct ibnbd_sess **sess,
+		struct ibnbd_path **paths)
+{
+	struct dirent *sess_ent;
+	DIR *sp;
+
+	sp = opendir(PATH_SESS_SRV);
+	if (!sp)
+		return 0;
+
+	for (sess_ent = readdir(sp); sess_ent; sess_ent = readdir(sp)) {
+		if (sess_ent->d_name[0] == '.')
+			continue;
+
+		 find_or_add_sess(sess_ent->d_name, sess, paths, IBNBD_SERVER);
+	}
+	closedir(sp);
+
+	return 0;
+}
+
 static int ibnbd_sysfs_read_srv(struct ibnbd_sess_dev **sds,
 				struct ibnbd_sess **sess,
 				struct ibnbd_path **paths,
 				struct ibnbd_dev **devs)
 {
 	char tmp[PATH_MAX];
+	int res;
 	struct dirent *dent, *sent;
 	struct ibnbd_sess_dev *sd;
 	struct ibnbd_sess *s;
 	struct ibnbd_dev *d;
 	DIR *ddir, *sdir;
 
+	res = ibnbd_sysfs_read_srv_sess_path(sess, paths);
+	if (res)
+		return res;
+	
 	ddir = opendir(PATH_SDS_SRV);
 	if (!ddir)
 		return 0;

@@ -259,6 +259,10 @@ int list_paths_term(struct ibnbd_path **paths, int path_cnt,
 	}
 
 	for (i = 0; i < path_cnt; i++) {
+		if (!paths[i]) {
+			ERR(ctx->trm, "inconsistent internal data path_cnt <-> paths\n");
+			return -EFAULT;
+		}
 		table_row_stringify(paths[i], flds + fld_cnt, cs, ctx, true, 0);
 
 		fld_cnt += cs_cnt;
