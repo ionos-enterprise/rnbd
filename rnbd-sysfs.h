@@ -1,12 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include <limits.h>
 
-#define PATH_IBNBD_CLT "/sys/class/ibnbd-client/ctl"
-#define PATH_SDS_CLT PATH_IBNBD_CLT "/devices/"
-#define PATH_SESS_CLT "/sys/class/ibtrs-client/"
-#define PATH_IBNBD_SRV "/sys/class/ibnbd-server/ctl"
-#define PATH_SDS_SRV PATH_IBNBD_SRV "/devices/"
-#define PATH_SESS_SRV "/sys/class/ibtrs-server/"
+struct rnbd_sysfs_paths {
+	const char *path_dev_clt;
+	const char *path_sess_clt;
+	const char *path_dev_srv;
+	const char *path_sess_srv;
+};
 
 enum rnbdmode {
 	RNBD_NONE = 0,
@@ -88,11 +88,11 @@ int rnbd_sysfs_alloc_all(struct rnbd_sess_dev ***sds_clt,
  * Use rnbd_sysfs_alloc_all() before and rnbd_sysfs_free_all() after.
  */
 int rnbd_sysfs_read_all(struct rnbd_sess_dev **sds_clt,
-			 struct rnbd_sess_dev **sds_srv,
-			 struct rnbd_sess **sess_clt,
-			 struct rnbd_sess **sess_srv,
-			 struct rnbd_path **paths_clt,
-			 struct rnbd_path **paths_srv);
+			struct rnbd_sess_dev **sds_srv,
+			struct rnbd_sess **sess_clt,
+			struct rnbd_sess **sess_srv,
+			struct rnbd_path **paths_clt,
+			struct rnbd_path **paths_srv);
 
 struct rnbd_ctx;
 
@@ -102,3 +102,7 @@ int scanf_sysfs(const char *dir, const char *entry, const char *format, ...);
 
 enum rnbdmode mode_for_host(void);
 const char *mode_to_string(enum rnbdmode mode);
+
+void check_compat_sysfs(const struct rnbd_ctx *ctx);
+const struct rnbd_sysfs_paths * const
+get_sysfs_paths(const struct rnbd_ctx *ctx);
