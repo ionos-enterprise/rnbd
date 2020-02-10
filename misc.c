@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Configuration tool for IBNBD driver and IBTRS library.
+ * Configuration tool for RNBD driver and RTRS library.
  *
  * Copyright (c) 2019 1&1 IONOS SE. All rights reserved.
  * Authors: Danil Kipnis <danil.kipnis@cloud.ionos.com>
@@ -115,10 +115,10 @@ int i_to_str(uint64_t d, char *str, size_t len, int prec)
 			(double)d / (1L << bits[i].bits), bits[i].str);
 }
 
-int sd_state_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int sd_state_to_str(char *str, size_t len, const struct rnbd_ctx *ctx,
 		    enum color *clr, void *v, bool humanize)
 {
-	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
+	struct rnbd_sess_dev *sd = container_of(v, struct rnbd_sess_dev,
 						 sess);
 
 	if (!strcmp("open", sd->dev->state))
@@ -129,17 +129,17 @@ int sd_state_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 	return snprintf(str, len, "%s", sd->dev->state);
 }
 
-int byte_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int byte_to_str(char *str, size_t len, const struct rnbd_ctx *ctx,
 		enum color *clr, void *v, bool humanize)
 {
 	*clr = CNRM;
 	return i_to_byte_unit(str, len, ctx, *(uint64_t *)v, humanize);
 }
 
-int sd_devname_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int sd_devname_to_str(char *str, size_t len, const struct rnbd_ctx *ctx,
 		      enum color *clr, void *v, bool humanize)
 {
-	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
+	struct rnbd_sess_dev *sd = container_of(v, struct rnbd_sess_dev,
 						 sess);
 
 	*clr = CNRM;
@@ -147,10 +147,10 @@ int sd_devname_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 	return snprintf(str, len, "%s", sd->dev->devname);
 }
 
-int sd_devpath_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int sd_devpath_to_str(char *str, size_t len, const struct rnbd_ctx *ctx,
 		      enum color *clr, void *v, bool humanize)
 {
-	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
+	struct rnbd_sess_dev *sd = container_of(v, struct rnbd_sess_dev,
 						 sess);
 
 	*clr = CNRM;
@@ -158,10 +158,10 @@ int sd_devpath_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 	return snprintf(str, len, "%s", sd->dev->devpath);
 }
 
-int sd_rx_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int sd_rx_to_str(char *str, size_t len, const struct rnbd_ctx *ctx,
 		 enum color *clr, void *v, bool humanize)
 {
-	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
+	struct rnbd_sess_dev *sd = container_of(v, struct rnbd_sess_dev,
 						 sess);
 
 	*clr = CNRM;
@@ -172,10 +172,10 @@ int sd_rx_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		return snprintf(str, len, "%" PRIu64, sd->dev->rx_sect);
 }
 
-int sd_tx_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int sd_tx_to_str(char *str, size_t len, const struct rnbd_ctx *ctx,
 		 enum color *clr, void *v, bool humanize)
 {
-	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
+	struct rnbd_sess_dev *sd = container_of(v, struct rnbd_sess_dev,
 						 sess);
 
 	*clr = CNRM;
@@ -186,10 +186,10 @@ int sd_tx_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		return snprintf(str, len, "%" PRIu64, sd->dev->tx_sect);
 }
 
-int dev_sessname_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int dev_sessname_to_str(char *str, size_t len, const struct rnbd_ctx *ctx,
 			enum color *clr, void *v, bool humanize)
 {
-	struct ibnbd_sess_dev *sd = container_of(v, struct ibnbd_sess_dev,
+	struct rnbd_sess_dev *sd = container_of(v, struct rnbd_sess_dev,
 						 sess);
 	*clr = CNRM;
 
@@ -199,10 +199,10 @@ int dev_sessname_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
 	return snprintf(str, len, "%s", sd->sess->sessname);
 }
 
-int ibnbd_path_state_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int rnbd_path_state_to_str(char *str, size_t len, const struct rnbd_ctx *ctx,
 			    enum color *clr, void *v, bool humanize)
 {
-	struct ibnbd_path *p = container_of(v, struct ibnbd_path, state);
+	struct rnbd_path *p = container_of(v, struct rnbd_path, state);
 
 	if (!strcmp(p->state, "connected"))
 		*clr = CGRN;
@@ -220,7 +220,7 @@ static bool is_gid(const char *arg)
 		return false;
 }
 
-int ibnbd_addr_to_norm(char *str, size_t len, char *v)
+int rnbd_addr_to_norm(char *str, size_t len, char *v)
 {
 	char addr[16];
 	int cnt, af;
@@ -243,7 +243,7 @@ out:
 	return snprintf(str, len, "%s", v);
 }
 
-int ibnbd_pathname_to_norm(char *str, size_t len, char *v)
+int rnbd_pathname_to_norm(char *str, size_t len, char *v)
 {
 	char *s, *at;
 	int cnt;
@@ -255,16 +255,16 @@ int ibnbd_pathname_to_norm(char *str, size_t len, char *v)
 		return snprintf(str, len, "%s", v);
 
 	*at = 0;
-	cnt = ibnbd_addr_to_norm(str, len, s);
+	cnt = rnbd_addr_to_norm(str, len, s);
 	cnt += snprintf(str + cnt, len - cnt, "%s", "@");
-	cnt += ibnbd_addr_to_norm(str + cnt, len - cnt, at + 1);
+	cnt += rnbd_addr_to_norm(str + cnt, len - cnt, at + 1);
 
 	free(s);
 
 	return cnt;
 }
 
-int addr_to_norm(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int addr_to_norm(char *str, size_t len, const struct rnbd_ctx *ctx,
 		 enum color *clr, void *v, bool humanize)
 {
 	*clr = CNRM;
@@ -272,13 +272,13 @@ int addr_to_norm(char *str, size_t len, const struct ibnbd_ctx *ctx,
 	if (!humanize)
 		return snprintf(str, len, "%s", (char *) v);
 
-	return ibnbd_addr_to_norm(str, len, v);
+	return rnbd_addr_to_norm(str, len, v);
 }
 
-int path_to_sessname(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int path_to_sessname(char *str, size_t len, const struct rnbd_ctx *ctx,
 		     enum color *clr, void *v, bool humanize)
 {
-	struct ibnbd_path *p = container_of(v, struct ibnbd_path, sess);
+	struct rnbd_path *p = container_of(v, struct rnbd_path, sess);
 
 	*clr = CNRM;
 
@@ -288,10 +288,10 @@ int path_to_sessname(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		return snprintf(str, len, "%s", "");
 }
 
-int sd_sess_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int sd_sess_to_direction(char *str, size_t len, const struct rnbd_ctx *ctx,
 			 enum color *clr, void *v, bool humanize)
 {
-	struct ibnbd_sess_dev *p = container_of(v, struct ibnbd_sess_dev, sess);
+	struct rnbd_sess_dev *p = container_of(v, struct rnbd_sess_dev, sess);
 
 	*clr = CNRM;
 
@@ -299,16 +299,16 @@ int sd_sess_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		return 0;
 
 	switch (p->sess->side) {
-	case IBNBD_CLIENT:
+	case RNBD_CLIENT:
 		return snprintf(str, len, "import");
-	case IBNBD_SERVER:
+	case RNBD_SERVER:
 		return snprintf(str, len, "export");
 	default:
 		return snprintf(str, len, "?");
 	}
 }
 
-int i_to_byte_unit(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int i_to_byte_unit(char *str, size_t len, const struct rnbd_ctx *ctx,
 		   uint64_t v, bool humanize)
 {
 	if (humanize)
@@ -321,10 +321,10 @@ int i_to_byte_unit(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		return snprintf(str, len, "%" PRIu64, v);
 }
 
-int path_to_shortdesc(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int path_to_shortdesc(char *str, size_t len, const struct rnbd_ctx *ctx,
 		      enum color *clr, void *v, bool humanize)
 {
-	struct ibnbd_path *p = container_of(v, struct ibnbd_path, sess);
+	struct rnbd_path *p = container_of(v, struct rnbd_path, sess);
 	enum color c;
 	char path_short[NAME_MAX];
 
@@ -339,13 +339,13 @@ int path_to_shortdesc(char *str, size_t len, const struct ibnbd_ctx *ctx,
 	else
 		c = CRED;
 
-	ibnbd_pathname_to_norm(path_short, sizeof(path_short), p->pathname);
+	rnbd_pathname_to_norm(path_short, sizeof(path_short), p->pathname);
 
 	return snprintf(str, len, "%s %d %s%s%s", p->hca_name, p->hca_port,
 			CLR(ctx->trm, c, path_short));
 }
 
-int act_path_cnt_to_state(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int act_path_cnt_to_state(char *str, size_t len, const struct rnbd_ctx *ctx,
 			  enum color *clr, void *v, bool humanize)
 {
 	int act_path_cnt = *(int *)v;
@@ -361,23 +361,23 @@ int act_path_cnt_to_state(char *str, size_t len, const struct ibnbd_ctx *ctx,
 }
 
 
-int sess_side_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int sess_side_to_direction(char *str, size_t len, const struct rnbd_ctx *ctx,
 			   enum color *clr, void *v, bool humanize)
 {
-	struct ibnbd_sess *s = container_of(v, struct ibnbd_sess, side);
+	struct rnbd_sess *s = container_of(v, struct rnbd_sess, side);
 
 	*clr = CNRM;
-	if (s->side == IBNBD_CLIENT)
+	if (s->side == RNBD_CLIENT)
 		return snprintf(str, len, "outgoing");
 	else
 		return snprintf(str, len, "incoming");
 }
 
 
-int path_sess_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int path_sess_to_direction(char *str, size_t len, const struct rnbd_ctx *ctx,
 			   enum color *clr, void *v, bool humanize)
 {
-	struct ibnbd_path *p = container_of(v, struct ibnbd_path, sess);
+	struct rnbd_path *p = container_of(v, struct rnbd_path, sess);
 
 	*clr = CNRM;
 
@@ -386,9 +386,9 @@ int path_sess_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
 		return 0;
 
 	switch (p->sess->side) {
-	case IBNBD_CLIENT:
+	case RNBD_CLIENT:
 		return snprintf(str, len, "outgoing");
-	case IBNBD_SERVER:
+	case RNBD_SERVER:
 		return snprintf(str, len, "incoming");
 	default:
 		return snprintf(str, len, "?");
@@ -430,7 +430,7 @@ bool is_path_addr(const char *arg)
 
 /**
  * Evaluate whether both left and right string represent
- * equivalent IBNBD path addresses.
+ * equivalent RNBD path addresses.
  *
  * Address strings start with either 'ip:' or 'gid:'
  * followed by an valid (IPv4 or IPv6) address
@@ -589,7 +589,7 @@ int read_port_descs(struct port_desc *port_descs, int max_ports)
 }
 
 int start_shell_exec(FILE **pipe, const char *cmd,
-		     const struct ibnbd_ctx *ctx)
+		     const struct rnbd_ctx *ctx)
 {
 	int err = 0;
 
@@ -606,7 +606,7 @@ int start_shell_exec(FILE **pipe, const char *cmd,
 
 
 int stop_shell_exec(FILE *pipe,
-		    const struct ibnbd_ctx *ctx)
+		    const struct rnbd_ctx *ctx)
 {
 	int err;
 
@@ -653,10 +653,10 @@ char *trimstr(char *str, char token)
 	return trimmed;
 }
 
-int ibnbd_resolve(const char *host, const char *hca, const char *port,
+int rnbd_resolve(const char *host, const char *hca, const char *port,
 		  const char *client_gid,
 		  struct path *path, int len,
-		  const struct ibnbd_ctx *ctx)
+		  const struct rnbd_ctx *ctx)
 {
 	int cnt = 0;
 	int err = 0;
@@ -710,7 +710,7 @@ int ibnbd_resolve(const char *host, const char *hca, const char *port,
 }
 
 int resolve_host(const char *from_name, struct path *path,
-		 const struct ibnbd_ctx *ctx)
+		 const struct rnbd_ctx *ctx)
 {
 	int err = 0, i, port_cnt, gid_cnt;
 
@@ -731,7 +731,7 @@ int resolve_host(const char *from_name, struct path *path,
 
 	for (i = 0; i < port_cnt && err >= 0; i++) {
 
-		err = ibnbd_resolve(from_name, ports[i].hca, ports[i].port,
+		err = rnbd_resolve(from_name, ports[i].hca, ports[i].port,
 				    ports[i].gid,
 				    path+gid_cnt, MAX_PATHS_PER_SESSION-gid_cnt,
 				    ctx);

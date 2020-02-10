@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Configuration tool for IBNBD driver and IBTRS library.
+ * Configuration tool for RNBD driver and RTRS library.
  *
  * Copyright (c) 2019 1&1 IONOS SE. All rights reserved.
  * Authors: Danil Kipnis <danil.kipnis@cloud.ionos.com>
@@ -28,34 +28,34 @@
 			printf(fmt, ##__VA_ARGS__); \
 	} while (0)
 
-static struct ibnbd_sess_dev **sds_clt;
-static struct ibnbd_sess_dev **sds_srv;
-static struct ibnbd_sess **sess_clt;
-static struct ibnbd_sess **sess_srv;
-static struct ibnbd_path **paths_clt;
-static struct ibnbd_path **paths_srv;
+static struct rnbd_sess_dev **sds_clt;
+static struct rnbd_sess_dev **sds_srv;
+static struct rnbd_sess **sess_clt;
+static struct rnbd_sess **sess_srv;
+static struct rnbd_path **paths_clt;
+static struct rnbd_path **paths_srv;
 static int sds_clt_cnt, sds_srv_cnt,
 	   sess_clt_cnt, sess_srv_cnt,
 	   paths_clt_cnt, paths_srv_cnt;
 
 struct param {
-	enum ibnbd_token tok;
+	enum rnbd_token tok;
 	const char *param_str;
 	const char *short_d;
 	const char *short_d2;
 	const char *descr;
 	const char *params;
 	int (*parse)(int argc, const char *argv[],
-		     const struct param *param, struct ibnbd_ctx *ctx);
+		     const struct param *param, struct rnbd_ctx *ctx);
 	void (*help)(const char *program_name,
 		     const struct param *cmd,
-		     const struct ibnbd_ctx *ctx);
+		     const struct rnbd_ctx *ctx);
 	size_t offset;
 	int dist;
 };
 
 static int parse_fmt(int argc, const char *argv[],
-		     const struct param *param, struct ibnbd_ctx *ctx)
+		     const struct param *param, struct rnbd_ctx *ctx)
 {
 	if (!strcasecmp(*argv, "csv"))
 		ctx->fmt = FMT_CSV;
@@ -80,7 +80,7 @@ enum lstmode {
 };
 
 static int parse_lst(int argc, const char *argv[],
-		     const struct param *param, struct ibnbd_ctx *ctx)
+		     const struct param *param, struct rnbd_ctx *ctx)
 {
 	if (!strcasecmp(*argv, "devices") ||
 	    !strcasecmp(*argv, "device") ||
@@ -103,7 +103,7 @@ static int parse_lst(int argc, const char *argv[],
 }
 
 static int parse_from(int argc, const char *argv[],
-		      const struct param *param, struct ibnbd_ctx *ctx)
+		      const struct param *param, struct rnbd_ctx *ctx)
 {
 	if (argc < 2) {
 		ERR(ctx->trm, "Please specify the destination to map from\n");
@@ -117,7 +117,7 @@ static int parse_from(int argc, const char *argv[],
 }
 
 static int parse_help(int argc, const char *argv[],
-		      const struct param *param, struct ibnbd_ctx *ctx)
+		      const struct param *param, struct rnbd_ctx *ctx)
 {
 	ctx->help_set = true;
 
@@ -129,7 +129,7 @@ static int parse_help(int argc, const char *argv[],
 	return 1;
 }
 
-static void parse_argv0(const char *argv0, struct ibnbd_ctx *ctx)
+static void parse_argv0(const char *argv0, struct rnbd_ctx *ctx)
 {
 	const char *prog_name = strrchr(argv0, '/');
 
@@ -142,24 +142,24 @@ static void parse_argv0(const char *argv0, struct ibnbd_ctx *ctx)
 }
 
 static int parse_mode(int argc, const char *argv[],
-		     const struct param *param, struct ibnbd_ctx *ctx)
+		     const struct param *param, struct rnbd_ctx *ctx)
 {
 	if (!strcasecmp(*argv, "client") || !strcasecmp(*argv, "clt"))
-		ctx->ibnbdmode = IBNBD_CLIENT;
+		ctx->rnbdmode = RNBD_CLIENT;
 	else if (!strcasecmp(*argv, "server") || !strcasecmp(*argv, "srv"))
-		ctx->ibnbdmode = IBNBD_SERVER;
+		ctx->rnbdmode = RNBD_SERVER;
 	else if (!strcasecmp(*argv, "both"))
-		ctx->ibnbdmode = IBNBD_BOTH;
+		ctx->rnbdmode = RNBD_BOTH;
 	else
 		return 0;
 
-	ctx->ibnbdmode_set = true;
+	ctx->rnbdmode_set = true;
 
 	return 1;
 }
 
 static int parse_rw(int argc, const char *argv[],
-		     const struct param *param, struct ibnbd_ctx *ctx)
+		     const struct param *param, struct rnbd_ctx *ctx)
 {
 	if (strcasecmp(*argv, "ro") &&
 	    strcasecmp(*argv, "rw") &&
@@ -185,7 +185,7 @@ static int clm_set_hdr_unit(struct table_column *clm, char const *unit)
 	return 0;
 }
 
-static int parse_apply_unit(const char *str, struct ibnbd_ctx *ctx)
+static int parse_apply_unit(const char *str, struct rnbd_ctx *ctx)
 {
 	int rc, shift;
 
@@ -205,7 +205,7 @@ static int parse_apply_unit(const char *str, struct ibnbd_ctx *ctx)
 }
 
 static int parse_unit(int argc, const char *argv[],
-		      const struct param *param, struct ibnbd_ctx *ctx)
+		      const struct param *param, struct rnbd_ctx *ctx)
 {
 	int rc;
 
@@ -213,19 +213,19 @@ static int parse_unit(int argc, const char *argv[],
 	if (rc < 0)
 		return 0;
 
-	clm_set_hdr_unit(&clm_ibnbd_dev_rx_sect, param->descr);
-	clm_set_hdr_unit(&clm_ibnbd_dev_tx_sect, param->descr);
-	clm_set_hdr_unit(&clm_ibnbd_sess_rx_bytes, param->descr);
-	clm_set_hdr_unit(&clm_ibnbd_sess_tx_bytes, param->descr);
-	clm_set_hdr_unit(&clm_ibnbd_path_rx_bytes, param->descr);
-	clm_set_hdr_unit(&clm_ibnbd_path_tx_bytes, param->descr);
+	clm_set_hdr_unit(&clm_rnbd_dev_rx_sect, param->descr);
+	clm_set_hdr_unit(&clm_rnbd_dev_tx_sect, param->descr);
+	clm_set_hdr_unit(&clm_rnbd_sess_rx_bytes, param->descr);
+	clm_set_hdr_unit(&clm_rnbd_sess_tx_bytes, param->descr);
+	clm_set_hdr_unit(&clm_rnbd_path_rx_bytes, param->descr);
+	clm_set_hdr_unit(&clm_rnbd_path_tx_bytes, param->descr);
 
 	ctx->unit_set = true;
 	return 1;
 }
 
 static int parse_all(int argc, const char *argv[],
-		     const struct param *param, struct ibnbd_ctx *ctx)
+		     const struct param *param, struct rnbd_ctx *ctx)
 {
 	memcpy(&ctx->clms_devices_clt, &all_clms_devices_clt,
 	       ARRSIZE(all_clms_devices_clt) * sizeof(all_clms_devices[0]));
@@ -244,7 +244,7 @@ static int parse_all(int argc, const char *argv[],
 }
 
 static int parse_flag(int argc, const char *argv[],
-		     const struct param *param, struct ibnbd_ctx *ctx)
+		     const struct param *param, struct rnbd_ctx *ctx)
 {
 	*(short *)(((char *)ctx)+(param->offset)) = 1;
 
@@ -252,7 +252,7 @@ static int parse_flag(int argc, const char *argv[],
 }
 
 static int parse_debug(int argc, const char *argv[],
-		     const struct param *param, struct ibnbd_ctx *ctx)
+		     const struct param *param, struct rnbd_ctx *ctx)
 {
 	ctx->debug_set = true;
 	ctx->verbose_set = true;
@@ -312,7 +312,7 @@ static struct param _params_path_param =
 	 NULL, NULL, 0};
 static struct param _params_notree =
 	{TOK_NOTREE, "notree", "", "", "Don't display paths for each sessions",
-	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, notree_set)};
+	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, notree_set)};
 static struct param _params_xml =
 	{TOK_XML, "xml", "", "", "Print in XML format", NULL, parse_fmt, 0};
 static struct param _params_cvs =
@@ -330,43 +330,43 @@ static struct param _params_migration =
 	 NULL, parse_rw, 0};
 static struct param _params_help =
 	{TOK_HELP, "help", "", "", "Display help and exit",
-	 NULL, parse_help, NULL, offsetof(struct ibnbd_ctx, help_set)};
+	 NULL, parse_help, NULL, offsetof(struct rnbd_ctx, help_set)};
 static struct param _params_version =
 	{TOK_VERSION, "version", "", "", "Display version of this tool and exit",
 	 NULL, NULL, NULL, 0};
 static struct param _params_verbose =
 	{TOK_VERBOSE, "verbose", "", "", "Verbose output",
-	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, verbose_set)};
+	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, verbose_set)};
 static struct param _params_minus_h =
 	{TOK_VERBOSE, "-h", "", "", "Help output",
-	 NULL, parse_help, NULL, offsetof(struct ibnbd_ctx, help_set)};
+	 NULL, parse_help, NULL, offsetof(struct rnbd_ctx, help_set)};
 static struct param _params_minus_minus_help =
 	{TOK_VERBOSE, "--help", "", "", "Help output",
-	 NULL, parse_help, NULL, offsetof(struct ibnbd_ctx, help_set)};
+	 NULL, parse_help, NULL, offsetof(struct rnbd_ctx, help_set)};
 static struct param _params_minus_v =
 	{TOK_VERBOSE, "-v", "", "", "Verbose output",
-	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, verbose_set)};
+	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, verbose_set)};
 static struct param _params_minus_minus_verbose =
 	{TOK_VERBOSE, "--verbose", "", "", "Verbose output",
-	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, verbose_set)};
+	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, verbose_set)};
 static struct param _params_minus_d =
 	{TOK_VERBOSE, "-d", "", "", "Debug mode",
-	 NULL, parse_debug, NULL, offsetof(struct ibnbd_ctx, debug_set)};
+	 NULL, parse_debug, NULL, offsetof(struct rnbd_ctx, debug_set)};
 static struct param _params_minus_minus_debug =
 	{TOK_VERBOSE, "--debug", "", "", "Debug mode", NULL, parse_debug, 0};
 static struct param _params_minus_s =
 	{TOK_VERBOSE, "-s", "", "", "Simulate",
-	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, simulate_set)};
+	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, simulate_set)};
 static struct param _params_minus_minus_simulate =
 	{TOK_VERBOSE, "--simulate", "", "",
 	 "Only print modifying operations, do not execute",
-	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, simulate_set)};
+	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, simulate_set)};
 static struct param _params_minus_c =
 	{TOK_VERBOSE, "-c", "", "", "Complete",
-	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, complete_set)};
+	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, complete_set)};
 static struct param _params_minus_minus_complete =
 	{TOK_VERBOSE, "--complete", "", "", "Complete",
-	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, complete_set)};
+	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, complete_set)};
 static struct param _params_byte =
 	{TOK_BYTE, "B", "", "", "Byte", NULL, parse_unit, 0};
 static struct param _params_kib =
@@ -383,20 +383,20 @@ static struct param _params_eib =
 	{TOK_EIB, "E", "", "", "EiB", NULL, parse_unit, 0};
 static struct param _params_noheaders =
 	{TOK_NOHEADERS, "noheaders", "", "", "Don't print headers",
-	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, noheaders_set)};
+	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, noheaders_set)};
 static struct param _params_nototals =
 	{TOK_NOTOTALS, "nototals", "", "", "Don't print totals",
-	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, nototals_set)};
+	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, nototals_set)};
 static struct param _params_force =
 	{TOK_FORCE, "force", "", "", "Force operation",
-	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, force_set)};
+	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, force_set)};
 static struct param _params_noterm =
 	{TOK_NOTERM, "noterm", "", "", "Non-interactive mode",
-	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, noterm_set)};
+	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, noterm_set)};
 #if 0
 static struct param _params_minus_f =
 	{TOK_FORCE, "-f", "", "", "",
-	 NULL, parse_flag, NULL, offsetof(struct ibnbd_ctx, force_set)};
+	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, force_set)};
 #endif
 static struct param _params_all =
 	{TOK_ALL, "all", "", "", "Print all columns", NULL, parse_all, 0};
@@ -426,7 +426,7 @@ static const struct param *find_param(const char *str,
 }
 
 static  void usage_param(const char *str, struct param *const params[],
-			const struct ibnbd_ctx *ctx)
+			const struct rnbd_ctx *ctx)
 {
 	if (ctx->complete_set) {
 		for (; (*params)->param_str; params++)
@@ -464,7 +464,7 @@ static void print_param_descr(char *str)
 }
 
 static  void print_param(const char *str, struct param *const params[],
-			const struct ibnbd_ctx *ctx)
+			const struct rnbd_ctx *ctx)
 {
 	do {
 		print_opt((*params)->param_str, (*params)->descr);
@@ -472,7 +472,7 @@ static  void print_param(const char *str, struct param *const params[],
 }
 
 static  void help_param(const char *str, struct param *const params[],
-		       const struct ibnbd_ctx *ctx)
+		       const struct rnbd_ctx *ctx)
 {
 	usage_param(str, params, ctx);
 
@@ -480,7 +480,7 @@ static  void help_param(const char *str, struct param *const params[],
 }
 
 static void print_usage(const char *sub_name, struct param * const cmds[],
-			const struct ibnbd_ctx *ctx)
+			const struct rnbd_ctx *ctx)
 {
 	if (ctx->complete_set) {
 		for (; (*cmds)->param_str; cmds++)
@@ -504,7 +504,7 @@ static void print_usage(const char *sub_name, struct param * const cmds[],
 	}
 }
 
-static bool help_print_all(const struct ibnbd_ctx *ctx)
+static bool help_print_all(const struct rnbd_ctx *ctx)
 {
 	if (ctx->help_arg_set && strncmp(ctx->help_arg, "all", 3) == 0)
 		return true;
@@ -512,7 +512,7 @@ static bool help_print_all(const struct ibnbd_ctx *ctx)
 		return false;
 }
 
-static bool help_print_flags(const struct ibnbd_ctx *ctx)
+static bool help_print_flags(const struct rnbd_ctx *ctx)
 {
 	if (ctx->help_arg_set && strncmp(ctx->help_arg, "flags", 3) == 0)
 		return true;
@@ -520,7 +520,7 @@ static bool help_print_flags(const struct ibnbd_ctx *ctx)
 		return false;
 }
 
-static bool help_print_fields(const struct ibnbd_ctx *ctx)
+static bool help_print_fields(const struct rnbd_ctx *ctx)
 {
 	if (ctx->help_arg_set && strncmp(ctx->help_arg, "fields", 4) == 0)
 		return true;
@@ -529,7 +529,7 @@ static bool help_print_fields(const struct ibnbd_ctx *ctx)
 }
 
 static void cmd_print_usage_short(const struct param *cmd, const char *a,
-			    const struct ibnbd_ctx *ctx)
+			    const struct rnbd_ctx *ctx)
 {
 	if (a && *a)
 		printf("Usage: %s%s%s %s%s%s %s%s%s",
@@ -547,7 +547,7 @@ static void cmd_print_usage_short(const struct param *cmd, const char *a,
 }
 
 static void cmd_print_usage_descr(const struct param *cmd, const char *a,
-				  const struct ibnbd_ctx *ctx)
+				  const struct rnbd_ctx *ctx)
 {
 	cmd_print_usage_short(cmd, a, ctx);
 	printf("%s\n", cmd->descr);
@@ -555,7 +555,7 @@ static void cmd_print_usage_descr(const struct param *cmd, const char *a,
 static void print_help(const char *program_name,
 		       const struct param *cmd,
 		       struct param *const sub_cmds[],
-		       const struct ibnbd_ctx *ctx)
+		       const struct rnbd_ctx *ctx)
 {
 	print_usage(program_name, sub_cmds, ctx);
 
@@ -594,7 +594,7 @@ static void print_clms_list(struct table_column **clms)
 
 static void help_object(const char *program_name,
 			const struct param *cmd,
-			const struct ibnbd_ctx *ctx)
+			const struct rnbd_ctx *ctx)
 {
 	const char *word;
 
@@ -616,21 +616,21 @@ static void help_fields(void)
 	print_opt("", "default selection.\n");
 }
 
-static void print_fields(const struct ibnbd_ctx *ctx,
+static void print_fields(const struct rnbd_ctx *ctx,
 			 struct table_column **def_clt,
 			 struct table_column **def_srv,
 			 struct table_column **all,
-			 enum ibnbdmode mode)
+			 enum rnbdmode mode)
 {
 	table_tbl_print_term(HPRE, all, ctx->trm, ctx);
-	if (mode != IBNBD_SERVER) {
+	if (mode != RNBD_SERVER) {
 		printf("\n%sDefault%s: ",
-		       HPRE, mode == IBNBD_BOTH ? " client" : "");
+		       HPRE, mode == RNBD_BOTH ? " client" : "");
 		print_clms_list(def_clt);
 	}
-	if (mode != IBNBD_CLIENT) {
+	if (mode != RNBD_CLIENT) {
 		printf("%sDefault%s: ",
-		       HPRE, mode == IBNBD_BOTH ? " server" : "");
+		       HPRE, mode == RNBD_BOTH ? " server" : "");
 		print_clms_list(def_srv);
 	}
 	printf("\n");
@@ -638,7 +638,7 @@ static void print_fields(const struct ibnbd_ctx *ctx,
 
 static void help_dump_all(const char *program_name,
 			  const struct param *cmd,
-			  const struct ibnbd_ctx *ctx)
+			  const struct rnbd_ctx *ctx)
 {
 	cmd_print_usage_descr(cmd, program_name, ctx);
 
@@ -651,19 +651,19 @@ static void help_dump_all(const char *program_name,
 		       CLR(ctx->trm, CDIM, "Device Fields"));
 		print_fields(ctx, def_clms_devices_clt,
 			     def_clms_devices_srv,
-			     all_clms_devices, IBNBD_BOTH);
+			     all_clms_devices, RNBD_BOTH);
 
 		printf("%s%s%s%s\n", HPRE,
 		       CLR(ctx->trm, CDIM, "Session Fields"));
 		print_fields(ctx, def_clms_sessions_clt,
 			     def_clms_sessions_srv,
-			     all_clms_sessions, IBNBD_BOTH);
+			     all_clms_sessions, RNBD_BOTH);
 
 		printf("%s%s%s%s\n", HPRE,
 		       CLR(ctx->trm, CDIM, "Path Fields"));
 		print_fields(ctx, def_clms_paths_clt,
 			     def_clms_paths_srv,
-			     all_clms_paths, IBNBD_BOTH);
+			     all_clms_paths, RNBD_BOTH);
 
 		if (help_print_fields(ctx))
 			return;
@@ -679,7 +679,7 @@ static void help_dump_all(const char *program_name,
 
 static void help_list_devices(const char *program_name,
 			      const struct param *cmd,
-			      const struct ibnbd_ctx *ctx)
+			      const struct rnbd_ctx *ctx)
 {
 	if (!program_name)
 		program_name = "devices";
@@ -694,7 +694,7 @@ static void help_list_devices(const char *program_name,
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
 		print_fields(ctx, def_clms_devices_clt, def_clms_devices_srv,
-			     all_clms_devices, ctx->ibnbdmode);
+			     all_clms_devices, ctx->rnbdmode);
 
 		if (help_print_fields(ctx))
 			return;
@@ -713,7 +713,7 @@ static void help_list_devices(const char *program_name,
 
 static void help_list_sessions(const char *program_name,
 			       const struct param *cmd,
-			       const struct ibnbd_ctx *ctx)
+			       const struct rnbd_ctx *ctx)
 {
 	if (!program_name)
 		program_name = "sessions";
@@ -728,7 +728,7 @@ static void help_list_sessions(const char *program_name,
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
 		print_fields(ctx, def_clms_sessions_clt, def_clms_sessions_srv,
-			     all_clms_sessions, ctx->ibnbdmode);
+			     all_clms_sessions, ctx->rnbdmode);
 
 		if (help_print_fields(ctx))
 			return;
@@ -748,7 +748,7 @@ static void help_list_sessions(const char *program_name,
 
 static void help_list_paths(const char *program_name,
 			    const struct param *cmd,
-			    const struct ibnbd_ctx *ctx)
+			    const struct rnbd_ctx *ctx)
 {
 	if (!program_name)
 		program_name = "paths";
@@ -763,7 +763,7 @@ static void help_list_paths(const char *program_name,
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
 		print_fields(ctx, def_clms_paths_clt, def_clms_paths_srv,
-			     all_clms_paths, ctx->ibnbdmode);
+			     all_clms_paths, ctx->rnbdmode);
 
 		if (help_print_fields(ctx))
 			return;
@@ -781,24 +781,24 @@ static void help_list_paths(const char *program_name,
 	print_opt("help", "Display help and exit. [fields|all]");
 }
 
-static int list_devices(struct ibnbd_sess_dev **d_clt, int d_clt_cnt,
-			struct ibnbd_sess_dev **d_srv, int d_srv_cnt,
-			bool is_dump, struct ibnbd_ctx *ctx)
+static int list_devices(struct rnbd_sess_dev **d_clt, int d_clt_cnt,
+			struct rnbd_sess_dev **d_srv, int d_srv_cnt,
+			bool is_dump, struct rnbd_ctx *ctx)
 {
-	if (!(ctx->ibnbdmode & IBNBD_CLIENT))
+	if (!(ctx->rnbdmode & RNBD_CLIENT))
 		d_clt_cnt = 0;
-	if (!(ctx->ibnbdmode & IBNBD_SERVER))
+	if (!(ctx->rnbdmode & RNBD_SERVER))
 		d_srv_cnt = 0;
 
 	switch (ctx->fmt) {
 	case FMT_CSV:
-		if ((d_clt_cnt && d_srv_cnt) || ctx->ibnbdmode == IBNBD_BOTH)
+		if ((d_clt_cnt && d_srv_cnt) || ctx->rnbdmode == RNBD_BOTH)
 			printf("Imports:\n");
 
 		if (d_clt_cnt)
 			list_devices_csv(d_clt, ctx->clms_devices_clt, ctx);
 
-		if ((d_clt_cnt && d_srv_cnt) || ctx->ibnbdmode == IBNBD_BOTH)
+		if ((d_clt_cnt && d_srv_cnt) || ctx->rnbdmode == RNBD_BOTH)
 			printf("Exports:\n");
 
 		if (d_srv_cnt)
@@ -808,7 +808,7 @@ static int list_devices(struct ibnbd_sess_dev **d_clt, int d_clt_cnt,
 	case FMT_JSON:
 		printf("{\n");
 
-		if ((d_clt_cnt && d_srv_cnt) || ctx->ibnbdmode == IBNBD_BOTH)
+		if ((d_clt_cnt && d_srv_cnt) || ctx->rnbdmode == RNBD_BOTH)
 			printf("\t\"imports\": ");
 
 		if (d_clt_cnt)
@@ -816,17 +816,17 @@ static int list_devices(struct ibnbd_sess_dev **d_clt, int d_clt_cnt,
 
 		if (d_clt_cnt && d_srv_cnt)
 			printf(",\n");
-		else if (!d_clt_cnt && ctx->ibnbdmode == IBNBD_BOTH)
+		else if (!d_clt_cnt && ctx->rnbdmode == RNBD_BOTH)
 			printf("null,\n");
 		else
 			printf(",\n");
 
-		if ((d_clt_cnt && d_srv_cnt) || ctx->ibnbdmode == IBNBD_BOTH)
+		if ((d_clt_cnt && d_srv_cnt) || ctx->rnbdmode == RNBD_BOTH)
 			printf("\t\"exports\": ");
 
 		if (d_srv_cnt)
 			list_devices_json(d_srv, ctx->clms_devices_srv, ctx);
-		else if (ctx->ibnbdmode == IBNBD_BOTH)
+		else if (ctx->rnbdmode == RNBD_BOTH)
 			printf("null");
 
 		if (!is_dump)
@@ -874,13 +874,13 @@ static int list_devices(struct ibnbd_sess_dev **d_clt, int d_clt_cnt,
 	return 0;
 }
 
-static int list_sessions(struct ibnbd_sess **s_clt, int clt_s_num,
-			 struct ibnbd_sess **s_srv, int srv_s_num,
-			 bool is_dump, struct ibnbd_ctx *ctx)
+static int list_sessions(struct rnbd_sess **s_clt, int clt_s_num,
+			 struct rnbd_sess **s_srv, int srv_s_num,
+			 bool is_dump, struct rnbd_ctx *ctx)
 {
-	if (!(ctx->ibnbdmode & IBNBD_CLIENT))
+	if (!(ctx->rnbdmode & RNBD_CLIENT))
 		clt_s_num = 0;
-	if (!(ctx->ibnbdmode & IBNBD_SERVER))
+	if (!(ctx->rnbdmode & RNBD_SERVER))
 		srv_s_num = 0;
 
 	switch (ctx->fmt) {
@@ -904,10 +904,10 @@ static int list_sessions(struct ibnbd_sess **s_clt, int clt_s_num,
 		printf("\t\"outgoing sessions\": ");
 		if (clt_s_num)
 			list_sessions_json(s_clt, ctx->clms_sessions_clt, ctx);
-		else if (ctx->ibnbdmode == IBNBD_BOTH)
+		else if (ctx->rnbdmode == RNBD_BOTH)
 			printf("null");
 
-		if ((clt_s_num && srv_s_num) || ctx->ibnbdmode == IBNBD_BOTH)
+		if ((clt_s_num && srv_s_num) || ctx->rnbdmode == RNBD_BOTH)
 			printf(",");
 
 		printf("\n");
@@ -915,7 +915,7 @@ static int list_sessions(struct ibnbd_sess **s_clt, int clt_s_num,
 		printf("\t\"incoming sessions\": ");
 		if (srv_s_num)
 			list_sessions_json(s_srv, ctx->clms_sessions_srv, ctx);
-		else if (ctx->ibnbdmode == IBNBD_BOTH)
+		else if (ctx->rnbdmode == RNBD_BOTH)
 			printf("null");
 
 		if (!is_dump)
@@ -963,13 +963,13 @@ static int list_sessions(struct ibnbd_sess **s_clt, int clt_s_num,
 	return 0;
 }
 
-static int list_paths(struct ibnbd_path **p_clt, int clt_p_num,
-		      struct ibnbd_path **p_srv, int srv_p_num,
-		      bool is_dump, struct ibnbd_ctx *ctx)
+static int list_paths(struct rnbd_path **p_clt, int clt_p_num,
+		      struct rnbd_path **p_srv, int srv_p_num,
+		      bool is_dump, struct rnbd_ctx *ctx)
 {
-	if (!(ctx->ibnbdmode & IBNBD_CLIENT))
+	if (!(ctx->rnbdmode & RNBD_CLIENT))
 		clt_p_num = 0;
-	if (!(ctx->ibnbdmode & IBNBD_SERVER))
+	if (!(ctx->rnbdmode & RNBD_SERVER))
 		srv_p_num = 0;
 
 	switch (ctx->fmt) {
@@ -993,10 +993,10 @@ static int list_paths(struct ibnbd_path **p_clt, int clt_p_num,
 		printf("\t\"outgoing paths\": ");
 		if (clt_p_num)
 			list_paths_json(p_clt, ctx->clms_paths_clt, ctx);
-		else if (ctx->ibnbdmode == IBNBD_BOTH)
+		else if (ctx->rnbdmode == RNBD_BOTH)
 			printf("null");
 
-		if ((clt_p_num && srv_p_num) || ctx->ibnbdmode == IBNBD_BOTH)
+		if ((clt_p_num && srv_p_num) || ctx->rnbdmode == RNBD_BOTH)
 			printf(",");
 
 		printf("\n");
@@ -1004,7 +1004,7 @@ static int list_paths(struct ibnbd_path **p_clt, int clt_p_num,
 		printf("\t\"incoming paths\": ");
 		if (srv_p_num)
 			list_paths_json(p_srv, ctx->clms_paths_srv, ctx);
-		else if (ctx->ibnbdmode == IBNBD_BOTH)
+		else if (ctx->rnbdmode == RNBD_BOTH)
 			printf("null");
 
 		printf("\n}\n");
@@ -1051,7 +1051,7 @@ static int list_paths(struct ibnbd_path **p_clt, int clt_p_num,
 	return 0;
 }
 
-static bool match_device(struct ibnbd_sess_dev *d, const char *name)
+static bool match_device(struct rnbd_sess_dev *d, const char *name)
 {
 	if (!strcmp(d->mapping_path, name) ||
 	    !strcmp(d->dev->devname, name) ||
@@ -1061,8 +1061,8 @@ static bool match_device(struct ibnbd_sess_dev *d, const char *name)
 	return false;
 }
 
-static int find_devices(const char *name, struct ibnbd_sess_dev **devs,
-			struct ibnbd_sess_dev **res)
+static int find_devices(const char *name, struct rnbd_sess_dev **devs,
+			struct rnbd_sess_dev **res)
 {
 	int i, cnt = 0;
 
@@ -1076,18 +1076,18 @@ static int find_devices(const char *name, struct ibnbd_sess_dev **devs,
 }
 
 /*
- * Find all ibnbd devices by device name, device path or mapping path
+ * Find all rnbd devices by device name, device path or mapping path
  */
-static int find_devs_all(const char *name, enum ibnbdmode ibnbdmode,
-			 struct ibnbd_sess_dev **ds_imp,
-			 int *ds_imp_cnt, struct ibnbd_sess_dev **ds_exp,
+static int find_devs_all(const char *name, enum rnbdmode rnbdmode,
+			 struct rnbd_sess_dev **ds_imp,
+			 int *ds_imp_cnt, struct rnbd_sess_dev **ds_exp,
 			 int *ds_exp_cnt)
 {
 	int cnt_imp = 0, cnt_exp = 0;
 
-	if (ibnbdmode & IBNBD_CLIENT)
+	if (rnbdmode & RNBD_CLIENT)
 		cnt_imp = find_devices(name, sds_clt, ds_imp);
-	if (ibnbdmode & IBNBD_SERVER)
+	if (rnbdmode & RNBD_SERVER)
 		cnt_exp = find_devices(name, sds_srv, ds_exp);
 
 	*ds_imp_cnt = cnt_imp;
@@ -1096,11 +1096,11 @@ static int find_devs_all(const char *name, enum ibnbdmode ibnbdmode,
 	return cnt_imp + cnt_exp;
 }
 
-static int show_device(struct ibnbd_sess_dev **clt, struct ibnbd_sess_dev **srv,
-		       struct ibnbd_ctx *ctx)
+static int show_device(struct rnbd_sess_dev **clt, struct rnbd_sess_dev **srv,
+		       struct rnbd_ctx *ctx)
 {
 	struct table_fld flds[CLM_MAX_CNT];
-	struct ibnbd_sess_dev **ds;
+	struct rnbd_sess_dev **ds;
 	struct table_column **cs;
 
 	if (clt[0]) {
@@ -1133,7 +1133,7 @@ static int show_device(struct ibnbd_sess_dev **clt, struct ibnbd_sess_dev **srv,
 	return 0;
 }
 
-static bool match_sess(struct ibnbd_sess *s, const char *name)
+static bool match_sess(struct rnbd_sess *s, const char *name)
 {
 	char *at;
 
@@ -1147,8 +1147,8 @@ static bool match_sess(struct ibnbd_sess *s, const char *name)
 	return false;
 }
 
-static struct ibnbd_sess *find_session(const char *name,
-				       struct ibnbd_sess **ss)
+static struct rnbd_sess *find_session(const char *name,
+				       struct rnbd_sess **ss)
 {
 	int i;
 
@@ -1159,8 +1159,8 @@ static struct ibnbd_sess *find_session(const char *name,
 	return NULL;
 }
 
-static int find_sessions_match(const char *name, struct ibnbd_sess **ss,
-			       struct ibnbd_sess **res)
+static int find_sessions_match(const char *name, struct rnbd_sess **ss,
+			       struct rnbd_sess **res)
 {
 	int i, cnt = 0;
 
@@ -1173,16 +1173,16 @@ static int find_sessions_match(const char *name, struct ibnbd_sess **ss,
 	return cnt;
 }
 
-static int find_sess_all(const char *name, enum ibnbdmode ibnbdmode,
-			 struct ibnbd_sess **ss_clt,
-			 int *ss_clt_cnt, struct ibnbd_sess **ss_srv,
+static int find_sess_all(const char *name, enum rnbdmode rnbdmode,
+			 struct rnbd_sess **ss_clt,
+			 int *ss_clt_cnt, struct rnbd_sess **ss_srv,
 			 int *ss_srv_cnt)
 {
 	int cnt_srv = 0, cnt_clt = 0;
 
-	if (ibnbdmode & IBNBD_CLIENT)
+	if (rnbdmode & RNBD_CLIENT)
 		cnt_clt = find_sessions_match(name, sess_clt, ss_clt);
-	if (ibnbdmode & IBNBD_SERVER)
+	if (rnbdmode & RNBD_SERVER)
 		cnt_srv = find_sessions_match(name, sess_srv, ss_srv);
 
 	*ss_clt_cnt = cnt_clt;
@@ -1228,7 +1228,7 @@ free_error:
 	return 0;
 }
 
-static bool match_path(struct ibnbd_path *p, const char *name)
+static bool match_path(struct rnbd_path *p, const char *name)
 {
 	struct path other = {NULL, NULL};
 	int port;
@@ -1274,8 +1274,8 @@ static bool match_path(struct ibnbd_path *p, const char *name)
 	return false;
 }
 
-static int find_paths(const char *name, struct ibnbd_path **pp,
-		      struct ibnbd_path **res)
+static int find_paths(const char *name, struct rnbd_path **pp,
+		      struct rnbd_path **res)
 {
 	int i, cnt = 0;
 
@@ -1288,16 +1288,16 @@ static int find_paths(const char *name, struct ibnbd_path **pp,
 	return cnt;
 }
 
-static int find_paths_all(const char *name, enum ibnbdmode ibnbdmode,
-			  struct ibnbd_path **pp_clt,
-			  int *pp_clt_cnt, struct ibnbd_path **pp_srv,
+static int find_paths_all(const char *name, enum rnbdmode rnbdmode,
+			  struct rnbd_path **pp_clt,
+			  int *pp_clt_cnt, struct rnbd_path **pp_srv,
 			  int *pp_srv_cnt)
 {
 	int cnt_clt = 0, cnt_srv = 0;
 
-	if (ibnbdmode & IBNBD_CLIENT)
+	if (rnbdmode & RNBD_CLIENT)
 		cnt_clt = find_paths(name, paths_clt, pp_clt);
-	if (ibnbdmode & IBNBD_SERVER)
+	if (rnbdmode & RNBD_SERVER)
 		cnt_srv = find_paths(name, paths_srv, pp_srv);
 
 	*pp_clt_cnt = cnt_clt;
@@ -1306,12 +1306,12 @@ static int find_paths_all(const char *name, enum ibnbdmode ibnbdmode,
 	return cnt_clt + cnt_srv;
 }
 
-static int show_path(struct ibnbd_path **pp_clt, struct ibnbd_path **pp_srv,
-		     struct ibnbd_ctx *ctx)
+static int show_path(struct rnbd_path **pp_clt, struct rnbd_path **pp_srv,
+		     struct rnbd_ctx *ctx)
 {
 	struct table_fld flds[CLM_MAX_CNT];
 	struct table_column **cs;
-	struct ibnbd_path **pp;
+	struct rnbd_path **pp;
 
 	if (pp_clt[0]) {
 		pp = pp_clt;
@@ -1343,12 +1343,12 @@ static int show_path(struct ibnbd_path **pp_clt, struct ibnbd_path **pp_srv,
 	return 0;
 }
 
-static int show_session(struct ibnbd_sess **ss_clt, struct ibnbd_sess **ss_srv,
-			struct ibnbd_ctx *ctx)
+static int show_session(struct rnbd_sess **ss_clt, struct rnbd_sess **ss_srv,
+			struct rnbd_ctx *ctx)
 {
 	struct table_fld flds[CLM_MAX_CNT];
 	struct table_column **cs, **ps;
-	struct ibnbd_sess **ss;
+	struct rnbd_sess **ss;
 
 	if (ss_clt && ss_clt[0]) {
 		ss = ss_clt;
@@ -1377,7 +1377,7 @@ static int show_session(struct ibnbd_sess **ss_clt, struct ibnbd_sess **ss_srv,
 		table_entry_print_term("", flds, cs,
 				       table_get_max_h_width(cs), ctx->trm);
 		printf("%s%s%s", CLR(ctx->trm, CBLD, ss[0]->sessname));
-		if (ss[0]->side == IBNBD_CLIENT)
+		if (ss[0]->side == RNBD_CLIENT)
 			printf(" %s(%s)%s",
 			       CLR(ctx->trm, CBLD, ss[0]->mp_short));
 		printf("\n");
@@ -1389,11 +1389,11 @@ static int show_session(struct ibnbd_sess **ss_clt, struct ibnbd_sess **ss_srv,
 	return 0;
 }
 
-static int show_all(const char *name, struct ibnbd_ctx *ctx)
+static int show_all(const char *name, struct rnbd_ctx *ctx)
 {
-	struct ibnbd_sess_dev **ds_clt, **ds_srv;
-	struct ibnbd_path **pp_clt, **pp_srv;
-	struct ibnbd_sess **ss_clt, **ss_srv;
+	struct rnbd_sess_dev **ds_clt, **ds_srv;
+	struct rnbd_path **pp_clt, **pp_srv;
+	struct rnbd_sess **ss_clt, **ss_srv;
 	int c_ds_clt, c_ds_srv, c_ds = 0,
 	    c_pp_clt, c_pp_srv, c_pp = 0,
 	    c_ss_clt, c_ss_srv, c_ss = 0, ret;
@@ -1415,11 +1415,11 @@ static int show_all(const char *name, struct ibnbd_ctx *ctx)
 		ret = -ENOMEM;
 		goto out;
 	}
-	c_pp = find_paths_all(name, ctx->ibnbdmode, pp_clt, &c_pp_clt, pp_srv,
+	c_pp = find_paths_all(name, ctx->rnbdmode, pp_clt, &c_pp_clt, pp_srv,
 			      &c_pp_srv);
-	c_ss = find_sess_all(name, ctx->ibnbdmode, ss_clt,
+	c_ss = find_sess_all(name, ctx->rnbdmode, ss_clt,
 			     &c_ss_clt, ss_srv, &c_ss_srv);
-	c_ds = find_devs_all(name, ctx->ibnbdmode, ds_clt,
+	c_ds = find_devs_all(name, ctx->rnbdmode, ds_clt,
 			     &c_ds_clt, ds_srv, &c_ds_srv);
 	if (c_pp + c_ss + c_ds > 1) {
 		ERR(ctx->trm, "Multiple entries match '%s'\n", name);
@@ -1462,9 +1462,9 @@ out:
 	return ret;
 }
 
-static int show_devices(const char *name, struct ibnbd_ctx *ctx)
+static int show_devices(const char *name, struct rnbd_ctx *ctx)
 {
-	struct ibnbd_sess_dev **ds_clt, **ds_srv;
+	struct rnbd_sess_dev **ds_clt, **ds_srv;
 	int c_ds_clt, c_ds_srv, c_ds = 0, ret;
 
 	ds_clt = calloc(sds_clt_cnt, sizeof(*ds_clt));
@@ -1476,7 +1476,7 @@ static int show_devices(const char *name, struct ibnbd_ctx *ctx)
 		ret = -ENOMEM;
 		goto out;
 	}
-	c_ds = find_devs_all(name, ctx->ibnbdmode, ds_clt,
+	c_ds = find_devs_all(name, ctx->rnbdmode, ds_clt,
 			     &c_ds_clt, ds_srv, &c_ds_srv);
 	if (c_ds > 1) {
 		ERR(ctx->trm, "Multiple devices match '%s'\n", name);
@@ -1501,9 +1501,9 @@ out:
 }
 
 #if 0
-static int show_both_sessions(const char *name, struct ibnbd_ctx *ctx)
+static int show_both_sessions(const char *name, struct rnbd_ctx *ctx)
 {
-	struct ibnbd_sess **ss_clt, **ss_srv;
+	struct rnbd_sess **ss_clt, **ss_srv;
 	int c_ss_clt, c_ss_srv, c_ss = 0, ret;
 
 	ss_clt = calloc(sess_clt_cnt, sizeof(*ss_clt));
@@ -1515,7 +1515,7 @@ static int show_both_sessions(const char *name, struct ibnbd_ctx *ctx)
 		ret = -ENOMEM;
 		goto out;
 	}
-	c_ss = find_sess_all(name, ctx->ibnbdmode, ss_clt,
+	c_ss = find_sess_all(name, ctx->rnbdmode, ss_clt,
 			     &c_ss_clt, ss_srv, &c_ss_srv);
 
 	if (c_ss > 1) {
@@ -1541,9 +1541,9 @@ out:
 }
 #endif
 
-static int show_client_sessions(const char *name, struct ibnbd_ctx *ctx)
+static int show_client_sessions(const char *name, struct rnbd_ctx *ctx)
 {
-	struct ibnbd_sess **ss_clt;
+	struct rnbd_sess **ss_clt;
 	int c_ss_clt = 0, ret;
 
 	ss_clt = calloc(sess_clt_cnt, sizeof(*ss_clt));
@@ -1580,9 +1580,9 @@ out:
 	return ret;
 }
 
-static int show_server_sessions(const char *name, struct ibnbd_ctx *ctx)
+static int show_server_sessions(const char *name, struct rnbd_ctx *ctx)
 {
-	struct ibnbd_sess **ss_srv;
+	struct rnbd_sess **ss_srv;
 	int c_ss_srv = 0, ret;
 
 	ss_srv = calloc(sess_srv_cnt, sizeof(*ss_srv));
@@ -1619,9 +1619,9 @@ out:
 	return ret;
 }
 
-static int show_paths(const char *name, struct ibnbd_ctx *ctx)
+static int show_paths(const char *name, struct rnbd_ctx *ctx)
 {
-	struct ibnbd_path **pp_clt, **pp_srv;
+	struct rnbd_path **pp_clt, **pp_srv;
 	int c_pp_clt, c_pp_srv, c_pp = 0, ret;
 
 	pp_clt = calloc(paths_clt_cnt, sizeof(*pp_clt));
@@ -1633,7 +1633,7 @@ static int show_paths(const char *name, struct ibnbd_ctx *ctx)
 		ret = -ENOMEM;
 		goto out;
 	}
-	c_pp = find_paths_all(name, ctx->ibnbdmode, pp_clt,
+	c_pp = find_paths_all(name, ctx->rnbdmode, pp_clt,
 			      &c_pp_clt, pp_srv, &c_pp_srv);
 
 	if (c_pp > 1) {
@@ -1659,7 +1659,7 @@ out:
 }
 
 static int parse_name_help(int argc, const char *argv[], const char *what,
-			   const struct param *cmd, struct ibnbd_ctx *ctx)
+			   const struct param *cmd, struct rnbd_ctx *ctx)
 {
 	const char *word;
 
@@ -1686,7 +1686,7 @@ static int parse_name_help(int argc, const char *argv[], const char *what,
 
 static void help_show(const char *program_name,
 		      const struct param *cmd,
-		      const struct ibnbd_ctx *ctx)
+		      const struct rnbd_ctx *ctx)
 {
 	cmd_print_usage_descr(cmd, "", ctx);
 
@@ -1703,11 +1703,11 @@ static void help_show(const char *program_name,
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
 		print_fields(ctx, def_clms_devices_clt, def_clms_devices_srv,
-			     all_clms_devices, ctx->ibnbdmode);
+			     all_clms_devices, ctx->rnbdmode);
 		print_fields(ctx, def_clms_sessions_clt, def_clms_sessions_srv,
-			     all_clms_sessions, ctx->ibnbdmode);
+			     all_clms_sessions, ctx->rnbdmode);
 		print_fields(ctx, def_clms_paths_clt, def_clms_paths_srv,
-			     all_clms_paths, ctx->ibnbdmode);
+			     all_clms_paths, ctx->rnbdmode);
 		if (help_print_fields(ctx))
 			return;
 	}
@@ -1724,7 +1724,7 @@ static void help_show(const char *program_name,
 
 static void help_show_devices(const char *program_name,
 			      const struct param *cmd,
-			      const struct ibnbd_ctx *ctx)
+			      const struct rnbd_ctx *ctx)
 {
 	if (!program_name)
 		program_name = "devices";
@@ -1746,7 +1746,7 @@ static void help_show_devices(const char *program_name,
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
 		print_fields(ctx, def_clms_devices_clt, def_clms_devices_srv,
-			     all_clms_devices, ctx->ibnbdmode);
+			     all_clms_devices, ctx->rnbdmode);
 		if (help_print_fields(ctx))
 			return;
 	}
@@ -1763,7 +1763,7 @@ static void help_show_devices(const char *program_name,
 
 static void help_show_sessions(const char *program_name,
 			       const struct param *cmd,
-			       const struct ibnbd_ctx *ctx)
+			       const struct rnbd_ctx *ctx)
 {
 	if (!program_name)
 		program_name = "sessions";
@@ -1785,7 +1785,7 @@ static void help_show_sessions(const char *program_name,
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
 		print_fields(ctx, def_clms_sessions_clt, def_clms_sessions_srv,
-			     all_clms_sessions, ctx->ibnbdmode);
+			     all_clms_sessions, ctx->rnbdmode);
 		if (help_print_fields(ctx))
 			return;
 	}
@@ -1802,7 +1802,7 @@ static void help_show_sessions(const char *program_name,
 
 static void help_show_paths(const char *program_name,
 			    const struct param *cmd,
-			    const struct ibnbd_ctx *ctx)
+			    const struct rnbd_ctx *ctx)
 {
 	if (!program_name)
 		program_name = "paths";
@@ -1824,7 +1824,7 @@ static void help_show_paths(const char *program_name,
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
 		print_fields(ctx, def_clms_paths_clt, def_clms_paths_srv,
-			     all_clms_paths, ctx->ibnbdmode);
+			     all_clms_paths, ctx->rnbdmode);
 
 		if (help_print_fields(ctx))
 			return;
@@ -1842,7 +1842,7 @@ static void help_show_paths(const char *program_name,
 
 static void help_map(const char *program_name,
 		     const struct param *cmd,
-		     const struct ibnbd_ctx *ctx)
+		     const struct rnbd_ctx *ctx)
 {
 	if (!program_name)
 		program_name = "device ";
@@ -1865,7 +1865,7 @@ static void help_map(const char *program_name,
 }
 
 static int parse_path(const char *arg,
-		      struct ibnbd_ctx *ctx)
+		      struct rnbd_ctx *ctx)
 {
 	if (!parse_path1(arg, ctx->paths+ctx->path_cnt))
 		return -EINVAL;
@@ -1875,12 +1875,12 @@ static int parse_path(const char *arg,
 	return 0;
 }
 
-static struct ibnbd_sess *find_single_session(const char *session_name,
-					      struct ibnbd_ctx *ctx,
-					      struct ibnbd_sess **sessions,
+static struct rnbd_sess *find_single_session(const char *session_name,
+					      struct rnbd_ctx *ctx,
+					      struct rnbd_sess **sessions,
 					      int sess_cnt, bool print_err)
 {
-	struct ibnbd_sess **matching_sess, *res = NULL;
+	struct rnbd_sess **matching_sess, *res = NULL;
 	int match_count;
 
 	if (!sess_cnt) {
@@ -1912,12 +1912,12 @@ static struct ibnbd_sess *find_single_session(const char *session_name,
 	return res;
 }
 
-static struct ibnbd_path *find_single_path(const char *path_name,
-					   struct ibnbd_ctx *ctx,
-					   struct ibnbd_path **paths,
+static struct rnbd_path *find_single_path(const char *path_name,
+					   struct rnbd_ctx *ctx,
+					   struct rnbd_path **paths,
 					   int path_cnt)
 {
-	struct ibnbd_path **matching_paths, *res = NULL;
+	struct rnbd_path **matching_paths, *res = NULL;
 	int match_count;
 
 	if (!path_cnt) {
@@ -1949,11 +1949,11 @@ static struct ibnbd_path *find_single_path(const char *path_name,
 }
 
 static int client_devices_map(const char *from_name, const char *device_name,
-			      struct ibnbd_ctx *ctx)
+			      struct rnbd_ctx *ctx)
 {
 	char cmd[4096], sessname[NAME_MAX];
-	struct ibnbd_sess *sess;
-	struct ibnbd_path *path;
+	struct rnbd_sess *sess;
+	struct rnbd_path *path;
 	int i, cnt = 0, ret;
 	bool existing_session_used = false;
 
@@ -2075,12 +2075,12 @@ static int client_devices_map(const char *from_name, const char *device_name,
 	return ret;
 }
 
-static struct ibnbd_sess_dev *find_single_device(const char *name,
-						 struct ibnbd_ctx *ctx,
-						 struct ibnbd_sess_dev **devs,
+static struct rnbd_sess_dev *find_single_device(const char *name,
+						 struct rnbd_ctx *ctx,
+						 struct rnbd_sess_dev **devs,
 						 int dev_cnt)
 {
-	struct ibnbd_sess_dev *res = NULL, **matching_devs;
+	struct rnbd_sess_dev *res = NULL, **matching_devs;
 	int match_count;
 
 	if (!dev_cnt) {
@@ -2112,9 +2112,9 @@ static struct ibnbd_sess_dev *find_single_device(const char *name,
 }
 
 static int client_devices_resize(const char *device_name, uint64_t size_sect,
-				 struct ibnbd_ctx *ctx)
+				 struct rnbd_ctx *ctx)
 {
-	const struct ibnbd_sess_dev *ds;
+	const struct rnbd_sess_dev *ds;
 	char tmp[PATH_MAX];
 	int ret;
 
@@ -2137,7 +2137,7 @@ static int client_devices_resize(const char *device_name, uint64_t size_sect,
 
 static void help_resize(const char *program_name,
 			const struct param *cmd,
-			const struct ibnbd_ctx *ctx)
+			const struct rnbd_ctx *ctx)
 {
 	if (!program_name)
 		program_name = "<device name or path or mapping path> ";
@@ -2156,7 +2156,7 @@ static void help_resize(const char *program_name,
 
 static void help_unmap(const char *program_name,
 		       const struct param *cmd,
-		       const struct ibnbd_ctx *ctx)
+		       const struct rnbd_ctx *ctx)
 {
 	if (!program_name)
 		program_name = "<device name or path or mapping path> ";
@@ -2173,9 +2173,9 @@ static void help_unmap(const char *program_name,
 }
 
 static int client_devices_unmap(const char *device_name, bool force,
-				struct ibnbd_ctx *ctx)
+				struct rnbd_ctx *ctx)
 {
-	const struct ibnbd_sess_dev *ds;
+	const struct rnbd_sess_dev *ds;
 	char tmp[PATH_MAX];
 	int ret;
 
@@ -2197,8 +2197,8 @@ static int client_devices_unmap(const char *device_name, bool force,
 	return ret;
 }
 
-static int client_device_remap(const struct ibnbd_dev *dev,
-			       struct ibnbd_ctx *ctx)
+static int client_device_remap(const struct rnbd_dev *dev,
+			       struct rnbd_ctx *ctx)
 {
 	char tmp[PATH_MAX];
 	int ret;
@@ -2221,9 +2221,9 @@ static int client_device_remap(const struct ibnbd_dev *dev,
 	return ret;
 }
 
-static int client_devices_remap(const char *device_name, struct ibnbd_ctx *ctx)
+static int client_devices_remap(const char *device_name, struct rnbd_ctx *ctx)
 {
-	const struct ibnbd_sess_dev *ds;
+	const struct rnbd_sess_dev *ds;
 
 	ds = find_single_device(device_name, ctx, sds_clt, sds_clt_cnt);
 	if (!ds)
@@ -2233,11 +2233,11 @@ static int client_devices_remap(const char *device_name, struct ibnbd_ctx *ctx)
 }
 
 static int client_session_remap(const char *session_name,
-				 struct ibnbd_ctx *ctx)
+				 struct rnbd_ctx *ctx)
 {
 	int tmp_err, err = 0;
-	struct ibnbd_sess_dev *const *sds_iter;
-	const struct ibnbd_sess *sess;
+	struct rnbd_sess_dev *const *sds_iter;
+	const struct rnbd_sess *sess;
 
 	if (!sds_clt_cnt) {
 		ERR(ctx->trm,
@@ -2262,17 +2262,17 @@ static int client_session_remap(const char *session_name,
 	return err;
 }
 
-static int session_do_all_paths(enum ibnbdmode mode,
+static int session_do_all_paths(enum rnbdmode mode,
 				const char *session_name,
 				int (*do_it)(const char *path_name,
-					     struct ibnbd_ctx *ctx),
-				struct ibnbd_ctx *ctx)
+					     struct rnbd_ctx *ctx),
+				struct rnbd_ctx *ctx)
 {
 	int err = 0;
-	struct ibnbd_path *const *paths_iter;
-	const struct ibnbd_sess *sess;
+	struct rnbd_path *const *paths_iter;
+	const struct rnbd_sess *sess;
 
-	if (!(mode == IBNBD_CLIENT ?
+	if (!(mode == RNBD_CLIENT ?
 	      sess_clt_cnt
 	      : sess_srv_cnt)) {
 		ERR(ctx->trm,
@@ -2280,7 +2280,7 @@ static int session_do_all_paths(enum ibnbdmode mode,
 		return -EINVAL;
 	}
 
-	if (mode == IBNBD_CLIENT)
+	if (mode == RNBD_CLIENT)
 		sess = find_single_session(session_name, ctx,
 					   sess_clt, sess_clt_cnt,
 					   true);
@@ -2293,7 +2293,7 @@ static int session_do_all_paths(enum ibnbdmode mode,
 		/*find_single_session has printed an error message*/
 		return -EINVAL;
 
-	for (paths_iter = (mode == IBNBD_CLIENT ? paths_clt : paths_srv);
+	for (paths_iter = (mode == RNBD_CLIENT ? paths_clt : paths_srv);
 	     *paths_iter && !err; paths_iter++) {
 
 		if ((*paths_iter)->sess == sess)
@@ -2304,7 +2304,7 @@ static int session_do_all_paths(enum ibnbdmode mode,
 
 static void help_remap(const char *program_name,
 		       const struct param *cmd,
-		       const struct ibnbd_ctx *ctx)
+		       const struct rnbd_ctx *ctx)
 {
 	if (!program_name)
 		program_name = "<device name> ";
@@ -2322,7 +2322,7 @@ static void help_remap(const char *program_name,
 
 static void help_remap_device_or_session(const char *program_name,
 					 const struct param *cmd,
-					 const struct ibnbd_ctx *ctx)
+					 const struct rnbd_ctx *ctx)
 {
 	if (!program_name)
 		program_name = "<name> ";
@@ -2342,7 +2342,7 @@ static void help_remap_device_or_session(const char *program_name,
 
 static void help_remap_session(const char *program_name,
 			       const struct param *cmd,
-			       const struct ibnbd_ctx *ctx)
+			       const struct rnbd_ctx *ctx)
 {
 	if (!program_name)
 		program_name = "<session name> ";
@@ -2361,7 +2361,7 @@ static void help_remap_session(const char *program_name,
 
 static void help_reconnect_session(const char *program_name,
 				   const struct param *cmd,
-				   const struct ibnbd_ctx *ctx)
+				   const struct rnbd_ctx *ctx)
 {
 	if (!program_name)
 		program_name = "<session> ";
@@ -2378,7 +2378,7 @@ static void help_reconnect_session(const char *program_name,
 
 static void help_reconnect_path(const char *program_name,
 				const struct param *cmd,
-				const struct ibnbd_ctx *ctx)
+				const struct rnbd_ctx *ctx)
 {
 	if (!program_name)
 		program_name = "<path> ";
@@ -2397,7 +2397,7 @@ static void help_reconnect_path(const char *program_name,
 
 static void help_disconnect_session(const char *program_name,
 				    const struct param *cmd,
-				    const struct ibnbd_ctx *ctx)
+				    const struct rnbd_ctx *ctx)
 {
 	if (!program_name)
 		program_name = "<session> ";
@@ -2414,7 +2414,7 @@ static void help_disconnect_session(const char *program_name,
 
 static void help_disconnect_path(const char *program_name,
 				 const struct param *cmd,
-				 const struct ibnbd_ctx *ctx)
+				 const struct rnbd_ctx *ctx)
 {
 	if (!program_name)
 		program_name = "<path> ";
@@ -2432,11 +2432,11 @@ static void help_disconnect_path(const char *program_name,
 
 static int client_session_add(const char *session_name,
 			      const struct path *path,
-			      struct ibnbd_ctx *ctx)
+			      struct rnbd_ctx *ctx)
 {
 	char address_string[4096];
 	char sysfs_path[4096];
-	struct ibnbd_sess *sess;
+	struct rnbd_sess *sess;
 	int ret;
 
 	sess = find_session(session_name, sess_clt);
@@ -2469,7 +2469,7 @@ static int client_session_add(const char *session_name,
 
 static void help_addpath(const char *program_name,
 			 const struct param *cmd,
-			 const struct ibnbd_ctx *ctx)
+			 const struct rnbd_ctx *ctx)
 {
 	if (!program_name)
 		program_name = "<session> <path> ";
@@ -2491,7 +2491,7 @@ static void help_addpath(const char *program_name,
 
 static void help_delpath(const char *program_name,
 			 const struct param *cmd,
-			 const struct ibnbd_ctx *ctx)
+			 const struct rnbd_ctx *ctx)
 {
 	if (!program_name)
 		program_name = "<path> ";
@@ -2510,10 +2510,10 @@ static void help_delpath(const char *program_name,
 
 static int client_path_do(const char *path_name, const char *sysfs_entry,
 			  const char *message_success,
-			  const char *message_fail, struct ibnbd_ctx *ctx)
+			  const char *message_fail, struct rnbd_ctx *ctx)
 {
 	char sysfs_path[4096];
-	struct ibnbd_path *path;
+	struct rnbd_path *path;
 	int ret;
 
 	path = find_single_path(path_name, ctx, paths_clt, paths_clt_cnt);
@@ -2536,7 +2536,7 @@ static int client_path_do(const char *path_name, const char *sysfs_entry,
 }
 
 static int client_path_delete(const char *path_name,
-				 struct ibnbd_ctx *ctx)
+				 struct rnbd_ctx *ctx)
 {
 	return client_path_do(path_name, "remove_path",
 				 "Successfully removed path '%s' from '%s'.\n",
@@ -2545,7 +2545,7 @@ static int client_path_delete(const char *path_name,
 }
 
 static int client_path_reconnect(const char *path_name,
-				    struct ibnbd_ctx *ctx)
+				    struct rnbd_ctx *ctx)
 {
 	return client_path_do(path_name, "reconnect",
 			      "Successfully reconnected path '%s' of session '%s'.\n",
@@ -2554,7 +2554,7 @@ static int client_path_reconnect(const char *path_name,
 }
 
 static int client_path_disconnect(const char *path_name,
-				  struct ibnbd_ctx *ctx)
+				  struct rnbd_ctx *ctx)
 {
 	return client_path_do(path_name, "disconnect",
 			      "Successfully disconnected path '%s' from session '%s'.\n",
@@ -2563,10 +2563,10 @@ static int client_path_disconnect(const char *path_name,
 }
 
 static int client_path_readd(const char *path_name,
-			     struct ibnbd_ctx *ctx)
+			     struct rnbd_ctx *ctx)
 {
 	char sysfs_path[4096];
-	struct ibnbd_path *path;
+	struct rnbd_path *path;
 	int ret;
 
 	path = find_single_path(path_name, ctx, paths_clt, paths_clt_cnt);
@@ -2605,10 +2605,10 @@ static int client_path_readd(const char *path_name,
 }
 
 static int server_path_disconnect(const char *path_name,
-				  struct ibnbd_ctx *ctx)
+				  struct rnbd_ctx *ctx)
 {
 	char sysfs_path[4096];
-	struct ibnbd_path *path;
+	struct rnbd_path *path;
 	int ret;
 
 	path = find_single_path(path_name, ctx, paths_srv, paths_srv_cnt);
@@ -3174,7 +3174,7 @@ static void handle_unknown_param(const char *param, struct param *params[])
 }
 
 static int parse_precision(const char *str,
-			   struct ibnbd_ctx *ctx)
+			   struct rnbd_ctx *ctx)
 {
 	unsigned int prec;
 	char e;
@@ -3197,43 +3197,43 @@ static int parse_precision(const char *str,
 
 static const char *comma = ",";
 
-static int parse_clt_devices_clms(const char *arg, struct ibnbd_ctx *ctx)
+static int parse_clt_devices_clms(const char *arg, struct rnbd_ctx *ctx)
 {
 	return table_extend_columns(arg, comma, all_clms_devices_clt,
 				    ctx->clms_devices_clt, CLM_MAX_CNT);
 }
 
-static int parse_srv_devices_clms(const char *arg, struct ibnbd_ctx *ctx)
+static int parse_srv_devices_clms(const char *arg, struct rnbd_ctx *ctx)
 {
 	return table_extend_columns(arg, comma, all_clms_devices_srv,
 				    ctx->clms_devices_srv, CLM_MAX_CNT);
 }
 
-static int parse_clt_sessions_clms(const char *arg, struct ibnbd_ctx *ctx)
+static int parse_clt_sessions_clms(const char *arg, struct rnbd_ctx *ctx)
 {
 	return table_extend_columns(arg, comma, all_clms_sessions_clt,
 				    ctx->clms_sessions_clt, CLM_MAX_CNT);
 }
 
-static int parse_srv_sessions_clms(const char *arg, struct ibnbd_ctx *ctx)
+static int parse_srv_sessions_clms(const char *arg, struct rnbd_ctx *ctx)
 {
 	return table_extend_columns(arg, comma, all_clms_sessions_srv,
 				    ctx->clms_sessions_srv, CLM_MAX_CNT);
 }
 
-static int parse_clt_paths_clms(const char *arg, struct ibnbd_ctx *ctx)
+static int parse_clt_paths_clms(const char *arg, struct rnbd_ctx *ctx)
 {
 	return table_extend_columns(arg, comma, all_clms_paths_clt,
 				    ctx->clms_paths_clt, CLM_MAX_CNT);
 }
 
-static int parse_srv_paths_clms(const char *arg, struct ibnbd_ctx *ctx)
+static int parse_srv_paths_clms(const char *arg, struct rnbd_ctx *ctx)
 {
 	return table_extend_columns(arg, comma, all_clms_paths_srv,
 				    ctx->clms_paths_srv, CLM_MAX_CNT);
 }
 
-static int parse_clt_clms(const char *arg, struct ibnbd_ctx *ctx)
+static int parse_clt_clms(const char *arg, struct rnbd_ctx *ctx)
 {
 	int tmp_err, err;
 
@@ -3253,7 +3253,7 @@ static int parse_clt_clms(const char *arg, struct ibnbd_ctx *ctx)
 	return err;
 }
 
-static int parse_srv_clms(const char *arg, struct ibnbd_ctx *ctx)
+static int parse_srv_clms(const char *arg, struct rnbd_ctx *ctx)
 {
 	int tmp_err, err;
 
@@ -3273,7 +3273,7 @@ static int parse_srv_clms(const char *arg, struct ibnbd_ctx *ctx)
 	return err;
 }
 
-static int parse_both_devices_clms(const char *arg, struct ibnbd_ctx *ctx)
+static int parse_both_devices_clms(const char *arg, struct rnbd_ctx *ctx)
 {
 	int tmp_err, err;
 
@@ -3288,7 +3288,7 @@ static int parse_both_devices_clms(const char *arg, struct ibnbd_ctx *ctx)
 	return err;
 }
 
-static int parse_both_clms(const char *arg, struct ibnbd_ctx *ctx)
+static int parse_both_clms(const char *arg, struct rnbd_ctx *ctx)
 {
 	int tmp_err, err;
 
@@ -3303,7 +3303,7 @@ static int parse_both_clms(const char *arg, struct ibnbd_ctx *ctx)
 }
 
 static int parse_sign(char s,
-		      struct ibnbd_ctx *ctx)
+		      struct rnbd_ctx *ctx)
 {
 	if (s == '+')
 		ctx->sign = 1;
@@ -3316,7 +3316,7 @@ static int parse_sign(char s,
 }
 
 static int parse_size(const char *str,
-		      struct ibnbd_ctx *ctx)
+		      struct rnbd_ctx *ctx)
 {
 	uint64_t size;
 
@@ -3332,9 +3332,9 @@ static int parse_size(const char *str,
 	return 0;
 }
 
-static void init_ibnbd_ctx(struct ibnbd_ctx *ctx)
+static void init_rnbd_ctx(struct rnbd_ctx *ctx)
 {
-	memset(ctx, 0, sizeof(struct ibnbd_ctx));
+	memset(ctx, 0, sizeof(struct rnbd_ctx));
 
 	memcpy(&(ctx->clms_devices_clt), &def_clms_devices_clt,
 	       ARRSIZE(def_clms_devices_clt) * sizeof(all_clms_devices[0]));
@@ -3355,7 +3355,7 @@ static void init_ibnbd_ctx(struct ibnbd_ctx *ctx)
 
 }
 
-static void deinit_ibnbd_ctx(struct ibnbd_ctx *ctx)
+static void deinit_rnbd_ctx(struct rnbd_ctx *ctx)
 {
 	int i;
 
@@ -3367,7 +3367,7 @@ static void deinit_ibnbd_ctx(struct ibnbd_ctx *ctx)
 	}
 }
 
-static void ibnbd_ctx_default(struct ibnbd_ctx *ctx)
+static void rnbd_ctx_default(struct rnbd_ctx *ctx)
 {
 	if (!ctx->lstmode_set)
 		ctx->lstmode = LST_DEVICES;
@@ -3378,16 +3378,16 @@ static void ibnbd_ctx_default(struct ibnbd_ctx *ctx)
 	if (!ctx->prec_set)
 		ctx->prec = 3;
 
-	if (!ctx->ibnbdmode_set) {
+	if (!ctx->rnbdmode_set) {
 		if (sess_clt[0])
-			ctx->ibnbdmode |= IBNBD_CLIENT;
+			ctx->rnbdmode |= RNBD_CLIENT;
 		if (sess_srv[0])
-			ctx->ibnbdmode |= IBNBD_SERVER;
+			ctx->rnbdmode |= RNBD_SERVER;
 	}
 }
 
 static void help_mode(const char *mode, struct param *const params[],
-		      const struct ibnbd_ctx *ctx)
+		      const struct rnbd_ctx *ctx)
 {
 	char buff[PATH_MAX];
 
@@ -3401,7 +3401,7 @@ static void help_mode(const char *mode, struct param *const params[],
 	}
 }
 
-static void help_start(const struct ibnbd_ctx *ctx)
+static void help_start(const struct rnbd_ctx *ctx)
 {
 	if (help_print_flags(ctx) || help_print_all(ctx)) {
 		help_param(ctx->pname, params_flags_help, ctx);
@@ -3424,7 +3424,7 @@ static void help_start(const struct ibnbd_ctx *ctx)
 	}
 }
 
-static void print_version(const struct ibnbd_ctx *ctx)
+static void print_version(const struct rnbd_ctx *ctx)
 {
 	printf("%s version %s%s%s\n", ctx->pname,
 	       CLR(ctx->trm, CBLD, PACKAGE_VERSION));
@@ -3432,7 +3432,7 @@ static void print_version(const struct ibnbd_ctx *ctx)
 
 /**
  * Parse all the possible parameters to list or show commands.
- * The results are collected in the ibnbd_ctx struct
+ * The results are collected in the rnbd_ctx struct
  *
  *  Assumtions:
  * * all types  accept the same parameters (except for collums)
@@ -3444,8 +3444,8 @@ static void print_version(const struct ibnbd_ctx *ctx)
  * < 0 error code
  * == 0 there are no arguments to the list command
  */
-int parse_list_parameters(int argc, const char *argv[], struct ibnbd_ctx *ctx,
-		int (*parse_clms)(const char *arg, struct ibnbd_ctx *ctx),
+int parse_list_parameters(int argc, const char *argv[], struct rnbd_ctx *ctx,
+		int (*parse_clms)(const char *arg, struct rnbd_ctx *ctx),
 		const struct param *cmd, const char *program_name)
 {
 	int err = 0; int start_argc = argc;
@@ -3488,7 +3488,7 @@ int parse_list_parameters(int argc, const char *argv[], struct ibnbd_ctx *ctx,
  * Parse parameters for a command as described by cmd.
  */
 int parse_cmd_parameters(int argc, const char *argv[],
-			 struct param *const params[], struct ibnbd_ctx *ctx,
+			 struct param *const params[], struct rnbd_ctx *ctx,
 			 const struct param *cmd, const char *program_name)
 {
 	int err = 0; int start_argc = argc;
@@ -3512,7 +3512,7 @@ int parse_cmd_parameters(int argc, const char *argv[],
 }
 
 int parse_all_parameters(int argc, const char *argv[],
-			 struct param *const params[], struct ibnbd_ctx *ctx,
+			 struct param *const params[], struct rnbd_ctx *ctx,
 			 const struct param *cmd, const char *program_name)
 {
 	int err = 0;
@@ -3534,7 +3534,7 @@ int parse_all_parameters(int argc, const char *argv[],
  * Parse parameters for the map command as described by cmd.
  */
 int parse_map_parameters(int argc, const char *argv[], int *accepted,
-			 struct param *const params[], struct ibnbd_ctx *ctx,
+			 struct param *const params[], struct rnbd_ctx *ctx,
 			 const struct param *cmd, const char *program_name)
 {
 	int err = 0; int start_argc = argc;
@@ -3563,7 +3563,7 @@ int parse_map_parameters(int argc, const char *argv[], int *accepted,
 }
 
 int cmd_dump_all(int argc, const char *argv[], const struct param *cmd,
-		 const char *help_context, struct ibnbd_ctx *ctx)
+		 const char *help_context, struct rnbd_ctx *ctx)
 
 {
 	int err, tmp_err;
@@ -3587,7 +3587,7 @@ int cmd_dump_all(int argc, const char *argv[], const struct param *cmd,
 	if (err < 0)
 		return err;
 
-	ctx->ibnbdmode = IBNBD_BOTH;
+	ctx->rnbdmode = RNBD_BOTH;
 
 	err = list_devices(sds_clt, sds_clt_cnt - 1, sds_srv,
 			   sds_srv_cnt - 1, true, ctx);
@@ -3617,7 +3617,7 @@ int cmd_dump_all(int argc, const char *argv[], const struct param *cmd,
 }
 
 int cmd_map(int argc, const char *argv[], const struct param *cmd,
-	    const char *help_context, struct ibnbd_ctx *ctx)
+	    const char *help_context, struct rnbd_ctx *ctx)
 {
 	int accepted = 0, err = 0;
 
@@ -3655,7 +3655,7 @@ int cmd_map(int argc, const char *argv[], const struct param *cmd,
 }
 
 int cmd_resize(int argc, const char *argv[], const struct param *cmd,
-	       const char *help_context, struct ibnbd_ctx *ctx)
+	       const char *help_context, struct rnbd_ctx *ctx)
 {
 	int err = parse_name_help(argc--, argv++,
 				  help_context, cmd, ctx);
@@ -3700,7 +3700,7 @@ int cmd_resize(int argc, const char *argv[], const struct param *cmd,
 }
 
 int cmd_unmap(int argc, const char *argv[], const struct param *cmd,
-	      const char *help_context, struct ibnbd_ctx *ctx)
+	      const char *help_context, struct rnbd_ctx *ctx)
 {
 	int err = parse_name_help(argc--, argv++,
 				  help_context, cmd, ctx);
@@ -3725,7 +3725,7 @@ int cmd_unmap(int argc, const char *argv[], const struct param *cmd,
 }
 
 int cmd_remap(int argc, const char *argv[], const struct param *cmd,
-	      bool allowSession, const char *help_context, struct ibnbd_ctx *ctx)
+	      bool allowSession, const char *help_context, struct rnbd_ctx *ctx)
 {
 	int err = parse_name_help(argc--, argv++,
 				  help_context, cmd, ctx);
@@ -3752,7 +3752,7 @@ int cmd_remap(int argc, const char *argv[], const struct param *cmd,
 	return client_devices_remap(ctx->name, ctx);
 }
 
-int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
+int cmd_client_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 {
 	const char *_help_context = ctx->pname_with_mode
 		? "session" : "client session";
@@ -3822,14 +3822,14 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			}
 			/* We want the session to change it's state to */
 			/* disconnected. So disconnect all paths first.*/
-			err = session_do_all_paths(IBNBD_CLIENT, ctx->name,
+			err = session_do_all_paths(RNBD_CLIENT, ctx->name,
 						   client_path_disconnect,
 						   ctx);
 			/* If the session does not exist at all we will   */
 			/* get -EINVAL. In all other error cases we try   */
 			/* to reconnect the path to reconnect the session.*/
 			if (err != -EINVAL)
-				err = session_do_all_paths(IBNBD_CLIENT,
+				err = session_do_all_paths(RNBD_CLIENT,
 							ctx->name,
 							client_path_reconnect,
 							ctx);
@@ -3873,7 +3873,7 @@ int cmd_client_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	return err;
 }
 
-int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
+int cmd_client_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 {
 	const char *_help_context = ctx->pname_with_mode
 		? "device" : "client device";
@@ -3950,7 +3950,7 @@ int cmd_client_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	return err;
 }
 
-int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
+int cmd_client_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 {
 	const char *_help_context = ctx->pname_with_mode
 		? "path" : "client path";
@@ -4148,7 +4148,7 @@ int cmd_client_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	return err;
 }
 
-int cmd_server_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
+int cmd_server_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 {
 	const char *_help_context = ctx->pname_with_mode
 		? "session" : "server session";
@@ -4216,7 +4216,7 @@ int cmd_server_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 				err = -EINVAL;
 				break;
 			}
-			err = session_do_all_paths(IBNBD_SERVER, ctx->name,
+			err = session_do_all_paths(RNBD_SERVER, ctx->name,
 						   server_path_disconnect,
 						   ctx);
 			break;
@@ -4237,7 +4237,7 @@ int cmd_server_sessions(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	return err;
 }
 
-int cmd_server_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
+int cmd_server_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 {
 	const char *_help_context = ctx->pname_with_mode
 		? "device" : "server device";
@@ -4302,7 +4302,7 @@ int cmd_server_devices(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	return err;
 }
 
-int cmd_server_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
+int cmd_server_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 {
 	const char *_help_context = ctx->pname_with_mode
 		? "path" : "server path";
@@ -4387,7 +4387,7 @@ int cmd_server_paths(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	return err;
 }
 
-int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
+int cmd_client(int argc, const char *argv[], struct rnbd_ctx *ctx)
 {
 	const char *_help_context = "client";
 	int err = 0;
@@ -4490,7 +4490,7 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	return err;
 }
 
-int cmd_server(int argc, const char *argv[], struct ibnbd_ctx *ctx)
+int cmd_server(int argc, const char *argv[], struct rnbd_ctx *ctx)
 {
 	const char *_help_context = "server";
 	int err = 0;
@@ -4582,7 +4582,7 @@ int cmd_server(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	return err;
 }
 
-int cmd_both(int argc, const char *argv[], struct ibnbd_ctx *ctx)
+int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 {
 	int err = 0;
 	const struct param *param;
@@ -4671,7 +4671,7 @@ int cmd_both(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	return err;
 }
 
-int cmd_start(int argc, const char *argv[], struct ibnbd_ctx *ctx)
+int cmd_start(int argc, const char *argv[], struct rnbd_ctx *ctx)
 {
 	int err = 0;
 	const struct param *param;
@@ -4684,18 +4684,18 @@ int cmd_start(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	if (err >= 0) {
 		param = find_param(*argv, params_mode);
 		if (!param) {
-			ctx->ibnbdmode = mode_for_host();
+			ctx->rnbdmode = mode_for_host();
 
 			INF(ctx->debug_set,
 			    "RNBD mode deduced from sysfs: '%s'.\n",
-			    mode_to_string(ctx->ibnbdmode));
+			    mode_to_string(ctx->rnbdmode));
 
-			switch (ctx->ibnbdmode) {
-			case IBNBD_CLIENT:
+			switch (ctx->rnbdmode) {
+			case RNBD_CLIENT:
 				return cmd_client(argc, argv, ctx);
-			case IBNBD_SERVER:
+			case RNBD_SERVER:
 				return cmd_server(argc, argv, ctx);
-			case IBNBD_BOTH:
+			case RNBD_BOTH:
 				return cmd_both(argc, argv, ctx);
 			default:
 				ERR(ctx->trm,
@@ -4742,13 +4742,13 @@ int main(int argc, const char *argv[])
 {
 	int ret = 0;
 
-	struct ibnbd_ctx ctx;
+	struct rnbd_ctx ctx;
 
-	init_ibnbd_ctx(&ctx);
+	init_rnbd_ctx(&ctx);
 
 	parse_argv0(argv[0], &ctx);
 
-	ret = ibnbd_sysfs_alloc_all(&sds_clt, &sds_srv,
+	ret = rnbd_sysfs_alloc_all(&sds_clt, &sds_srv,
 				    &sess_clt, &sess_srv,
 				    &paths_clt, &paths_srv,
 				    &sds_clt_cnt, &sds_srv_cnt,
@@ -4760,14 +4760,14 @@ int main(int argc, const char *argv[])
 		goto out;
 	}
 
-	ret = ibnbd_sysfs_read_all(sds_clt, sds_srv, sess_clt, sess_srv,
+	ret = rnbd_sysfs_read_all(sds_clt, sds_srv, sess_clt, sess_srv,
 				   paths_clt, paths_srv);
 	if (ret) {
 		ERR(ctx.trm, "Failed to read sysfs entries: %d\n", ret);
 		goto free;
 	}
 
-	ibnbd_ctx_default(&ctx);
+	rnbd_ctx_default(&ctx);
 
 	ret = parse_cmd_parameters(--argc, ++argv, params_flags,
 				   &ctx, NULL, NULL);
@@ -4789,10 +4789,10 @@ int main(int argc, const char *argv[])
 	ret = cmd_start(argc, argv, &ctx);
 
 free:
-	ibnbd_sysfs_free_all(sds_clt, sds_srv, sess_clt, sess_srv,
+	rnbd_sysfs_free_all(sds_clt, sds_srv, sess_clt, sess_srv,
 			     paths_clt, paths_srv);
 out:
-	deinit_ibnbd_ctx(&ctx);
+	deinit_rnbd_ctx(&ctx);
 
 	if (ret == -EAGAIN)
 		/* help message was printed */

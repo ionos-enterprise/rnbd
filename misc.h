@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
- * Configuration tool for IBNBD driver and IBTRS library.
+ * Configuration tool for RNBD driver and RTRS library.
  *
  * Copyright (c) 2019 1&1 IONOS SE. All rights reserved.
  * Authors: Danil Kipnis <danil.kipnis@cloud.ionos.com>
@@ -39,7 +39,7 @@ struct path {
 	const char *dst;
 };
 
-struct ibnbd_ctx {
+struct rnbd_ctx {
 	const char *pname;
 	const char *name;
 
@@ -53,8 +53,8 @@ struct ibnbd_ctx {
 	unsigned int lstmode;
 	bool lstmode_set;
 
-	unsigned int ibnbdmode;
-	bool ibnbdmode_set;
+	unsigned int rnbdmode;
+	bool rnbdmode_set;
 	bool pname_with_mode;
 
 	const char *access_mode;
@@ -115,54 +115,54 @@ void trim(char *s);
  */
 int str_to_size(const char *str, uint64_t *size);
 
-int i_to_byte_unit(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int i_to_byte_unit(char *str, size_t len, const struct rnbd_ctx *ctx,
 		   uint64_t v, bool humanize);
 
-int byte_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int byte_to_str(char *str, size_t len, const struct rnbd_ctx *ctx,
 		enum color *clr, void *v, bool humanize);
 
-int sd_state_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int sd_state_to_str(char *str, size_t len, const struct rnbd_ctx *ctx,
 		    enum color *clr, void *v, bool humanize);
 
-int sd_devname_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int sd_devname_to_str(char *str, size_t len, const struct rnbd_ctx *ctx,
 		      enum color *clr, void *v, bool humanize);
 
-int sd_devpath_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int sd_devpath_to_str(char *str, size_t len, const struct rnbd_ctx *ctx,
 		      enum color *clr, void *v, bool humanize);
 
-int sd_rx_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int sd_rx_to_str(char *str, size_t len, const struct rnbd_ctx *ctx,
 		 enum color *clr, void *v, bool humanize);
 
-int sd_tx_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int sd_tx_to_str(char *str, size_t len, const struct rnbd_ctx *ctx,
 		 enum color *clr, void *v, bool humanize);
 
-int dev_sessname_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int dev_sessname_to_str(char *str, size_t len, const struct rnbd_ctx *ctx,
 			enum color *clr, void *v, bool humanize);
 
-int ibnbd_path_state_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int rnbd_path_state_to_str(char *str, size_t len, const struct rnbd_ctx *ctx,
 			    enum color *clr, void *v, bool humanize);
 
-int path_to_sessname(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int path_to_sessname(char *str, size_t len, const struct rnbd_ctx *ctx,
 		     enum color *clr, void *v, bool humanize);
 
-int sd_sess_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int sd_sess_to_direction(char *str, size_t len, const struct rnbd_ctx *ctx,
 			 enum color *clr, void *v, bool humanize);
 
-int act_path_cnt_to_state(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int act_path_cnt_to_state(char *str, size_t len, const struct rnbd_ctx *ctx,
 			  enum color *clr, void *v, bool humanize);
 
-int sess_side_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int sess_side_to_direction(char *str, size_t len, const struct rnbd_ctx *ctx,
 			   enum color *clr, void *v, bool humanize);
 
-int path_sess_to_direction(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int path_sess_to_direction(char *str, size_t len, const struct rnbd_ctx *ctx,
 			   enum color *clr, void *v, bool humanize);
 
-int path_to_shortdesc(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int path_to_shortdesc(char *str, size_t len, const struct rnbd_ctx *ctx,
 		      enum color *clr, void *v, bool humanize);
 
 bool is_path_addr(const char *arg);
 
-int addr_to_norm(char *str, size_t len, const struct ibnbd_ctx *ctx,
+int addr_to_norm(char *str, size_t len, const struct rnbd_ctx *ctx,
 		 enum color *clr, void *v, bool humanize);
 
 bool match_path_addr(const char *left, const char *right);
@@ -170,13 +170,13 @@ bool match_path_addr(const char *left, const char *right);
 int sessname_from_host(const char *from_name, char *out_buf, size_t buf_len);
 
 int resolve_host(const char *from_name, struct path *path,
-		 const struct ibnbd_ctx *ctx);
+		 const struct rnbd_ctx *ctx);
 
 #define container_of(ptr, type, member) ({                      \
 		const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
 		(type *)( (char *)__mptr - offsetof(type,member) );})
 
-enum ibnbd_token {
+enum rnbd_token {
 
 	/* mode */
 	TOK_NONE      = 0,

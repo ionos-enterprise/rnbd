@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Configuration tool for IBNBD driver and IBTRS library.
+ * Configuration tool for RNBD driver and RTRS library.
  *
  * Copyright (c) 2019 1&1 IONOS SE. All rights reserved.
  * Authors: Danil Kipnis <danil.kipnis@cloud.ionos.com>
@@ -41,7 +41,7 @@ static const char * const fld_fmt_str[] = {
 };
 
 int table_row_stringify(void *s, struct table_fld *flds,
-			struct table_column **cs, const struct ibnbd_ctx *ctx,
+			struct table_column **cs, const struct rnbd_ctx *ctx,
 			bool humanize, int pre_len)
 {
 	struct table_column *c;
@@ -222,7 +222,7 @@ int table_flds_print(enum fmt_type fmt, const char *prefix,
 
 int table_row_print(void *v, enum fmt_type fmt, const char *pre,
 		    struct table_column **cs, bool trm,
-		    const struct ibnbd_ctx *ctx, bool humanize,
+		    const struct rnbd_ctx *ctx, bool humanize,
 		    size_t pre_len)
 {
 	struct table_fld flds[CLM_MAX_CNT];
@@ -463,7 +463,7 @@ int table_extend_columns(const char *arg, const char *delim,
 	CLM(table_column, m_name, m_header, m_type, tostr, \
 	    align, h_clr, c_clr, m_descr, m_width, 0)
 
-static int pstr_to_str(char *str, size_t len, const struct ibnbd_ctx *ctx,
+static int pstr_to_str(char *str, size_t len, const struct rnbd_ctx *ctx,
 		       enum color *clr, void *v, bool humanize)
 {
 	*clr = 0;
@@ -482,7 +482,7 @@ static struct table_column *l_clmns[] = {
 };
 
 int table_tbl_print_term(const char *prefix, struct table_column **clm,
-			 bool trm, const struct ibnbd_ctx *ctx)
+			 bool trm, const struct rnbd_ctx *ctx)
 {
 	int row = 0;
 

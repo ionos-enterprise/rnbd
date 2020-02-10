@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Configuration tool for IBNBD driver and IBTRS library.
+ * Configuration tool for RNBD driver and RTRS library.
  *
  * Copyright (c) 2019 1&1 IONOS SE. All rights reserved.
  * Authors: Danil Kipnis <danil.kipnis@cloud.ionos.com>
@@ -25,10 +25,10 @@
 #include "table.h"
 #include "misc.h"
 
-struct ibnbd_dev *devs[4096]; /* FIXME: this has to be a list */
+struct rnbd_dev *devs[4096]; /* FIXME: this has to be a list */
 
 int printf_sysfs(const char *dir, const char *entry,
-		 const struct ibnbd_ctx *ctx, const char *format, ...)
+		 const struct rnbd_ctx *ctx, const char *format, ...)
 {
 	char path[PATH_MAX];
 	char cmd[4096];
@@ -89,9 +89,9 @@ int scanf_sysfs(const char *dir, const char *entry, const char *format, ...)
 	return ret;
 }
 
-static void ibnbd_sysfs_free(struct ibnbd_sess_dev **sds,
-			     struct ibnbd_sess **sess,
-			     struct ibnbd_path **paths)
+static void rnbd_sysfs_free(struct rnbd_sess_dev **sds,
+			     struct rnbd_sess **sess,
+			     struct rnbd_path **paths)
 {
 	int i;
 
@@ -110,17 +110,17 @@ static void ibnbd_sysfs_free(struct ibnbd_sess_dev **sds,
 	free(paths);
 }
 
-void ibnbd_sysfs_free_all(struct ibnbd_sess_dev **sds_clt,
-			  struct ibnbd_sess_dev **sds_srv,
-			  struct ibnbd_sess **sess_clt,
-			  struct ibnbd_sess **sess_srv,
-			  struct ibnbd_path **paths_clt,
-			  struct ibnbd_path **paths_srv)
+void rnbd_sysfs_free_all(struct rnbd_sess_dev **sds_clt,
+			  struct rnbd_sess_dev **sds_srv,
+			  struct rnbd_sess **sess_clt,
+			  struct rnbd_sess **sess_srv,
+			  struct rnbd_path **paths_clt,
+			  struct rnbd_path **paths_srv)
 {
 	int i;
 
-	ibnbd_sysfs_free(sds_clt, sess_clt, paths_clt);
-	ibnbd_sysfs_free(sds_srv, sess_srv, paths_srv);
+	rnbd_sysfs_free(sds_clt, sess_clt, paths_clt);
+	rnbd_sysfs_free(sds_srv, sess_srv, paths_srv);
 
 	for (i = 0; devs[i]; i++)
 		free(devs[i]);
@@ -145,7 +145,7 @@ static int dir_cnt(const char *dir)
 	return cnt;
 }
 
-static int ibnbd_sysfs_path_cnt(const char *sdir)
+static int rnbd_sysfs_path_cnt(const char *sdir)
 {
 	struct dirent *sess;
 	char pdir[PATH_MAX];
@@ -168,7 +168,7 @@ static int ibnbd_sysfs_path_cnt(const char *sdir)
 	return cnt;
 }
 
-static int ibnbd_sysfs_sds_srv_cnt(void)
+static int rnbd_sysfs_sds_srv_cnt(void)
 {
 	struct dirent *sd;
 	char sdir[PATH_MAX];
@@ -191,9 +191,9 @@ static int ibnbd_sysfs_sds_srv_cnt(void)
 	return cnt;
 }
 
-static int ibnbd_sysfs_alloc(struct ibnbd_sess_dev ***sds,
-			     struct ibnbd_sess ***sess,
-			     struct ibnbd_path ***paths,
+static int rnbd_sysfs_alloc(struct rnbd_sess_dev ***sds,
+			     struct rnbd_sess ***sess,
+			     struct rnbd_path ***paths,
 			     int sds_cnt, int *sess_cnt, int *path_cnt,
 			     const char *sess_path)
 {
@@ -201,7 +201,7 @@ static int ibnbd_sysfs_alloc(struct ibnbd_sess_dev ***sds,
 	if (*sess_cnt < 0)
 		return *sess_cnt;
 
-	*path_cnt = ibnbd_sysfs_path_cnt(sess_path);
+	*path_cnt = rnbd_sysfs_path_cnt(sess_path);
 	if (*path_cnt < 0)
 		return *path_cnt;
 
@@ -228,12 +228,12 @@ static int ibnbd_sysfs_alloc(struct ibnbd_sess_dev ***sds,
 	return 0;
 }
 
-int ibnbd_sysfs_alloc_all(struct ibnbd_sess_dev ***sds_clt,
-			  struct ibnbd_sess_dev ***sds_srv,
-			  struct ibnbd_sess ***sess_clt,
-			  struct ibnbd_sess ***sess_srv,
-			  struct ibnbd_path ***paths_clt,
-			  struct ibnbd_path ***paths_srv,
+int rnbd_sysfs_alloc_all(struct rnbd_sess_dev ***sds_clt,
+			  struct rnbd_sess_dev ***sds_srv,
+			  struct rnbd_sess ***sess_clt,
+			  struct rnbd_sess ***sess_srv,
+			  struct rnbd_path ***paths_clt,
+			  struct rnbd_path ***paths_srv,
 			  int *sds_clt_cnt, int *sds_srv_cnt,
 			  int *sess_clt_cnt, int *sess_srv_cnt,
 			  int *paths_clt_cnt, int *paths_srv_cnt)
@@ -248,7 +248,7 @@ int ibnbd_sysfs_alloc_all(struct ibnbd_sess_dev ***sds_clt,
 		return *sds_clt_cnt;
 
 
-	*sds_srv_cnt = ibnbd_sysfs_sds_srv_cnt();
+	*sds_srv_cnt = rnbd_sysfs_sds_srv_cnt();
 	if (*sds_srv_cnt < 0)
 		return *sds_srv_cnt;
 
@@ -256,24 +256,24 @@ int ibnbd_sysfs_alloc_all(struct ibnbd_sess_dev ***sds_clt,
 	*sds_clt_cnt += 1;
 	*sds_srv_cnt += 1;
 
-	ret = ibnbd_sysfs_alloc(sds_clt, sess_clt, paths_clt,
+	ret = rnbd_sysfs_alloc(sds_clt, sess_clt, paths_clt,
 				*sds_clt_cnt, sess_clt_cnt, paths_clt_cnt,
 				PATH_SESS_CLT);
 	if (ret)
 		return ret;
 
-	ret = ibnbd_sysfs_alloc(sds_srv, sess_srv, paths_srv,
+	ret = rnbd_sysfs_alloc(sds_srv, sess_srv, paths_srv,
 				*sds_srv_cnt, sess_srv_cnt, paths_srv_cnt,
 				PATH_SESS_SRV);
 	if (ret)
-		ibnbd_sysfs_free(*sds_clt, *sess_clt, *paths_clt);
+		rnbd_sysfs_free(*sds_clt, *sess_clt, *paths_clt);
 
 	return ret;
 }
 
-static struct ibnbd_dev *find_or_add_dev(const char *syspath,
-					 struct ibnbd_dev **devs,
-					 enum ibnbdmode side)
+static struct rnbd_dev *find_or_add_dev(const char *syspath,
+					 struct rnbd_dev **devs,
+					 enum rnbdmode side)
 {
 	char *devname, *r, tmp[PATH_MAX], rpath[PATH_MAX];
 	int i;
@@ -300,7 +300,7 @@ static struct ibnbd_dev *find_or_add_dev(const char *syspath,
 	scanf_sysfs(rpath, "stat", "%*d %*d %d %*d %*d %*d %d", &devs[i]->rx_sect,
 		    &devs[i]->tx_sect);
 
-	if (side == IBNBD_CLIENT) {
+	if (side == RNBD_CLIENT) {
 		strcat(rpath, "/ibnbd/");
 		scanf_sysfs(rpath, "state", "%s", devs[i]->state);
 	}
@@ -308,11 +308,11 @@ static struct ibnbd_dev *find_or_add_dev(const char *syspath,
 	return devs[i];
 }
 
-static struct ibnbd_path *add_path(const char *sdir,
+static struct rnbd_path *add_path(const char *sdir,
 				   const char *pname,
-				   struct ibnbd_path **paths)
+				   struct rnbd_path **paths)
 {
-	struct ibnbd_path *p;
+	struct rnbd_path *p;
 	char ppath[PATH_MAX];
 	int i;
 
@@ -340,19 +340,19 @@ static struct ibnbd_path *add_path(const char *sdir,
 	return p;
 }
 
-static struct ibnbd_sess *find_or_add_sess(const char *sessname,
-					   struct ibnbd_sess **sess,
-					   struct ibnbd_path **paths,
-					   enum ibnbdmode side)
+static struct rnbd_sess *find_or_add_sess(const char *sessname,
+					   struct rnbd_sess **sess,
+					   struct rnbd_path **paths,
+					   enum rnbdmode side)
 {
-	struct ibnbd_sess *s;
-	struct ibnbd_path *p;
+	struct rnbd_sess *s;
+	struct rnbd_path *p;
 	struct dirent *pent;
 	char tmp[PATH_MAX];
 	DIR *pdir;
 	int i;
 
-	if (side == IBNBD_CLIENT)
+	if (side == RNBD_CLIENT)
 		sprintf(tmp, PATH_SESS_CLT "%s", sessname);
 	else
 		sprintf(tmp, PATH_SESS_SRV "%s", sessname);
@@ -425,16 +425,16 @@ out:
 	return NULL;
 }
 
-static struct ibnbd_sess_dev *add_sess_dev(const char *devname,
-					   struct ibnbd_sess_dev **sds,
-					   struct ibnbd_sess *s,
-					   struct ibnbd_dev *d,
-					   enum ibnbdmode side)
+static struct rnbd_sess_dev *add_sess_dev(const char *devname,
+					   struct rnbd_sess_dev **sds,
+					   struct rnbd_sess *s,
+					   struct rnbd_dev *d,
+					   enum rnbdmode side)
 {
 	char tmp[PATH_MAX];
 	int i;
 
-	if (side == IBNBD_CLIENT)
+	if (side == RNBD_CLIENT)
 		sprintf(tmp, PATH_SDS_CLT "%s/ibnbd/", devname);
 	else
 		sprintf(tmp, PATH_SDS_SRV "%s/sessions/%s", devname,
@@ -456,16 +456,16 @@ static struct ibnbd_sess_dev *add_sess_dev(const char *devname,
 	return sds[i];
 }
 
-static int ibnbd_sysfs_read_clt(struct ibnbd_sess_dev **sds,
-				struct ibnbd_sess **sess,
-				struct ibnbd_path **paths,
-				struct ibnbd_dev **devs)
+static int rnbd_sysfs_read_clt(struct rnbd_sess_dev **sds,
+				struct rnbd_sess **sess,
+				struct rnbd_path **paths,
+				struct rnbd_dev **devs)
 {
 	char tmp[PATH_MAX], sessname[NAME_MAX];
 	struct dirent *dent;
-	struct ibnbd_sess_dev *sd;
-	struct ibnbd_sess *s;
-	struct ibnbd_dev *d;
+	struct rnbd_sess_dev *sd;
+	struct rnbd_sess *s;
+	struct rnbd_dev *d;
 	DIR *ddir;
 
 	ddir = opendir(PATH_SDS_CLT);
@@ -479,15 +479,15 @@ static int ibnbd_sysfs_read_clt(struct ibnbd_sess_dev **sds,
 		sprintf(tmp, PATH_SDS_CLT "%s", dent->d_name);
 		scanf_sysfs(tmp, "/ibnbd/session", "%s", sessname);
 
-		s = find_or_add_sess(sessname, sess, paths, IBNBD_CLIENT);
+		s = find_or_add_sess(sessname, sess, paths, RNBD_CLIENT);
 		if (!s)
 			return -ENOMEM;
 
-		d = find_or_add_dev(tmp, devs, IBNBD_CLIENT);
+		d = find_or_add_dev(tmp, devs, RNBD_CLIENT);
 		if (!d)
 			return -ENOMEM;
 
-		sd = add_sess_dev(dent->d_name, sds, s, d, IBNBD_CLIENT);
+		sd = add_sess_dev(dent->d_name, sds, s, d, RNBD_CLIENT);
 		if (!sd)
 			return -ENOMEM;
 	}
@@ -497,9 +497,9 @@ static int ibnbd_sysfs_read_clt(struct ibnbd_sess_dev **sds,
 	return 0;
 }
 
-static int ibnbd_sysfs_read_srv_sess_path(
-		struct ibnbd_sess **sess,
-		struct ibnbd_path **paths)
+static int rnbd_sysfs_read_srv_sess_path(
+		struct rnbd_sess **sess,
+		struct rnbd_path **paths)
 {
 	struct dirent *sess_ent;
 	DIR *sp;
@@ -512,27 +512,27 @@ static int ibnbd_sysfs_read_srv_sess_path(
 		if (sess_ent->d_name[0] == '.')
 			continue;
 
-		 find_or_add_sess(sess_ent->d_name, sess, paths, IBNBD_SERVER);
+		 find_or_add_sess(sess_ent->d_name, sess, paths, RNBD_SERVER);
 	}
 	closedir(sp);
 
 	return 0;
 }
 
-static int ibnbd_sysfs_read_srv(struct ibnbd_sess_dev **sds,
-				struct ibnbd_sess **sess,
-				struct ibnbd_path **paths,
-				struct ibnbd_dev **devs)
+static int rnbd_sysfs_read_srv(struct rnbd_sess_dev **sds,
+				struct rnbd_sess **sess,
+				struct rnbd_path **paths,
+				struct rnbd_dev **devs)
 {
 	char tmp[PATH_MAX];
 	int res;
 	struct dirent *dent, *sent;
-	struct ibnbd_sess_dev *sd;
-	struct ibnbd_sess *s;
-	struct ibnbd_dev *d;
+	struct rnbd_sess_dev *sd;
+	struct rnbd_sess *s;
+	struct rnbd_dev *d;
 	DIR *ddir, *sdir;
 
-	res = ibnbd_sysfs_read_srv_sess_path(sess, paths);
+	res = rnbd_sysfs_read_srv_sess_path(sess, paths);
 	if (res)
 		return res;
 	
@@ -546,7 +546,7 @@ static int ibnbd_sysfs_read_srv(struct ibnbd_sess_dev **sds,
 
 		sprintf(tmp, PATH_SDS_SRV "%s/block_dev", dent->d_name);
 
-		d = find_or_add_dev(tmp, devs, IBNBD_SERVER);
+		d = find_or_add_dev(tmp, devs, RNBD_SERVER);
 		if (!d)
 			return -ENOMEM;
 
@@ -558,12 +558,12 @@ static int ibnbd_sysfs_read_srv(struct ibnbd_sess_dev **sds,
 			if (sent->d_name[0] == '.')
 				continue;
 			s = find_or_add_sess(sent->d_name, sess, paths,
-					     IBNBD_SERVER);
+					     RNBD_SERVER);
 			if (!s)
 				return -ENOMEM;
 
 			sd = add_sess_dev(dent->d_name, sds,
-					  s, d, IBNBD_SERVER);
+					  s, d, RNBD_SERVER);
 			if (!sd)
 				return -ENOMEM;
 		}
@@ -577,52 +577,52 @@ static int ibnbd_sysfs_read_srv(struct ibnbd_sess_dev **sds,
 
 /*
  * Read all the stuff from sysfs.
- * Use ibnbd_sysfs_alloc_all() before and ibnbd_sysfs_free_all() after.
+ * Use rnbd_sysfs_alloc_all() before and rnbd_sysfs_free_all() after.
  */
-int ibnbd_sysfs_read_all(struct ibnbd_sess_dev **sds_clt,
-			 struct ibnbd_sess_dev **sds_srv,
-			 struct ibnbd_sess **sess_clt,
-			 struct ibnbd_sess **sess_srv,
-			 struct ibnbd_path **paths_clt,
-			 struct ibnbd_path **paths_srv)
+int rnbd_sysfs_read_all(struct rnbd_sess_dev **sds_clt,
+			 struct rnbd_sess_dev **sds_srv,
+			 struct rnbd_sess **sess_clt,
+			 struct rnbd_sess **sess_srv,
+			 struct rnbd_path **paths_clt,
+			 struct rnbd_path **paths_srv)
 {
 	int ret = 0;
 
-	ret = ibnbd_sysfs_read_clt(sds_clt, sess_clt, paths_clt, devs);
+	ret = rnbd_sysfs_read_clt(sds_clt, sess_clt, paths_clt, devs);
 	if (ret)
 		return ret;
 
-	ret = ibnbd_sysfs_read_srv(sds_srv, sess_srv, paths_srv, devs);
+	ret = rnbd_sysfs_read_srv(sds_srv, sess_srv, paths_srv, devs);
 
 	return ret;
 }
 
-enum ibnbdmode mode_for_host(void)
+enum rnbdmode mode_for_host(void)
 {
-	enum ibnbdmode mode = IBNBD_NONE;
+	enum rnbdmode mode = RNBD_NONE;
 
 	if (faccessat(AT_FDCWD, PATH_IBNBD_CLT, F_OK, AT_EACCESS) == 0)
-		mode |= IBNBD_CLIENT;
+		mode |= RNBD_CLIENT;
 
 	/* else we are not interested in any error diagnossis here  */
 	/* if we can not deduce the mode, than we just know nothing */
 
 	if (faccessat(AT_FDCWD, PATH_IBNBD_SRV, F_OK, AT_EACCESS) == 0)
-		mode |= IBNBD_SERVER;
+		mode |= RNBD_SERVER;
 
 	return mode;
 }
 
-const char *mode_to_string(enum ibnbdmode mode)
+const char *mode_to_string(enum rnbdmode mode)
 {
 	switch (mode) {
-	case IBNBD_NONE:
+	case RNBD_NONE:
 		return "none";
-	case IBNBD_CLIENT:
+	case RNBD_CLIENT:
 		return "client";
-	case IBNBD_SERVER:
+	case RNBD_SERVER:
 		return "server";
-	case IBNBD_BOTH:
+	case RNBD_BOTH:
 		return "both";
 	}
 	/* NOTREACHED */

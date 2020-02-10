@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * Configuration tool for IBNBD driver and IBTRS library.
+ * Configuration tool for RNBD driver and RTRS library.
  *
  * Copyright (c) 2019 1&1 IONOS SE. All rights reserved.
  * Authors: Danil Kipnis <danil.kipnis@cloud.ionos.com>
@@ -18,15 +18,15 @@
 
 extern struct table_column *clms_paths_shortdesc[];
 
-int list_devices_term(struct ibnbd_sess_dev **sds,
+int list_devices_term(struct rnbd_sess_dev **sds,
 		      struct table_column **cs,
-		      const struct ibnbd_ctx *ctx)
+		      const struct rnbd_ctx *ctx)
 {
-	struct ibnbd_dev d_total = {
+	struct rnbd_dev d_total = {
 		.rx_sect = 0,
 		.tx_sect = 0
 	};
-	struct ibnbd_sess_dev total = {
+	struct rnbd_sess_dev total = {
 		.dev = &d_total,
 		.mapping_path = ""
 	};
@@ -77,9 +77,9 @@ int list_devices_term(struct ibnbd_sess_dev **sds,
 	return 0;
 }
 
-void list_devices_csv(struct ibnbd_sess_dev **sds,
+void list_devices_csv(struct rnbd_sess_dev **sds,
 		      struct table_column **cs,
-		      const struct ibnbd_ctx *ctx)
+		      const struct rnbd_ctx *ctx)
 {
 	int i;
 
@@ -93,9 +93,9 @@ void list_devices_csv(struct ibnbd_sess_dev **sds,
 		table_row_print(sds[i], FMT_CSV, "", cs, false, ctx, false, 0);
 }
 
-void list_devices_json(struct ibnbd_sess_dev **sds,
+void list_devices_json(struct rnbd_sess_dev **sds,
 		       struct table_column **cs,
-		       const struct ibnbd_ctx *ctx)
+		       const struct rnbd_ctx *ctx)
 {
 	int i;
 
@@ -113,9 +113,9 @@ void list_devices_json(struct ibnbd_sess_dev **sds,
 	printf("\n\t]");
 }
 
-void list_devices_xml(struct ibnbd_sess_dev **sds,
+void list_devices_xml(struct rnbd_sess_dev **sds,
 		      struct table_column **cs,
-		      const struct ibnbd_ctx *ctx)
+		      const struct rnbd_ctx *ctx)
 {
 	int i;
 
@@ -126,11 +126,11 @@ void list_devices_xml(struct ibnbd_sess_dev **sds,
 	}
 }
 
-int list_sessions_term(struct ibnbd_sess **sessions,
+int list_sessions_term(struct rnbd_sess **sessions,
 		       struct table_column **cs,
-		       const struct ibnbd_ctx *ctx)
+		       const struct rnbd_ctx *ctx)
 {
-	struct ibnbd_sess total = {
+	struct rnbd_sess total = {
 		.act_path_cnt = 0,
 		.path_cnt = 0,
 		.rx_bytes = 0,
@@ -192,9 +192,9 @@ int list_sessions_term(struct ibnbd_sess **sessions,
 	return 0;
 }
 
-void list_sessions_csv(struct ibnbd_sess **sessions,
+void list_sessions_csv(struct rnbd_sess **sessions,
 		       struct table_column **cs,
-		       const struct ibnbd_ctx *ctx)
+		       const struct rnbd_ctx *ctx)
 {
 	int i;
 
@@ -205,9 +205,9 @@ void list_sessions_csv(struct ibnbd_sess **sessions,
 		table_row_print(sessions[i], FMT_CSV, "", cs, false, ctx, false, 0);
 }
 
-void list_sessions_json(struct ibnbd_sess **sessions,
+void list_sessions_json(struct rnbd_sess **sessions,
 			struct table_column **cs,
-			const struct ibnbd_ctx *ctx)
+			const struct rnbd_ctx *ctx)
 {
 	int i;
 
@@ -223,9 +223,9 @@ void list_sessions_json(struct ibnbd_sess **sessions,
 	printf("\n\t]");
 }
 
-void list_sessions_xml(struct ibnbd_sess **sessions,
+void list_sessions_xml(struct rnbd_sess **sessions,
 		       struct table_column **cs,
-		       const struct ibnbd_ctx *ctx)
+		       const struct rnbd_ctx *ctx)
 {
 	int i;
 
@@ -237,11 +237,11 @@ void list_sessions_xml(struct ibnbd_sess **sessions,
 	}
 }
 
-int list_paths_term(struct ibnbd_path **paths, int path_cnt,
+int list_paths_term(struct rnbd_path **paths, int path_cnt,
 		    struct table_column **cs, int tree,
-		    const struct ibnbd_ctx *ctx)
+		    const struct rnbd_ctx *ctx)
 {
-	struct ibnbd_path total = {
+	struct rnbd_path total = {
 		.rx_bytes = 0,
 		.tx_bytes = 0,
 		.inflights = 0,
@@ -298,9 +298,9 @@ int list_paths_term(struct ibnbd_path **paths, int path_cnt,
 	return 0;
 }
 
-void list_paths_csv(struct ibnbd_path **paths,
+void list_paths_csv(struct rnbd_path **paths,
 		    struct table_column **cs,
-		    const struct ibnbd_ctx *ctx)
+		    const struct rnbd_ctx *ctx)
 {
 	int i;
 
@@ -312,9 +312,9 @@ void list_paths_csv(struct ibnbd_path **paths,
 				false, ctx, false, 0);
 }
 
-void list_paths_json(struct ibnbd_path **paths,
+void list_paths_json(struct rnbd_path **paths,
 		     struct table_column **cs,
-		     const struct ibnbd_ctx *ctx)
+		     const struct rnbd_ctx *ctx)
 {
 	int i;
 
@@ -330,9 +330,9 @@ void list_paths_json(struct ibnbd_path **paths,
 	printf("\n\t]");
 }
 
-void list_paths_xml(struct ibnbd_path **paths,
+void list_paths_xml(struct rnbd_path **paths,
 		    struct table_column **cs,
-		    const struct ibnbd_ctx *ctx)
+		    const struct rnbd_ctx *ctx)
 {
 	int i;
 

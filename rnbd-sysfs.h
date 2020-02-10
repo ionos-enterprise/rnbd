@@ -8,26 +8,26 @@
 #define PATH_SDS_SRV PATH_IBNBD_SRV "/devices/"
 #define PATH_SESS_SRV "/sys/class/ibtrs-server/"
 
-enum ibnbdmode {
-	IBNBD_NONE = 0,
-	IBNBD_CLIENT = 1,
-	IBNBD_SERVER = 1 << 1,
-	IBNBD_BOTH = IBNBD_CLIENT | IBNBD_SERVER,
+enum rnbdmode {
+	RNBD_NONE = 0,
+	RNBD_CLIENT = 1,
+	RNBD_SERVER = 1 << 1,
+	RNBD_BOTH = RNBD_CLIENT | RNBD_SERVER,
 };
 
 /*
  * A block device exported or imported
  */
-struct ibnbd_dev {
+struct rnbd_dev {
 	char		devname[NAME_MAX]; /* file under /dev/ */
-	char		devpath[PATH_MAX]; /* /dev/ibnbd<x>, /dev/ram<x> */
+	char		devpath[PATH_MAX]; /* /dev/rnbd<x>, /dev/ram<x> */
 	unsigned long	rx_sect;	   /* from /sys/block/../stats */
 	unsigned long	tx_sect;	   /* from /sys/block/../stats */
-	char		state[NAME_MAX];   /* ../ibnbd/state sysfs entry */
+	char		state[NAME_MAX];   /* ../rnbd/state sysfs entry */
 };
 
-struct ibnbd_path {
-	struct ibnbd_sess *sess;	      /* parent session */
+struct rnbd_path {
+	struct rnbd_sess *sess;	      /* parent session */
 	char		  pathname[NAME_MAX]; /* path appears in sysfs */
 	char		  src_addr[NAME_MAX]; /* client address */
 	char		  dst_addr[NAME_MAX]; /* server address */
@@ -41,8 +41,8 @@ struct ibnbd_path {
 	int		  reconnects;
 };
 
-struct ibnbd_sess {
-	enum ibnbdmode	  side;			/* client or server side */
+struct rnbd_sess {
+	enum rnbdmode	  side;			/* client or server side */
 	char		  sessname[NAME_MAX];	/* session name */
 	char		  mp[NAME_MAX];		/* multipath policy */
 	char		  mp_short[NAME_MAX];	/* multipath policy short */
@@ -57,48 +57,48 @@ struct ibnbd_sess {
 
 	/* paths */
 	int		  path_cnt;	/* path count */
-	struct ibnbd_path **paths;	/* paths */
+	struct rnbd_path **paths;	/* paths */
 };
 
-struct ibnbd_sess_dev {
-	struct ibnbd_sess	*sess;			/* session */
+struct rnbd_sess_dev {
+	struct rnbd_sess	*sess;			/* session */
 	char			mapping_path[NAME_MAX]; /* name for mapping */
 	char			access_mode[64];	/* ro/rw/migration */
-	struct ibnbd_dev	*dev;			/* ibnbd block device */
+	struct rnbd_dev	*dev;			/* rnbd block device */
 };
 
-void ibnbd_sysfs_free_all(struct ibnbd_sess_dev **sds_clt,
-			  struct ibnbd_sess_dev **sds_srv,
-			  struct ibnbd_sess **sess_clt,
-			  struct ibnbd_sess **sess_srv,
-			  struct ibnbd_path **paths_clt,
-			  struct ibnbd_path **paths_srv);
+void rnbd_sysfs_free_all(struct rnbd_sess_dev **sds_clt,
+			  struct rnbd_sess_dev **sds_srv,
+			  struct rnbd_sess **sess_clt,
+			  struct rnbd_sess **sess_srv,
+			  struct rnbd_path **paths_clt,
+			  struct rnbd_path **paths_srv);
 
-int ibnbd_sysfs_alloc_all(struct ibnbd_sess_dev ***sds_clt,
-			  struct ibnbd_sess_dev ***sds_srv,
-			  struct ibnbd_sess ***sess_clt,
-			  struct ibnbd_sess ***sess_srv,
-			  struct ibnbd_path ***paths_clt,
-			  struct ibnbd_path ***paths_srv,
+int rnbd_sysfs_alloc_all(struct rnbd_sess_dev ***sds_clt,
+			  struct rnbd_sess_dev ***sds_srv,
+			  struct rnbd_sess ***sess_clt,
+			  struct rnbd_sess ***sess_srv,
+			  struct rnbd_path ***paths_clt,
+			  struct rnbd_path ***paths_srv,
 			  int *sds_clt_cnt, int *sds_srv_cnt,
 			  int *sess_clt_cnt, int *sess_srv_cnt,
 			  int *paths_clt_cnt, int *paths_srv_cnt);
 /*
  * Read all the stuff from sysfs.
- * Use ibnbd_sysfs_alloc_all() before and ibnbd_sysfs_free_all() after.
+ * Use rnbd_sysfs_alloc_all() before and rnbd_sysfs_free_all() after.
  */
-int ibnbd_sysfs_read_all(struct ibnbd_sess_dev **sds_clt,
-			 struct ibnbd_sess_dev **sds_srv,
-			 struct ibnbd_sess **sess_clt,
-			 struct ibnbd_sess **sess_srv,
-			 struct ibnbd_path **paths_clt,
-			 struct ibnbd_path **paths_srv);
+int rnbd_sysfs_read_all(struct rnbd_sess_dev **sds_clt,
+			 struct rnbd_sess_dev **sds_srv,
+			 struct rnbd_sess **sess_clt,
+			 struct rnbd_sess **sess_srv,
+			 struct rnbd_path **paths_clt,
+			 struct rnbd_path **paths_srv);
 
-struct ibnbd_ctx;
+struct rnbd_ctx;
 
 int printf_sysfs(const char *dir, const char *entry,
-		 const struct ibnbd_ctx *ctx, const char *format, ...);
+		 const struct rnbd_ctx *ctx, const char *format, ...);
 int scanf_sysfs(const char *dir, const char *entry, const char *format, ...);
 
-enum ibnbdmode mode_for_host(void);
-const char *mode_to_string(enum ibnbdmode mode);
+enum rnbdmode mode_for_host(void);
+const char *mode_to_string(enum rnbdmode mode);
