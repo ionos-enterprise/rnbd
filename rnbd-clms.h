@@ -27,11 +27,11 @@ CLM_SD(access_mode, "Access Mode", FLD_STR, NULL, 'l', CNRM,
 
 static struct table_column clm_ibnbd_dev_devname =
 	_CLM_SD("devname", sess, "Device", FLD_STR, sd_devname_to_str, 'l',
-		CNRM, CNRM, "Device name under /dev/. I.e. ibnbd0");
+		CNRM, CNRM, "Device name under /dev/. I.e. rnbd0");
 
 static struct table_column clm_ibnbd_dev_devpath =
 	_CLM_SD("devpath", sess, "Device path", FLD_STR, sd_devpath_to_str, 'l',
-		CNRM, CNRM, "Device path under /dev/. I.e. /dev/ibnbd0");
+		CNRM, CNRM, "Device path under /dev/. I.e. /dev/rnbd0");
 
 static struct table_column clm_ibnbd_dev_rx_sect =
 	_CLM_SD("rx_sect", sess, "RX", FLD_LLU, sd_rx_to_str, 'r', CNRM, CNRM,
@@ -43,11 +43,11 @@ static struct table_column clm_ibnbd_dev_tx_sect =
 
 static struct table_column clm_ibnbd_dev_state =
 	_CLM_SD("state", sess, "State", FLD_STR, sd_state_to_str, 'l', CNRM,
-		CNRM, "State of the IBNBD device. (client only)");
+		CNRM, "State of the RNBD device. (client only)");
 
 static struct table_column clm_ibnbd_sess_dev_sessname =
 	_CLM_SD("sessname", sess, "Session", FLD_STR, dev_sessname_to_str, 'l',
-		CNRM, CNRM, "Name of the IBTRS session of the device");
+		CNRM, CNRM, "Name of the RTRS session of the device");
 
 static struct table_column clm_ibnbd_sess_dev_direction =
 	_CLM_SD("direction", sess, "Direction", FLD_STR,

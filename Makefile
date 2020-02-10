@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
-# Makefile for building ibnbd-tool
+# Makefile for building rnbd-tool
 
 # dpkg-parsechangelog is significantly slow
 CHANGELOG = $(shell head -n 1 ./debian/changelog)
@@ -14,10 +14,10 @@ LIBS =
 SRC = $(wildcard *.c)
 OBJ = $(SRC:.c=.o)
 
-TARGETS_OBJ = ibnbd.o
+TARGETS_OBJ = rnbd.o
 TARGETS = $(TARGETS_OBJ:.o=)
 
-      ibnbd_OBJ = levenshtein.o misc.o table.o ibnbd-sysfs.o list.o
+      rnbd_OBJ = levenshtein.o misc.o table.o rnbd-sysfs.o list.o
 
 .PHONY: all
 all: $(TARGETS)

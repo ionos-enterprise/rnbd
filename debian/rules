@@ -11,4 +11,4 @@ include /usr/share/dpkg/buildflags.mk
 	dh $@ --with bash-completion --parallel
 
 override_dh_strip:
-	dh_strip --dbg-package=ibnbd-tool-dbg
+	dh_strip --dbg-package=rnbd-tool-dbg

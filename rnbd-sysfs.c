@@ -21,7 +21,7 @@
 #include <inttypes.h>
 #include <stdbool.h>
 
-#include "ibnbd-sysfs.h"
+#include "rnbd-sysfs.h"
 #include "table.h"
 #include "misc.h"
 

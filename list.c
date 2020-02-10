@@ -14,7 +14,7 @@
 
 #include "table.h"
 #include "misc.h"
-#include "ibnbd-sysfs.h"
+#include "rnbd-sysfs.h"
 
 extern struct table_column *clms_paths_shortdesc[];
 

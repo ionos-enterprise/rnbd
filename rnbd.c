@@ -19,8 +19,8 @@
 #include "misc.h"
 #include "list.h"
 
-#include "ibnbd-sysfs.h"
-#include "ibnbd-clms.h"
+#include "rnbd-sysfs.h"
+#include "rnbd-clms.h"
 
 #define INF(verbose_set, fmt, ...)		\
 	do { \
@@ -1694,7 +1694,7 @@ static void help_show(const char *program_name,
 
 		printf("\nArguments:\n");
 		print_opt("<name>",
-			  "Name of an ibnbd device, session, or path.");
+			  "Name of an rnbd device, session, or path.");
 
 		printf("\nOptions:\n");
 	}
@@ -1737,7 +1737,7 @@ static void help_show_devices(const char *program_name,
 		print_opt("<device>",
 			  "Name of a local or a remote block device.");
 		print_opt("",
-			  "I.e. ibnbd0, /dev/ibnbd0, d12aef94-4110-4321-9373-3be8494a557b.");
+			  "I.e. rnbd0, /dev/rnbd0, d12aef94-4110-4321-9373-3be8494a557b.");
 
 		printf("\nOptions:\n");
 	}
@@ -2637,7 +2637,7 @@ static struct param _cmd_dump_all =
 	{TOK_DUMP, "dump",
 		"Dump information about all",
 		"",
-		"Dump information about all ibnbd objects.",
+		"Dump information about all rnbd objects.",
 		NULL, NULL, help_dump_all};
 static struct param _cmd_list_devices =
 	{TOK_LIST, "list",
@@ -2661,28 +2661,28 @@ static struct param _cmd_show =
 	{TOK_SHOW, "show",
 		"Show information about the object that is designated by <name>",
 		"",
-		"Show information about an ibnbd device, session, or path.",
+		"Show information about an rnbd device, session, or path.",
 	 "<name>",
 		NULL, help_show};
 static struct param _cmd_show_devices =
 	{TOK_SHOW, "show",
 		"Show information about a",
 		"",
-		"Show information about an ibnbd block device.",
+		"Show information about an rnbd block device.",
 		"<device>",
 		NULL, help_show_devices};
 static struct param _cmd_show_sessions =
 	{TOK_SHOW, "show",
 		"Show information about a",
 		"",
-		"Show information about an ibnbd session.",
+		"Show information about an rnbd session.",
 		"<session>",
 		NULL, help_show_sessions};
 static struct param _cmd_show_paths =
 	{TOK_SHOW, "show",
 		"Show information about a",
 		"",
-		"Show information about an ibnbd transport path.",
+		"Show information about an rnbd transport path.",
 		"<path>",
 		NULL, help_show_paths};
 static struct param _cmd_map =
@@ -4394,7 +4394,7 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	const struct param *param;
 
 	if (argc < 1) {
-		usage_param("ibnbd client",
+		usage_param("rnbd client",
 			    params_object_type_help_client, ctx);
 		if (ctx->complete_set) {
 			err = -EAGAIN;
@@ -4406,7 +4406,7 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	if (err >= 0) {
 		param = find_param(*argv, params_object_type_client);
 		if (!param) {
-			usage_param("ibnbd client",
+			usage_param("rnbd client",
 				   params_object_type_help_client, ctx);
 			handle_unknown_param(*argv, params_object_type_client);
 			err = -EINVAL;
@@ -4480,7 +4480,7 @@ int cmd_client(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 					  params_object_type_help_client, ctx);
 			break;
 		default:
-			usage_param("ibnbd client",
+			usage_param("rnbd client",
 				   params_object_type_help_client, ctx);
 			handle_unknown_param(*argv, params_object_type_client);
 			err = -EINVAL;
@@ -4497,7 +4497,7 @@ int cmd_server(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	const struct param *param;
 
 	if (argc < 1) {
-		usage_param("ibnbd server",
+		usage_param("rnbd server",
 			    params_object_type_help_server, ctx);
 		if (ctx->complete_set) {
 			err = -EAGAIN;
@@ -4509,7 +4509,7 @@ int cmd_server(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	if (err >= 0) {
 		param = find_param(*argv, params_object_type_server);
 		if (!param) {
-			usage_param("ibnbd server",
+			usage_param("rnbd server",
 				   params_object_type_help_server, ctx);
 			handle_unknown_param(*argv, params_object_type_server);
 			err = -EINVAL;
@@ -4572,7 +4572,7 @@ int cmd_server(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 					  ctx);
 			break;
 		default:
-			usage_param("ibnbd server",
+			usage_param("rnbd server",
 				   params_object_type_help_server, ctx);
 			handle_unknown_param(*argv, params_object_type_server);
 			err = -EINVAL;
@@ -4588,7 +4588,7 @@ int cmd_both(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 	const struct param *param;
 
 	if (argc < 1) {
-		usage_param("ibnbd both", params_both_help, ctx);
+		usage_param("rnbd both", params_both_help, ctx);
 		if (ctx->complete_set)
 			err = -EAGAIN;
 		else
@@ -4687,7 +4687,7 @@ int cmd_start(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 			ctx->ibnbdmode = mode_for_host();
 
 			INF(ctx->debug_set,
-			    "IBNBD mode deduced from sysfs: '%s'.\n",
+			    "RNBD mode deduced from sysfs: '%s'.\n",
 			    mode_to_string(ctx->ibnbdmode));
 
 			switch (ctx->ibnbdmode) {
@@ -4699,7 +4699,7 @@ int cmd_start(int argc, const char *argv[], struct ibnbd_ctx *ctx)
 				return cmd_both(argc, argv, ctx);
 			default:
 				ERR(ctx->trm,
-				    "IBNBD mode not specified and could not be deduced.\n");
+				    "RNBD mode not specified and could not be deduced.\n");
 				print_usage(NULL, params_mode_help, ctx);
 
 				handle_unknown_param(*argv, params_mode);

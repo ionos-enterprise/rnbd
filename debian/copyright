@@ -1,6 +1,6 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: ibnbd-tool
+Upstream-Name: rnbd-tool
 
 Files: *
-Copyright: 2014, ProfitBricks GmbH
+Copyright: 2019 - 2020 IONOS Cloud GmbH. All Rights Reserved
 License: TODO

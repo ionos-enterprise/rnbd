@@ -1,5 +1,6 @@
-ibnbd-tool (1.0.1) jessie stretch buster; urgency=medium
+rnbd-tool (1.0.1) jessie stretch buster; urgency=medium
 
+  * rename ibnbd to rnbd
   * Bug fixes
   * Extensions
 

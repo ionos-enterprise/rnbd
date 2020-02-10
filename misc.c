@@ -19,7 +19,7 @@
 #include "table.h"
 #include "misc.h"
 
-#include "ibnbd-sysfs.h"
+#include "rnbd-sysfs.h"
 
 #define HCA_DIR "/sys/class/infiniband/"
 

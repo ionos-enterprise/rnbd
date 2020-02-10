@@ -1,4 +1,4 @@
-# bash completion for ibnbd
+# bash completion for rnbd
 
 _device_names()
 {
@@ -26,7 +26,7 @@ _path_names()
 	return 0
 }
 
-_ibnbd()
+_rnbd()
 {
 	local cur prev pprev ppprev cmd opts
 
@@ -108,7 +108,7 @@ _ibnbd()
 		cli|client|dev|devs|device|devices)
 			_device_names "$cur" "$cmd"
 			;;
-		*ibnbd)
+		*rnbd)
 			_device_names "$cur" "${COMP_WORDS[@]:0:COMP_CWORD-1} "
 			;;
 		path|paths)
@@ -118,7 +118,7 @@ _ibnbd()
 		return 0
 		;;
 	from)
-		_session_names "$cur" "ibnbd client"
+		_session_names "$cur" "rnbd client"
 		return 0
 		;;
 	esac
@@ -147,6 +147,5 @@ _ibnbd()
 	fi
 }
 
-complete -F _ibnbd ibnbd
-complete -F _ibnbd rnbd
+complete -F _rnbd rnbd
 COMP_WORDBREAKS=${COMP_WORDBREAKS//:}

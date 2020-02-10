@@ -1,8 +1,8 @@
-.TH IBNBD "8" "Februar 2020" "ibnbd 1.0.0" "System Administration Utilities"
+.TH RNBD "8" "Februar 2020" "rnbd 1.0.1" "System Administration Utilities"
 .SH NAME
-ibnbd - Configuration tool for IBNBD driver and IBTRS library.
+rnbd - Configuration tool for RNBD driver and RTRS library.
 .SH SYNOPSIS
-ibnbd client|server|both|help|version ...
+rnbd client|server|both|help|version ...
 .SH SYNOPSIS
 
     --help          Help output
@@ -19,7 +19,7 @@ ibnbd client|server|both|help|version ...
     version         Display version of this tool and exit
 
 
-ibnbd client devices|sessions|paths|help ...
+rnbd client devices|sessions|paths|help ...
 
     devices         Map/unmapped/modify devices
     sessions        Operate on sessions
@@ -27,7 +27,7 @@ ibnbd client devices|sessions|paths|help ...
     help            Display help and exit
 
 
-ibnbd server devices|sessions|paths|help ...
+rnbd server devices|sessions|paths|help ...
 
     devices         List devices
     sessions        Operate on sessions
@@ -35,9 +35,9 @@ ibnbd server devices|sessions|paths|help ...
     help            Display help and exit
 
 
-ibnbd both dump|help ...
+rnbd both dump|help ...
 
-    dump            Dump information about all ibnbd objects.
+    dump            Dump information about all rnbd objects.
     help            Display help and exit
 
 
@@ -45,12 +45,12 @@ ibnbd both dump|help ...
 The commands of the tool are structured in the following fashion:
 client vs server -> device vs. session vs. path. If the context of
 a command is unambiguous, it can be also called directly.
-For example: ibnbd map (instead of ibnbd client device map), ibnbd session list
-(instead of ibnbd client session list), ibnbd show client@server (instead of ibnbd client session show client@server), etc.
+For example: rnbd map (instead of rnbd client device map), rnbd session list
+(instead of rnbd client session list), rnbd show client@server (instead of rnbd client session show client@server), etc.
 .SH SUBCOMMANDS
 .B
 
-ibnbd client device list [OPTIONS]
+rnbd client device list [OPTIONS]
 
 List information on devices.
 
@@ -60,11 +60,11 @@ Options:
                     default selection.
 
                     Field           Header         Description
-                    sessname        Session        Name of the IBTRS session of the device
+                    sessname        Session        Name of the RTRS session of the device
                     mapping_path    Mapping Path   Mapping name of the remote device
-                    devname         Device         Device name under /dev/. I.e. ibnbd0
-                    devpath         Device path    Device path under /dev/. I.e. /dev/ibnbd0
-                    state           State          State of the IBNBD device. (client only)
+                    devname         Device         Device name under /dev/. I.e. rnbd0
+                    devpath         Device path    Device path under /dev/. I.e. /dev/rnbd0
+                    state           State          State of the RNBD device. (client only)
                     access_mode     Access Mode    RW mode of the device: ro, rw or migration
                     rx_sect         RX             Amount of data read from the device
                     tx_sect         TX             Amount of data written to the device
@@ -82,13 +82,13 @@ Options:
 
 .B
 
-ibnbd client device show <device> [OPTIONS]
+rnbd client device show <device> [OPTIONS]
 
-Show information about an ibnbd block device.
+Show information about an rnbd block device.
 
 Arguments:
     <device>        Name of a local or a remote block device.
-                    I.e. ibnbd0, /dev/ibnbd0, d12aef94-4110-4321-9373-3be8494a557b.
+                    I.e. rnbd0, /dev/rnbd0, d12aef94-4110-4321-9373-3be8494a557b.
 
 Options:
     {fields}        Comma separated list of fields to be printed. The list can be
@@ -96,11 +96,11 @@ Options:
                     default selection.
 
                     Field           Header         Description
-                    sessname        Session        Name of the IBTRS session of the device
+                    sessname        Session        Name of the RTRS session of the device
                     mapping_path    Mapping Path   Mapping name of the remote device
-                    devname         Device         Device name under /dev/. I.e. ibnbd0
-                    devpath         Device path    Device path under /dev/. I.e. /dev/ibnbd0
-                    state           State          State of the IBNBD device. (client only)
+                    devname         Device         Device name under /dev/. I.e. rnbd0
+                    devpath         Device path    Device path under /dev/. I.e. /dev/rnbd0
+                    state           State          State of the RNBD device. (client only)
                     access_mode     Access Mode    RW mode of the device: ro, rw or migration
                     rx_sect         RX             Amount of data read from the device
                     tx_sect         TX             Amount of data written to the device
@@ -115,7 +115,7 @@ Options:
 
 .B
 
-ibnbd client device map <device> from <server> [OPTIONS]
+rnbd client device map <device> from <server> [OPTIONS]
 
 Map a device from a given server
 
@@ -133,7 +133,7 @@ Options:
 
 .B
 
-ibnbd client device resize <device> <size> [OPTIONS]
+rnbd client device resize <device> <size> [OPTIONS]
 
 Change size of a mapped device
 
@@ -149,7 +149,7 @@ Options:
 
 .B
 
-ibnbd client device unmap <device> [OPTIONS]
+rnbd client device unmap <device> [OPTIONS]
 
 Umap a given imported device
 
@@ -164,7 +164,7 @@ Options:
 
 .B
 
-ibnbd client device remap <device> [OPTIONS]
+rnbd client device remap <device> [OPTIONS]
 
 Unmap and map again an imported device
 
@@ -179,7 +179,7 @@ Options:
 
 .B
 
-ibnbd client session list [OPTIONS]
+rnbd client session list [OPTIONS]
 
 List information on sessions.
 
@@ -214,9 +214,9 @@ Options:
 
 .B
 
-ibnbd client session show <session> [OPTIONS]
+rnbd client session show <session> [OPTIONS]
 
-Show information about an ibnbd session.
+Show information about an rnbd session.
 
 Arguments:
     <session>       Session name or remote hostname.
@@ -250,7 +250,7 @@ Options:
 
 .B
 
-ibnbd client session remap <session> [OPTIONS]
+rnbd client session remap <session> [OPTIONS]
 
 Unmap and map again all devices of a given session
 
@@ -265,7 +265,7 @@ Options:
 
 .B
 
-ibnbd client session reconnect <session> [OPTIONS]
+rnbd client session reconnect <session> [OPTIONS]
 
 Disconnect and connect again a whole session
 
@@ -279,7 +279,7 @@ Options:
 
 .B
 
-ibnbd client path list [OPTIONS]
+rnbd client path list [OPTIONS]
 
 List information on paths.
 
@@ -316,9 +316,9 @@ Options:
 
 .B
 
-ibnbd client path show <path> [OPTIONS]
+rnbd client path show <path> [OPTIONS]
 
-Show information about an ibnbd transport path.
+Show information about an rnbd transport path.
 
 Arguments:
     <path>          In order to display path information, path name or identifier
@@ -354,9 +354,9 @@ Options:
 
 .B
 
-ibnbd client path disconnect <session> [OPTIONS]
+rnbd client path disconnect <path> [OPTIONS]
 
-Disconnect a path a given session
+Disconnect a path of a given session
 
 Arguments:
     <identifier>    Name or identifier of of a path:
@@ -369,7 +369,7 @@ Options:
 
 .B
 
-ibnbd client path reconnect <path> [OPTIONS]
+rnbd client path reconnect <path> [OPTIONS]
 
 Disconnect and connect again a single path of a session
 
@@ -384,7 +384,7 @@ Options:
 
 .B
 
-ibnbd session add <session> <path> [OPTIONS]
+rnbd session add <session> <path> [OPTIONS]
 
 Add a new path to an existing session
 
@@ -400,7 +400,7 @@ Options:
 
 .B
 
-ibnbd client path delete <path> [OPTIONS]
+rnbd client path delete <path> [OPTIONS]
 
 Delete a given path from the corresponding session
 
@@ -415,7 +415,7 @@ Options:
 
 .B
 
-ibnbd client path readd <path> [OPTIONS]
+rnbd client path readd <path> [OPTIONS]
 
 Delete and add again a given path to the corresponding session
 
@@ -430,7 +430,7 @@ Options:
 
 .B
 
-ibnbd server device list [OPTIONS]
+rnbd server device list [OPTIONS]
 
 List information on devices.
 
@@ -440,11 +440,11 @@ Options:
                     default selection.
 
                     Field           Header         Description
-                    sessname        Session        Name of the IBTRS session of the device
+                    sessname        Session        Name of the RTRS session of the device
                     mapping_path    Mapping Path   Mapping name of the remote device
-                    devname         Device         Device name under /dev/. I.e. ibnbd0
-                    devpath         Device path    Device path under /dev/. I.e. /dev/ibnbd0
-                    state           State          State of the IBNBD device. (client only)
+                    devname         Device         Device name under /dev/. I.e. rnbd0
+                    devpath         Device path    Device path under /dev/. I.e. /dev/rnbd0
+                    state           State          State of the RNBD device. (client only)
                     access_mode     Access Mode    RW mode of the device: ro, rw or migration
                     rx_sect         RX             Amount of data read from the device
                     tx_sect         TX             Amount of data written to the device
@@ -461,13 +461,13 @@ Options:
 
 .B
 
-ibnbd server device show <device> [OPTIONS]
+rnbd server device show <device> [OPTIONS]
 
-Show information about an ibnbd block device.
+Show information about an rnbd block device.
 
 Arguments:
     <device>        Name of a local or a remote block device.
-                    I.e. ibnbd0, /dev/ibnbd0, d12aef94-4110-4321-9373-3be8494a557b.
+                    I.e. rnbd0, /dev/rnbd0, d12aef94-4110-4321-9373-3be8494a557b.
 
 Options:
     {fields}        Comma separated list of fields to be printed. The list can be
@@ -475,11 +475,11 @@ Options:
                     default selection.
 
                     Field           Header         Description
-                    sessname        Session        Name of the IBTRS session of the device
+                    sessname        Session        Name of the RTRS session of the device
                     mapping_path    Mapping Path   Mapping name of the remote device
-                    devname         Device         Device name under /dev/. I.e. ibnbd0
-                    devpath         Device path    Device path under /dev/. I.e. /dev/ibnbd0
-                    state           State          State of the IBNBD device. (client only)
+                    devname         Device         Device name under /dev/. I.e. rnbd0
+                    devpath         Device path    Device path under /dev/. I.e. /dev/rnbd0
+                    state           State          State of the RNBD device. (client only)
                     access_mode     Access Mode    RW mode of the device: ro, rw or migration
                     rx_sect         RX             Amount of data read from the device
                     tx_sect         TX             Amount of data written to the device
@@ -493,7 +493,7 @@ Options:
 
 .B
 
-ibnbd server session list [OPTIONS]
+rnbd server session list [OPTIONS]
 
 List information on sessions.
 
@@ -527,9 +527,9 @@ Options:
 
 .B
 
-ibnbd server session show <session> [OPTIONS]
+rnbd server session show <session> [OPTIONS]
 
-Show information about an ibnbd session.
+Show information about an rnbd session.
 
 Arguments:
     <session>       Session name or remote hostname.
@@ -562,7 +562,7 @@ Options:
 
 .B
 
-ibnbd server session disconnect <session> [OPTIONS]
+rnbd server session disconnect <session> [OPTIONS]
 
 Disconnect all paths on a given session
 
@@ -576,7 +576,7 @@ Options:
 
 .B
 
-ibnbd server path list [OPTIONS]
+rnbd server path list [OPTIONS]
 
 List information on paths.
 
@@ -612,9 +612,9 @@ Options:
 
 .B
 
-ibnbd server path show <path> [OPTIONS]
+rnbd server path show <path> [OPTIONS]
 
-Show information about an ibnbd transport path.
+Show information about an rnbd transport path.
 
 Arguments:
     <path>          In order to display path information, path name or identifier
@@ -649,9 +649,9 @@ Options:
 
 .B
 
-ibnbd server path disconnect <session> [OPTIONS]
+rnbd server path disconnect <path> [OPTIONS]
 
-Disconnect a path a given session
+Disconnect a path of a given session
 
 Arguments:
     <identifier>    Name or identifier of of a path:
@@ -665,20 +665,20 @@ Options:
 .SH EXAMPLES
 List server devices
 
-.B ibnbd server devices list
+.B rnbd server devices list
 
 List client sessions
 
-.B ibnbd client sessions list 
+.B rnbd client sessions list 
 
 List paths of server, display sizes in KB, display all columns
 
 
-.B ibnbd server paths list K all
+.B rnbd server paths list K all
 
 List imported on client devices, show only mapping_path and devpath, output in json
 
-.B ibnbd client devices list mapping_path,devpath json
+.B rnbd client devices list mapping_path,devpath json
 
 .SH COPYRIGHT
 Copyright \(co 2019 - 2020 IONOS Cloud GmbH. All Rights Reserved
