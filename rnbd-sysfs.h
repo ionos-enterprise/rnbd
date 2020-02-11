@@ -1,11 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include <limits.h>
 
-struct rnbd_sysfs_paths {
+struct rnbd_sysfs_info {
 	const char *path_dev_clt;
 	const char *path_sess_clt;
 	const char *path_dev_srv;
 	const char *path_sess_srv;
+	const char *path_dev_name;
 };
 
 enum rnbdmode {
@@ -104,5 +105,5 @@ enum rnbdmode mode_for_host(void);
 const char *mode_to_string(enum rnbdmode mode);
 
 void check_compat_sysfs(const struct rnbd_ctx *ctx);
-const struct rnbd_sysfs_paths * const
-get_sysfs_paths(const struct rnbd_ctx *ctx);
+const struct rnbd_sysfs_info * const
+get_sysfs_info(const struct rnbd_ctx *ctx);

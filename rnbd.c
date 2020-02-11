@@ -2069,7 +2069,7 @@ static int client_devices_map(const char *from_name, const char *device_name,
 		cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, " access_mode=%s",
 				ctx->access_mode);
 
-	ret = printf_sysfs(get_sysfs_paths(ctx)->path_dev_clt,
+	ret = printf_sysfs(get_sysfs_info(ctx)->path_dev_clt,
 			   "map_device", ctx, "%s", cmd);
 	if (ret)
 		ERR(ctx->trm, "Failed to map device: %s (%d)\n",
@@ -2128,7 +2128,8 @@ static int client_devices_resize(const char *device_name, uint64_t size_sect,
 	if (!ds)
 		return -EINVAL;
 
-	sprintf(tmp, "/sys/block/%s/ibnbd", ds->dev->devname);
+	sprintf(tmp, "/sys/block/%s/%s", ds->dev->devname,
+		get_sysfs_info(ctx)->path_dev_name);
 	ret = printf_sysfs(tmp, "resize", ctx, "%d", size_sect);
 	if (ret)
 		ERR(ctx->trm, "Failed to resize %s: %s (%d)\n",
@@ -2454,7 +2455,7 @@ static int client_session_add(const char *session_name,
 	}
 
 	snprintf(sysfs_path, sizeof(sysfs_path), "%s%s",
-		 get_sysfs_paths(ctx)->path_sess_clt, sess->sessname);
+		 get_sysfs_info(ctx)->path_sess_clt, sess->sessname);
 	if (path->src)
 		snprintf(address_string, sizeof(address_string),
 			 "%s@%s", path->src, path->dst);
@@ -2528,7 +2529,7 @@ static int client_path_do(const char *path_name, const char *sysfs_entry,
 		return -EINVAL;
 
 	snprintf(sysfs_path, sizeof(sysfs_path), "%s%s/paths/%s",
-		 get_sysfs_paths(ctx)->path_sess_clt,
+		 get_sysfs_info(ctx)->path_sess_clt,
 		 path->sess->sessname, path->pathname);
 
 	ret = printf_sysfs(sysfs_path, sysfs_entry, ctx, "1");
@@ -2581,7 +2582,7 @@ static int client_path_readd(const char *path_name,
 		return -EINVAL;
 
 	snprintf(sysfs_path, sizeof(sysfs_path), "%s%s/paths/%s",
-		 get_sysfs_paths(ctx)->path_sess_clt,
+		 get_sysfs_info(ctx)->path_sess_clt,
 		 path->sess->sessname, path->pathname);
 
 	ret = printf_sysfs(sysfs_path, "remove_path", ctx, "1");
@@ -2596,7 +2597,7 @@ static int client_path_readd(const char *path_name,
 	    path->pathname, path->sess->sessname);
 
 	snprintf(sysfs_path, sizeof(sysfs_path), "%s%s",
-		 get_sysfs_paths(ctx)->path_sess_clt,
+		 get_sysfs_info(ctx)->path_sess_clt,
 		 path->sess->sessname);
 
 	ret = printf_sysfs(sysfs_path, "add_path", ctx, "%s", path->pathname);
@@ -2624,7 +2625,7 @@ static int server_path_disconnect(const char *path_name,
 		return -EINVAL;
 
 	snprintf(sysfs_path, sizeof(sysfs_path), "%s%s/paths/%s",
-		 get_sysfs_paths(ctx)->path_sess_srv,
+		 get_sysfs_info(ctx)->path_sess_srv,
 		 path->sess->sessname, path->pathname);
 
 	ret = printf_sysfs(sysfs_path, "disconnect", ctx, "1");
@@ -4782,6 +4783,9 @@ int main(int argc, const char *argv[])
 		goto free;
 
 	argc -= ret; argv += ret;
+
+	INF(ctx.debug_set, "%s using '%s' sysfs.\n",
+	    ctx.pname, get_sysfs_info(&ctx)->path_dev_name);
 
 	if (argc && *argv[0] == '-') {
 		handle_unknown_param(*argv, params_flags);

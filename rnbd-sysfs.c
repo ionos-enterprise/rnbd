@@ -40,28 +40,30 @@
 struct rnbd_dev *devs[4096]; /* FIXME: this has to be a list */
 
 
-static struct rnbd_sysfs_paths _sysfs_paths =
+static struct rnbd_sysfs_info _sysfs_info =
 {
 	.path_dev_clt = PATH_DEV_CLT,
 	.path_sess_clt = PATH_SESS_CLT,
 	.path_dev_srv = PATH_DEV_SRV,
-	.path_sess_srv = PATH_SESS_SRV
+	.path_sess_srv = PATH_SESS_SRV,
+	.path_dev_name = PATH_DEV_NAME
 };
 
-static struct rnbd_sysfs_paths _compat_sysfs_paths =
+static struct rnbd_sysfs_info _compat_sysfs_info =
 {
 	.path_dev_clt = COMPAT_PATH_DEV_CLT,
 	.path_sess_clt = COMPAT_PATH_SESS_CLT,
 	.path_dev_srv = COMPAT_PATH_DEV_SRV,
-	.path_sess_srv = COMPAT_PATH_SESS_SRV
+	.path_sess_srv = COMPAT_PATH_SESS_SRV,
+	.path_dev_name = COMPAT_PATH_DEV_NAME
 };
 
-const struct rnbd_sysfs_paths * use_sysfs_paths = &_sysfs_paths;
+const struct rnbd_sysfs_info * use_sysfs_info = &_sysfs_info;
 
-const struct rnbd_sysfs_paths * const
-get_sysfs_paths(const struct rnbd_ctx *ctx)
+const struct rnbd_sysfs_info * const
+get_sysfs_info(const struct rnbd_ctx *ctx)
 {
-	return use_sysfs_paths;
+	return use_sysfs_info;
 }
 
 int printf_sysfs(const char *dir, const char *entry,
@@ -212,7 +214,7 @@ static int rnbd_sysfs_sds_srv_cnt(void)
 	int cnt = 0;
 	DIR *d;
 
-	sprintf(dir, "%s/devices/", use_sysfs_paths->path_dev_srv);
+	sprintf(dir, "%s/devices/", use_sysfs_info->path_dev_srv);
 	d = opendir(dir);
 	if (!d)
 		return 0;
@@ -221,7 +223,7 @@ static int rnbd_sysfs_sds_srv_cnt(void)
 		if (sd->d_name[0] == '.')
 			continue;
 
-		sprintf(dir, "%s/devices/%s/sessions/", use_sysfs_paths->path_dev_srv, sd->d_name);
+		sprintf(dir, "%s/devices/%s/sessions/", use_sysfs_info->path_dev_srv, sd->d_name);
 		cnt += dir_cnt(dir);
 	}
 	closedir(d);
@@ -276,14 +278,14 @@ int rnbd_sysfs_alloc_all(struct rnbd_sess_dev ***sds_clt,
 			  int *sess_clt_cnt, int *sess_srv_cnt,
 			  int *paths_clt_cnt, int *paths_srv_cnt)
 {
-	char tmp[PATH_MAX];
+	char path[PATH_MAX];
 	int ret = 0;
 
 	devs[0] = NULL;
 
 
-	sprintf(tmp, "%s/devices/", use_sysfs_paths->path_dev_clt);
-	*sds_clt_cnt = dir_cnt(tmp);
+	sprintf(path, "%s/devices/", use_sysfs_info->path_dev_clt);
+	*sds_clt_cnt = dir_cnt(path);
 	if (*sds_clt_cnt < 0)
 		return *sds_clt_cnt;
 
@@ -298,13 +300,13 @@ int rnbd_sysfs_alloc_all(struct rnbd_sess_dev ***sds_clt,
 
 	ret = rnbd_sysfs_alloc(sds_clt, sess_clt, paths_clt,
 				*sds_clt_cnt, sess_clt_cnt, paths_clt_cnt,
-				use_sysfs_paths->path_sess_clt);
+				use_sysfs_info->path_sess_clt);
 	if (ret)
 		return ret;
 
 	ret = rnbd_sysfs_alloc(sds_srv, sess_srv, paths_srv,
 				*sds_srv_cnt, sess_srv_cnt, paths_srv_cnt,
-				use_sysfs_paths->path_sess_srv);
+				use_sysfs_info->path_sess_srv);
 	if (ret)
 		rnbd_sysfs_free(*sds_clt, *sess_clt, *paths_clt);
 
@@ -315,11 +317,11 @@ static struct rnbd_dev *find_or_add_dev(const char *syspath,
 					 struct rnbd_dev **devs,
 					 enum rnbdmode side)
 {
-	char *devname, *r, tmp[PATH_MAX], rpath[PATH_MAX];
+	char *devname, *r, path[2*PATH_MAX], rpath[PATH_MAX];
 	int i;
 
-	strcpy(tmp, syspath);
-	r = realpath(tmp, rpath);
+	strcpy(path, syspath);
+	r = realpath(path, rpath);
 	if (!r)
 		return NULL;
 
@@ -341,8 +343,8 @@ static struct rnbd_dev *find_or_add_dev(const char *syspath,
 		    &devs[i]->tx_sect);
 
 	if (side == RNBD_CLIENT) {
-		strcat(rpath, "/ibnbd/");
-		scanf_sysfs(rpath, "state", "%s", devs[i]->state);
+		snprintf(path, sizeof(path), "%s/%s/", rpath, use_sysfs_info->path_dev_name);
+		scanf_sysfs(path, "state", "%s", devs[i]->state);
 	}
 
 	return devs[i];
@@ -388,14 +390,14 @@ static struct rnbd_sess *find_or_add_sess(const char *sessname,
 	struct rnbd_sess *s;
 	struct rnbd_path *p;
 	struct dirent *pent;
-	char tmp[PATH_MAX];
+	char path[PATH_MAX];
 	DIR *pdir;
 	int i;
 
 	if (side == RNBD_CLIENT)
-		sprintf(tmp, "%s%s", use_sysfs_paths->path_sess_clt, sessname);
+		sprintf(path, "%s%s", use_sysfs_info->path_sess_clt, sessname);
 	else
-		sprintf(tmp, "%s%s", use_sysfs_paths->path_sess_clt, sessname);
+		sprintf(path, "%s%s", use_sysfs_info->path_sess_srv, sessname);
 
 	for (i = 0; sess[i]; i++)
 		if (!strcmp(sessname, sess[i]->sessname))
@@ -409,10 +411,10 @@ static struct rnbd_sess *find_or_add_sess(const char *sessname,
 
 	strcpy(s->sessname, sessname);
 	s->side = side;
-	scanf_sysfs(tmp, "mpath_policy", "%s (%2s: %*d)", s->mp, s->mp_short);
+	scanf_sysfs(path, "mpath_policy", "%s (%2s: %*d)", s->mp, s->mp_short);
 
-	strcat(tmp, "/paths/");
-	s->path_cnt = dir_cnt(tmp);
+	strcat(path, "/paths/");
+	s->path_cnt = dir_cnt(path);
 	if (!s->path_cnt)
 		return s;
 
@@ -422,7 +424,7 @@ static struct rnbd_sess *find_or_add_sess(const char *sessname,
 		return NULL;
 	}
 
-	pdir = opendir(tmp);
+	pdir = opendir(path);
 	if (!pdir)
 		goto out;
 
@@ -433,7 +435,7 @@ static struct rnbd_sess *find_or_add_sess(const char *sessname,
 			continue;
 		}
 
-		p = add_path(tmp, pent->d_name, paths);
+		p = add_path(path, pent->d_name, paths);
 		if (!p)
 			goto out;
 
@@ -471,14 +473,15 @@ static struct rnbd_sess_dev *add_sess_dev(const char *devname,
 					   struct rnbd_dev *d,
 					   enum rnbdmode side)
 {
-	char tmp[PATH_MAX];
+	char path[PATH_MAX];
 	int i;
 
 	if (side == RNBD_CLIENT)
-		sprintf(tmp, "%s/devices/%s/ibnbd/", use_sysfs_paths->path_dev_clt, devname);
+		sprintf(path, "%s/devices/%s/%s/", use_sysfs_info->path_dev_clt,
+			devname, use_sysfs_info->path_dev_name);
 	else
-		sprintf(tmp, "%s/devices/%s/sessions/%s",
-			use_sysfs_paths->path_sess_srv, devname, s->sessname);
+		sprintf(path, "%s/devices/%s/sessions/%s",
+			use_sysfs_info->path_sess_srv, devname, s->sessname);
 
 	for (i = 0; sds[i]; i++)
 		;
@@ -487,8 +490,8 @@ static struct rnbd_sess_dev *add_sess_dev(const char *devname,
 	if (!sds[i])
 		return NULL;
 
-	scanf_sysfs(tmp, "mapping_path", "%s", sds[i]->mapping_path);
-	scanf_sysfs(tmp, "access_mode", "%s", sds[i]->access_mode);
+	scanf_sysfs(path, "mapping_path", "%s", sds[i]->mapping_path);
+	scanf_sysfs(path, "access_mode", "%s", sds[i]->access_mode);
 
 	sds[i]->sess = s;
 	sds[i]->dev = d;
@@ -501,15 +504,15 @@ static int rnbd_sysfs_read_clt(struct rnbd_sess_dev **sds,
 				struct rnbd_path **paths,
 				struct rnbd_dev **devs)
 {
-	char tmp[PATH_MAX], sessname[NAME_MAX];
+	char path[PATH_MAX], sessname[NAME_MAX];
 	struct dirent *dent;
 	struct rnbd_sess_dev *sd;
 	struct rnbd_sess *s;
 	struct rnbd_dev *d;
 	DIR *ddir;
 
-	sprintf(tmp, "%s/devices/", use_sysfs_paths->path_dev_clt);
-	ddir = opendir(tmp);
+	sprintf(path, "%s/devices/", use_sysfs_info->path_dev_clt);
+	ddir = opendir(path);
 	if (!ddir)
 		return 0;
 
@@ -517,14 +520,15 @@ static int rnbd_sysfs_read_clt(struct rnbd_sess_dev **sds,
 		if (dent->d_name[0] == '.')
 			continue;
 
-		sprintf(tmp, "%s/devices/%s", use_sysfs_paths->path_dev_clt, dent->d_name);
-		scanf_sysfs(tmp, "/ibnbd/session", "%s", sessname);
+		sprintf(path, "%s/devices/%s/%s", use_sysfs_info->path_dev_clt, dent->d_name, use_sysfs_info->path_dev_name);
+		scanf_sysfs(path, "session", "%s", sessname);
 
 		s = find_or_add_sess(sessname, sess, paths, RNBD_CLIENT);
 		if (!s)
 			return -ENOMEM;
 
-		d = find_or_add_dev(tmp, devs, RNBD_CLIENT);
+		sprintf(path, "%s/devices/%s", use_sysfs_info->path_dev_clt, dent->d_name);
+		d = find_or_add_dev(path, devs, RNBD_CLIENT);
 		if (!d)
 			return -ENOMEM;
 
@@ -545,7 +549,7 @@ static int rnbd_sysfs_read_srv_sess_path(
 	struct dirent *sess_ent;
 	DIR *sp;
 
-	sp = opendir(use_sysfs_paths->path_sess_srv);
+	sp = opendir(use_sysfs_info->path_sess_srv);
 	if (!sp)
 		return 0;
 
@@ -565,7 +569,7 @@ static int rnbd_sysfs_read_srv(struct rnbd_sess_dev **sds,
 				struct rnbd_path **paths,
 				struct rnbd_dev **devs)
 {
-	char tmp[PATH_MAX];
+	char path[PATH_MAX];
 	int res;
 	struct dirent *dent, *sent;
 	struct rnbd_sess_dev *sd;
@@ -577,8 +581,8 @@ static int rnbd_sysfs_read_srv(struct rnbd_sess_dev **sds,
 	if (res)
 		return res;
 	
-	sprintf(tmp, "%s/devices/", use_sysfs_paths->path_dev_srv);
-	ddir = opendir(tmp);
+	sprintf(path, "%s/devices/", use_sysfs_info->path_dev_srv);
+	ddir = opendir(path);
 	if (!ddir)
 		return 0;
 
@@ -586,16 +590,16 @@ static int rnbd_sysfs_read_srv(struct rnbd_sess_dev **sds,
 		if (dent->d_name[0] == '.')
 			continue;
 
-		sprintf(tmp, "%s/devices/%s/block_dev",
-			use_sysfs_paths->path_dev_srv, dent->d_name);
+		sprintf(path, "%s/devices/%s/block_dev",
+			use_sysfs_info->path_dev_srv, dent->d_name);
 
-		d = find_or_add_dev(tmp, devs, RNBD_SERVER);
+		d = find_or_add_dev(path, devs, RNBD_SERVER);
 		if (!d)
 			return -ENOMEM;
 
-		sprintf(tmp, "%s/devices/%s/sessions/",
-			use_sysfs_paths->path_dev_srv, dent->d_name);
-		sdir = opendir(tmp);
+		sprintf(path, "%s/devices/%s/sessions/",
+			use_sysfs_info->path_dev_srv, dent->d_name);
+		sdir = opendir(path);
 		if (!sdir)
 			return 0;
 		for (sent = readdir(sdir); sent; sent = readdir(sdir)) {
@@ -645,13 +649,13 @@ enum rnbdmode mode_for_host(void)
 {
 	enum rnbdmode mode = RNBD_NONE;
 
-	if (faccessat(AT_FDCWD, use_sysfs_paths->path_dev_clt, F_OK, AT_EACCESS) == 0)
+	if (faccessat(AT_FDCWD, use_sysfs_info->path_dev_clt, F_OK, AT_EACCESS) == 0)
 		mode |= RNBD_CLIENT;
 
 	/* else we are not interested in any error diagnossis here  */
 	/* if we can not deduce the mode, than we just know nothing */
 
-	if (faccessat(AT_FDCWD, use_sysfs_paths->path_dev_srv, F_OK, AT_EACCESS) == 0)
+	if (faccessat(AT_FDCWD, use_sysfs_info->path_dev_srv, F_OK, AT_EACCESS) == 0)
 		mode |= RNBD_SERVER;
 
 	return mode;
@@ -676,7 +680,7 @@ void check_compat_sysfs(const struct rnbd_ctx *ctx)
 	    || (faccessat(AT_FDCWD, COMPAT_PATH_DEV_SRV, F_OK, AT_EACCESS) == 0)
 	    || (strcmp(ctx->pname, COMPAT_PATH_DEV_NAME) == 0))
 
-		use_sysfs_paths = &_compat_sysfs_paths;
+		use_sysfs_info = &_compat_sysfs_info;
 }
 
 const char *mode_to_string(enum rnbdmode mode)
