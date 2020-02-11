@@ -1889,6 +1889,11 @@ static struct rnbd_sess *find_single_session(const char *session_name,
 		return NULL;
 	}
 
+	res = find_session(session_name, sessions);
+	if (res)
+		/* of there is an exact match, that's the one we want */
+		return res;
+	
 	matching_sess = calloc(sess_cnt, sizeof(*matching_sess));
 
 	if (sess_cnt && !matching_sess) {
