@@ -1,6 +1,11 @@
-rnbd-tool (1.0.1) jessie stretch buster; urgency=medium
+rnbd-tool (1.0.2) jessie stretch buster; urgency=medium
 
   * rename ibnbd to rnbd
+
+ -- Danil Kipnis <danil@cloud.ionos.com>  Wed, 12 Feb 2020 14:57:56 +0100
+
+rnbd-tool (1.0.1) jessie stretch buster; urgency=medium
+
   * Bug fixes
   * Extensions
 
