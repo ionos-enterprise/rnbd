@@ -7,6 +7,7 @@
  *          Lutz Pogrell <lutz.pogrell@cloud.ionos.com>
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <errno.h>
 #include <inttypes.h>
@@ -360,6 +361,13 @@ int act_path_cnt_to_state(char *str, size_t len, const struct rnbd_ctx *ctx,
 	return snprintf(str, len, "disconnected");
 }
 
+int sessname_to_srvname(char *str, size_t len, const struct rnbd_ctx *ctx,
+			enum color *clr, void *v, bool humanize)
+{
+	*clr = CNRM;
+
+	return snprintf(str, len, "%s", strchrnul(v, '@') + 1);
+}
 
 int sess_side_to_direction(char *str, size_t len, const struct rnbd_ctx *ctx,
 			   enum color *clr, void *v, bool humanize)

@@ -160,6 +160,9 @@ int path_sess_to_direction(char *str, size_t len, const struct rnbd_ctx *ctx,
 int path_to_shortdesc(char *str, size_t len, const struct rnbd_ctx *ctx,
 		      enum color *clr, void *v, bool humanize);
 
+int sessname_to_srvname(char *str, size_t len, const struct rnbd_ctx *ctx,
+		        enum color *clr, void *v, bool humanize);
+
 bool is_path_addr(const char *arg);
 
 int addr_to_norm(char *str, size_t len, const struct rnbd_ctx *ctx,

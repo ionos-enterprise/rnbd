@@ -141,6 +141,11 @@ static struct table_column clm_rnbd_sess_state =
 		act_path_cnt_to_state, 'l', CNRM, CNRM,
 		"State of the session.");
 
+static struct table_column clm_rnbd_sess_srvname =
+	_CLM_S("srvname", sessname, "Server Name", FLD_STR,
+		sessname_to_srvname, 'l', CNRM, CNRM,
+		"Server name");
+
 CLM_S(side, "Direction", FLD_STR, sess_side_to_direction, 'l', CNRM, CNRM,
 	"Direction of the session: incoming or outgoing");
 
@@ -157,6 +162,7 @@ static struct table_column *all_clms_sessions[] = {
 	&clm_rnbd_sess_inflights,
 	&clm_rnbd_sess_reconnects,
 	&clm_rnbd_sess_side,
+	&clm_rnbd_sess_srvname,
 	NULL
 };
 
@@ -172,6 +178,7 @@ static struct table_column *all_clms_sessions_clt[] = {
 	&clm_rnbd_sess_tx_bytes,
 	&clm_rnbd_sess_reconnects,
 	&clm_rnbd_sess_side,
+	&clm_rnbd_sess_srvname,
 	NULL
 };
 
