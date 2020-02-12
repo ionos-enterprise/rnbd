@@ -7,7 +7,7 @@
 
 PATH=$PATH:./
 VER=$(egrep -oe "[0-9,.]+" -m 1 debian/changelog)
-DATE=$(date +"%B %Y")
+DATE=$(LANG=en_us_8859_1 && date +"%B %Y")
 
 echo ".TH RNBD \"8\" \"$DATE\" \"rnbd $VER\" \"System Administration Utilities\""
 echo ".SH NAME"
@@ -27,7 +27,7 @@ echo "a command is unambiguous, it can be also called directly."
 echo "For example: rnbd map (instead of rnbd client device map), rnbd session list"
 echo "(instead of rnbd client session list), rnbd show client@server (instead of rnbd client session show client@server), etc."
 
-modes="client server both"
+modes="client server"
 objects="device session path"
 cmds="list show map resize unmap remap disconnect reconnect add delete readd"
 

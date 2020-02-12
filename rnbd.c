@@ -2873,7 +2873,6 @@ static struct param *params_mode[] = {
 static struct param *params_mode_help[] = {
 	&_params_client,
 	&_params_server,
-	&_params_both,
 	&_params_help,
 	&_params_version,
 	&_params_null
@@ -3427,8 +3426,6 @@ static void help_start(const struct rnbd_ctx *ctx)
 		printf("\n\n");
 		help_mode("server",
 			  params_object_type_help_server, ctx);
-		printf("\n\n");
-		help_mode("both", params_both_help, ctx);
 	}
 }
 
