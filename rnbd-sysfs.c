@@ -481,7 +481,7 @@ static struct rnbd_sess_dev *add_sess_dev(const char *devname,
 			devname, use_sysfs_info->path_dev_name);
 	else
 		sprintf(path, "%s/devices/%s/sessions/%s",
-			use_sysfs_info->path_sess_srv, devname, s->sessname);
+			use_sysfs_info->path_dev_srv, devname, s->sessname);
 
 	for (i = 0; sds[i]; i++)
 		;
