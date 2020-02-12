@@ -17,6 +17,13 @@ _session_names()
 	return 0
 }
 
+_host_names()
+{
+	local cmd=$(saquery | grep NodeDescription | sed -e 's/.*\.\.*\([^ \.]*\).*/\1/')
+	COMPREPLY=( $( compgen -W "$cmd" -- "$1" ) )
+	return 0
+}
+
 _srv_names()
 {
 	local cmd
@@ -131,6 +138,8 @@ _rnbd()
 		_session_names "$cur" "$cmd"
 		local TMP=( ${COMPREPLY[@]} )
 		_srv_names "$cur" "$cmd"
+		COMPREPLY=( ${TMP[@]} ${COMPREPLY[@]} )
+		_host_names "$cur" "$cmd"
 		COMPREPLY=( ${TMP[@]} ${COMPREPLY[@]} )
 		return 0
 		;;
