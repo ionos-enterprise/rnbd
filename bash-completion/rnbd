@@ -17,6 +17,15 @@ _session_names()
 	return 0
 }
 
+_srv_names()
+{
+	local cmd
+
+	cmd="$2 sessions list noheaders nototals srvname notree"
+	COMPREPLY=( $( compgen -W "$($cmd)" -- "$1" ) )
+	return 0
+}
+
 _path_names()
 {
 	local cmd
@@ -118,7 +127,11 @@ _rnbd()
 		return 0
 		;;
 	from)
-		_session_names "$cur" "rnbd client"
+		cmd="rnbd client"
+		_session_names "$cur" "$cmd"
+		local TMP=( ${COMPREPLY[@]} )
+		_srv_names "$cur" "$cmd"
+		COMPREPLY=( ${TMP[@]} ${COMPREPLY[@]} )
 		return 0
 		;;
 	esac
