@@ -1141,8 +1141,7 @@ static bool match_sess(struct rnbd_sess *s, const char *name)
 		return true;
 
 	at = strchr(s->sessname, '@');
-	if (at && (!strcmp(name, at + 1) ||
-		   !strncmp(name, s->sessname, at - s->sessname)))
+	if (at && (!strcmp(name, at + 1)))
 		return true;
 	return false;
 }
