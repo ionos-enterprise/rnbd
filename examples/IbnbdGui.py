@@ -61,7 +61,7 @@ def is_host(host):
 
 def get_ibnbd_dump(host):
     user = "root"
-    tool = "ibnbd"
+    tool = "rnbd"
     command = "ssh %s@%s -C %s dump json all" % \
               (user, host, tool)
     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None,
