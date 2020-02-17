@@ -4788,6 +4788,20 @@ int cmd_start(int argc, const char *argv[], struct rnbd_ctx *ctx)
 	return err;
 }
 
+static int compar_sds_sess(const void *p1, const void *p2)
+{
+	const struct rnbd_sess_dev *const *sd1 = p1, *const *sd2 = p2;
+
+	return strcmp((*sd1)->sess->sessname, (*sd2)->sess->sessname);
+}
+
+static int compar_sds_dev(const void *p1, const void *p2)
+{
+	const struct rnbd_sess_dev *const *sd1 = p1, *const *sd2 = p2;
+
+	return strcmp((*sd1)->mapping_path, (*sd2)->mapping_path);
+}
+
 int main(int argc, const char *argv[])
 {
 	int ret = 0;
@@ -4816,6 +4830,11 @@ int main(int argc, const char *argv[])
 		ERR(ctx.trm, "Failed to read sysfs entries: %d\n", ret);
 		goto free;
 	}
+	qsort(sds_clt, sds_clt_cnt - 1, sizeof(*sds_clt), compar_sds_dev);
+	qsort(sds_srv, sds_srv_cnt - 1, sizeof(*sds_srv), compar_sds_dev);
+	qsort(sds_clt, sds_clt_cnt - 1, sizeof(*sds_clt), compar_sds_sess);
+	qsort(sds_srv, sds_srv_cnt - 1, sizeof(*sds_srv), compar_sds_sess);
+
 
 	rnbd_ctx_default(&ctx);
 
