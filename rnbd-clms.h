@@ -176,6 +176,7 @@ static struct table_column *all_clms_sessions_clt[] = {
 	&clm_rnbd_sess_mp_short,
 	&clm_rnbd_sess_rx_bytes,
 	&clm_rnbd_sess_tx_bytes,
+	&clm_rnbd_sess_inflights,
 	&clm_rnbd_sess_reconnects,
 	&clm_rnbd_sess_side,
 	&clm_rnbd_sess_srvname,

@@ -619,10 +619,23 @@ static void help_fields(void)
 static void print_fields(const struct rnbd_ctx *ctx,
 			 struct table_column **def_clt,
 			 struct table_column **def_srv,
+			 struct table_column **clt_all,
+			 struct table_column **srv_all,
 			 struct table_column **all,
 			 enum rnbdmode mode)
 {
-	table_tbl_print_term(HPRE, all, ctx->trm, ctx);
+	switch (mode) {
+	case RNBD_SERVER:
+		table_tbl_print_term(HPRE, srv_all, ctx->trm, ctx);
+		break;
+	case RNBD_CLIENT:
+		table_tbl_print_term(HPRE, clt_all, ctx->trm, ctx);
+		break;
+	case RNBD_BOTH:
+	case RNBD_NONE:
+		table_tbl_print_term(HPRE, all, ctx->trm, ctx);
+		break;
+	}
 	if (mode != RNBD_SERVER) {
 		printf("\n%sDefault%s: ",
 		       HPRE, mode == RNBD_BOTH ? " client" : "");
@@ -651,18 +664,24 @@ static void help_dump_all(const char *program_name,
 		       CLR(ctx->trm, CDIM, "Device Fields"));
 		print_fields(ctx, def_clms_devices_clt,
 			     def_clms_devices_srv,
+			     all_clms_devices_clt,
+			     all_clms_devices_srv,
 			     all_clms_devices, RNBD_BOTH);
 
 		printf("%s%s%s%s\n", HPRE,
 		       CLR(ctx->trm, CDIM, "Session Fields"));
 		print_fields(ctx, def_clms_sessions_clt,
 			     def_clms_sessions_srv,
+			     all_clms_sessions_clt,
+			     all_clms_sessions_srv,
 			     all_clms_sessions, RNBD_BOTH);
 
 		printf("%s%s%s%s\n", HPRE,
 		       CLR(ctx->trm, CDIM, "Path Fields"));
 		print_fields(ctx, def_clms_paths_clt,
 			     def_clms_paths_srv,
+			     all_clms_paths_clt,
+			     all_clms_paths_srv,
 			     all_clms_paths, RNBD_BOTH);
 
 		if (help_print_fields(ctx))
@@ -693,7 +712,10 @@ static void help_list_devices(const char *program_name,
 
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
-		print_fields(ctx, def_clms_devices_clt, def_clms_devices_srv,
+		print_fields(ctx, def_clms_devices_clt,
+			     def_clms_devices_srv,
+			     all_clms_devices_clt,
+			     all_clms_devices_srv,
 			     all_clms_devices, ctx->rnbdmode);
 
 		if (help_print_fields(ctx))
@@ -727,7 +749,10 @@ static void help_list_sessions(const char *program_name,
 
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
-		print_fields(ctx, def_clms_sessions_clt, def_clms_sessions_srv,
+		print_fields(ctx, def_clms_sessions_clt,
+			     def_clms_sessions_srv,
+			     all_clms_sessions_clt,
+			     all_clms_sessions_srv,
 			     all_clms_sessions, ctx->rnbdmode);
 
 		if (help_print_fields(ctx))
@@ -762,7 +787,10 @@ static void help_list_paths(const char *program_name,
 
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
-		print_fields(ctx, def_clms_paths_clt, def_clms_paths_srv,
+		print_fields(ctx, def_clms_paths_clt,
+			     def_clms_paths_srv,
+			     all_clms_paths_clt,
+			     all_clms_paths_srv,
 			     all_clms_paths, ctx->rnbdmode);
 
 		if (help_print_fields(ctx))
@@ -1701,11 +1729,20 @@ static void help_show(const char *program_name,
 
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
-		print_fields(ctx, def_clms_devices_clt, def_clms_devices_srv,
+		print_fields(ctx, def_clms_devices_clt,
+			     def_clms_devices_srv,
+			     all_clms_devices_clt,
+			     all_clms_devices_srv,
 			     all_clms_devices, ctx->rnbdmode);
-		print_fields(ctx, def_clms_sessions_clt, def_clms_sessions_srv,
+		print_fields(ctx, def_clms_sessions_clt,
+			     def_clms_sessions_srv,
+			     all_clms_sessions_clt,
+			     all_clms_sessions_srv,
 			     all_clms_sessions, ctx->rnbdmode);
-		print_fields(ctx, def_clms_paths_clt, def_clms_paths_srv,
+		print_fields(ctx, def_clms_paths_clt,
+			     def_clms_paths_srv,
+			     all_clms_paths_clt,
+			     all_clms_paths_srv,
 			     all_clms_paths, ctx->rnbdmode);
 		if (help_print_fields(ctx))
 			return;
@@ -1744,7 +1781,10 @@ static void help_show_devices(const char *program_name,
 
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
-		print_fields(ctx, def_clms_devices_clt, def_clms_devices_srv,
+		print_fields(ctx, def_clms_devices_clt,
+			     def_clms_devices_srv,
+			     all_clms_devices_clt,
+			     all_clms_devices_srv,
 			     all_clms_devices, ctx->rnbdmode);
 		if (help_print_fields(ctx))
 			return;
@@ -1783,7 +1823,10 @@ static void help_show_sessions(const char *program_name,
 
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
-		print_fields(ctx, def_clms_sessions_clt, def_clms_sessions_srv,
+		print_fields(ctx, def_clms_sessions_clt,
+			     def_clms_sessions_srv,
+			     all_clms_sessions_clt,
+			     all_clms_sessions_srv,
 			     all_clms_sessions, ctx->rnbdmode);
 		if (help_print_fields(ctx))
 			return;
@@ -1822,7 +1865,10 @@ static void help_show_paths(const char *program_name,
 
 	if (help_print_all(ctx) || help_print_fields(ctx)) {
 
-		print_fields(ctx, def_clms_paths_clt, def_clms_paths_srv,
+		print_fields(ctx, def_clms_paths_clt,
+			     def_clms_paths_srv,
+			     all_clms_paths_clt,
+			     all_clms_paths_srv,
 			     all_clms_paths, ctx->rnbdmode);
 
 		if (help_print_fields(ctx))
