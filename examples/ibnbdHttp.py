@@ -15,7 +15,7 @@ Usage:
 class RequestHandler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
-        command = "rbnbd dump json all"
+        command = "rnbd dump json all"
         proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None,
                                 shell=True)
         jsonstr = proc.communicate()[0]
