@@ -3025,22 +3025,14 @@ static struct param *params_fmt_parameters[] = {
 	&_params_null
 };
 
-static struct param *params_map_from_parameters[] = {
-	&_params_from,
-	&_params_help,
-	&_params_verbose,
-	&_params_minus_v,
-	&_params_null
-};
-
 static struct param *params_map_parameters[] = {
 	&_params_from,
+	&_params_path_param,
 	&_params_ro,
 	&_params_rw,
 	&_params_migration,
 	&_params_help,
 	&_params_verbose,
-	&_params_minus_v,
 	&_params_null
 };
 
@@ -3066,6 +3058,7 @@ static struct param *params_unmap_parameters[] = {
 
 static struct param *params_add_path_parameters[] = {
 	&_params_help,
+	&_params_path_param,
 	&_params_verbose,
 	&_params_minus_v,
 	&_params_null
@@ -3677,7 +3670,7 @@ int cmd_map(int argc, const char *argv[], const struct param *cmd,
 		return err;
 
 	err = parse_map_parameters(argc, argv, &accepted,
-				   params_map_from_parameters,
+				   params_map_parameters,
 				   ctx, cmd, help_context);
 	if (accepted == 0) {
 
