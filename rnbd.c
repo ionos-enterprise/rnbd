@@ -2048,16 +2048,16 @@ static int client_devices_map(const char *from_name, const char *device_name,
 			    "map found no matching session for %s.\n",
 			    from_name);
 
-			/* if still not found, generate the session name */
-			ret = sessname_from_host(from_name,
-						 sessname, sizeof(sessname));
-			if (ret) {
-				ERR(ctx->trm,
-				    "Failed to generate session name for %s: %s (%d)\n",
-				    from_name, strerror(-ret), ret);
-				return ret;
-			}
 			if (!ctx->path_cnt) {
+				/* if still not found, generate the session name */
+				ret = sessname_from_host(from_name,
+							 sessname, sizeof(sessname));
+				if (ret) {
+					ERR(ctx->trm,
+					    "Failed to generate session name for %s: %s (%d)\n",
+					    from_name, strerror(-ret), ret);
+					return ret;
+				}
 
 				/* if no path provided by user, */
 				/* try to resolve from_name as host name */
@@ -2075,6 +2075,10 @@ static int client_devices_map(const char *from_name, const char *device_name,
 				} else {
 					ctx->path_cnt = ret;
 				}
+			} else {
+				/* we are going to create a new session for an address */
+				/* use session name as given by user                   */
+				strncpy(sessname, from_name, sizeof(sessname));
 			}
 		}
 	}
