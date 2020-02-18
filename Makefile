@@ -8,7 +8,7 @@ GITVER = $(shell cat ./.git/HEAD 2>/dev/null | sed -n 's/\(ref: refs\/heads\/\)\
 
 CC = gcc
 DEFINES = -DPACKAGE_VERSION='"$(DEBVER)"' -DGIT_BRANCH='"$(GITVER)"'
-CFLAGS = -fPIC -Wall -Werror -O2 -g -Iinclude $(DEFINES)
+CFLAGS = -fPIC -Wall -Werror -Wno-stringop-truncation -O2 -g -Iinclude $(DEFINES)
 LIBS =
 
 SRC = $(wildcard *.c)
