@@ -4721,7 +4721,7 @@ int cmd_start(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 	if (argc < 1) {
 		usage_param(ctx->pname, params_mode_help, ctx);
-		ERR(ctx->trm, "mode not specified\n");
+		ERR(ctx->trm, "Please specify an argument\n");
 		err = -EINVAL;
 	}
 	if (err >= 0) {
