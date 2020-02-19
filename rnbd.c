@@ -2941,12 +2941,6 @@ static struct param *params_both[] = {
 	&_params_null
 };
 
-static struct param *params_both_help[] = {
-	&_cmd_dump_all,
-	&_params_help,
-	&_params_null
-};
-
 static struct param *params_object_type_client[] = {
 	&_params_devices,
 	&_params_device,
@@ -4631,7 +4625,7 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 	const struct param *param;
 
 	if (argc < 1) {
-		usage_param("rnbd both", params_both_help, ctx);
+		usage_param("rnbd both", params_both, ctx);
 		if (ctx->complete_set)
 			err = -EAGAIN;
 		else
@@ -4641,7 +4635,7 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		param = find_param(*argv, params_both);
 		if (!param) {
 			handle_unknown_param(*argv, params_both);
-			usage_param(ctx->pname, params_both_help, ctx);
+			usage_param(ctx->pname, params_both, ctx);
 			err = -EINVAL;
 		} else if (param->parse) {
 			(void) param->parse(argc, argv, param, ctx);
@@ -4693,7 +4687,7 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = cmd_remap(argc, argv, param, false, "", ctx);
 			break;
 		case TOK_HELP:
-			help_param(ctx->pname, params_both_help, ctx);
+			help_param(ctx->pname, params_both, ctx);
 
 			if (help_print_all(ctx)) {
 
@@ -4701,12 +4695,12 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 					  params_object_type_help_client, ctx);
 				help_mode("server",
 					  params_object_type_help_server, ctx);
-				help_mode("both", params_both_help, ctx);
+				help_mode("both", params_both, ctx);
 			}
 			break;
 		default:
 			handle_unknown_param(*argv, params_both);
-			usage_param(ctx->pname, params_both_help, ctx);
+			usage_param(ctx->pname, params_both, ctx);
 			err = -EINVAL;
 			break;
 		}
