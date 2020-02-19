@@ -420,9 +420,18 @@ static bool is_ipv4_addr(const char *arg)
 
 static bool is_ipv6_addr(const char *arg)
 {
+	char ipv6_str_base[INET6_ADDRSTRLEN];
 	char addr[16];
+	const char *str_addr = arg;
+	const char *percent_sign = strchr(arg, '%');
 
-	return inet_pton(AF_INET6, arg, addr);
+	if (percent_sign) {
+		memset(ipv6_str_base, 0, sizeof(ipv6_str_base));
+		memcpy(ipv6_str_base, arg, percent_sign - arg < INET6_ADDRSTRLEN
+		       		? percent_sign - arg : INET6_ADDRSTRLEN);
+			str_addr = ipv6_str_base;
+	}
+	return inet_pton(AF_INET6, str_addr, addr);
 }
 
 bool is_path_addr(const char *arg)

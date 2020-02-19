@@ -91,7 +91,7 @@ int printf_sysfs(const char *dir, const char *entry,
 	if (!f)
 		return -errno;
 
-	ret = fprintf(f, cmd, args);
+	ret = fputs(cmd, f);
 
 	if (ret >= 0) {
 		if (fflush(f))
