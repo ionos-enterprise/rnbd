@@ -658,6 +658,9 @@ enum rnbdmode mode_for_host(void)
 	if (faccessat(AT_FDCWD, use_sysfs_info->path_dev_srv, F_OK, AT_EACCESS) == 0)
 		mode |= RNBD_SERVER;
 
+	if (mode == RNBD_NONE)
+		mode = RNBD_BOTH;
+
 	return mode;
 }
 
