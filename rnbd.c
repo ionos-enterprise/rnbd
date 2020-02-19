@@ -2006,23 +2006,22 @@ static int client_devices_map(const char *from_name, const char *device_name,
 	struct rnbd_path *path;
 	int i, cnt = 0, ret;
 
-	if (!ctx->path_cnt && !parse_path(ctx->from, ctx)) {
+	if (!from_name && ctx->path_cnt) {
 
 		/* User provided only a path to designate a session to use. */
 
-		path = find_single_path(from_name, ctx,
+		path = find_single_path(ctx->paths[0].dst, ctx,
 					paths_clt, paths_clt_cnt);
 		if (path) {
 			sess = path->sess;
-			strcpy(sessname, from_name);
 			INF(ctx->debug_set,
 			    "map matched session %s for path name %s.\n",
-			    sess->sessname, from_name);
+			    sess->sessname, ctx->paths[0].dst);
 			strcpy(sessname, sess->sessname);
 		} else {
 			ERR(ctx->trm,
 			    "Client session for path '%s' not found. Please provide a session name to establish a new session.\n",
-			    ctx->from);
+			    ctx->paths[0].dst);
 			return -EINVAL;
 		}
 	}
@@ -2076,7 +2075,7 @@ static int client_devices_map(const char *from_name, const char *device_name,
 			}
 		}
 	}
-	if (sess && ctx->path_cnt) {
+	if (sess && ctx->path_cnt && from_name) {
 		INF(ctx->verbose_set,
 		    "Session '%s' exists. Provided paths will be ignored by the driver. Please use addpath to add a path to an existsing sesion.\n",
 		    from_name);
@@ -2120,7 +2119,7 @@ static int client_devices_map(const char *from_name, const char *device_name,
 		    strerror(-ret), ret);
 	else
 		INF(ctx->verbose_set, "Successfully mapped '%s' from '%s'.\n",
-		    device_name, from_name);
+		    device_name, from_name ? from_name : sessname);
 
 	return ret;
 }
