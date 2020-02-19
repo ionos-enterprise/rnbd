@@ -144,9 +144,9 @@ static void parse_argv0(const char *argv0, struct rnbd_ctx *ctx)
 static int parse_mode(int argc, const char *argv[],
 		     const struct param *param, struct rnbd_ctx *ctx)
 {
-	if (!strcasecmp(*argv, "client") || !strcasecmp(*argv, "clt"))
+	if (!strcasecmp(*argv, "client") || !strcasecmp(*argv, "clt") || !strcasecmp(*argv, "cli"))
 		ctx->rnbdmode = RNBD_CLIENT;
-	else if (!strcasecmp(*argv, "server") || !strcasecmp(*argv, "srv"))
+	else if (!strcasecmp(*argv, "server") || !strcasecmp(*argv, "serv") || !strcasecmp(*argv, "srv"))
 		ctx->rnbdmode = RNBD_SERVER;
 	else if (!strcasecmp(*argv, "both"))
 		ctx->rnbdmode = RNBD_BOTH;
