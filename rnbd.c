@@ -4675,16 +4675,16 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = show_all(ctx->name, ctx);
 			break;
 		case TOK_MAP:
-			err = cmd_map(argc, argv, param, "", ctx);
+			err = cmd_map(argc, argv, param, "device", ctx);
 			break;
 		case TOK_RESIZE:
-			err = cmd_resize(argc, argv, param, "", ctx);
+			err = cmd_resize(argc, argv, param, "device", ctx);
 			break;
 		case TOK_UNMAP:
-			err = cmd_unmap(argc, argv, param, "", ctx);
+			err = cmd_unmap(argc, argv, param, "device", ctx);
 			break;
 		case TOK_REMAP:
-			err = cmd_remap(argc, argv, param, false, "", ctx);
+			err = cmd_remap(argc, argv, param, false, "device", ctx);
 			break;
 		case TOK_HELP:
 			help_param(ctx->pname, params_both, ctx);
