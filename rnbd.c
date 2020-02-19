@@ -2002,13 +2002,13 @@ static int client_devices_map(const char *from_name, const char *device_name,
 			      struct rnbd_ctx *ctx)
 {
 	char cmd[4096], sessname[NAME_MAX];
-	struct rnbd_sess *sess;
+	struct rnbd_sess *sess = NULL;
 	struct rnbd_path *path;
 	int i, cnt = 0, ret;
-	bool existing_session_used = false;
 
 	if (!ctx->path_cnt && !parse_path(ctx->from, ctx)) {
-		/* user provided only a path to establish */
+
+		/* User provided only a path to designate a session to use. */
 
 		path = find_single_path(from_name, ctx,
 					paths_clt, paths_clt_cnt);
@@ -2025,15 +2025,10 @@ static int client_devices_map(const char *from_name, const char *device_name,
 			    ctx->from);
 			return -EINVAL;
 		}
-	} else {
-		strcpy(sessname, from_name);
-		sess = find_session(sessname, sess_clt);
-		if (sess)
-			existing_session_used = true;
 	}
-	if (!sess && !strchr(from_name, '@')) {
+	if (!sess) {
 
-		/* if it looks like a host name, try to match a session */
+		/* Try to match a session in any case */
 		sess = find_single_session(from_name, ctx, sess_clt,
 					   sds_clt_cnt, false);
 
@@ -2063,36 +2058,36 @@ static int client_devices_map(const char *from_name, const char *device_name,
 				/* try to resolve from_name as host name */
 				ret = resolve_host(from_name, ctx->paths, ctx);
 				if (ret < 0) {
-					ERR(ctx->trm,
+					INF(ctx->debug_set,
 					    "Failed to resolve host name for %s: %s (%d)\n",
 					    from_name, strerror(-ret), ret);
-					return ret;
+					ret = 0;
 				} else if (ret == 0) {
-					ERR(ctx->trm,
+					INF(ctx->debug_set,
 					    "Found no paths to host %s.\n",
 					    from_name);
-					return ret;
 				} else {
 					ctx->path_cnt = ret;
 				}
 			} else {
-				/* we are going to create a new session for an address */
-				/* use session name as given by user                   */
+				/* we are going to create a new session for an path address */
+				/* use session name as given by user                        */
 				strncpy(sessname, from_name, sizeof(sessname));
 			}
 		}
 	}
-	if (!sess && !ctx->path_cnt) {
-		ERR(ctx->trm,
-		    "Client session '%s' not found. Please provide at least one path to establish a new one.\n",
-		    from_name);
-		return -EINVAL;
-	}
-
-	if (existing_session_used && ctx->path_cnt)
+	if (sess && ctx->path_cnt) {
 		INF(ctx->verbose_set,
 		    "Session '%s' exists. Provided paths will be ignored by the driver. Please use addpath to add a path to an existsing sesion.\n",
 		    from_name);
+	}
+	if (!sess && !ctx->path_cnt) {
+		ERR(ctx->trm,
+		    "No client session '%s' found and '%s' can not be resolved as host name.\n"
+		    "Please provide at least one path to establish a new session.\n",
+		    from_name, from_name);
+		return -EINVAL;
+	}
 
 	cnt = snprintf(cmd, sizeof(cmd), "sessname=%s", sessname);
 	cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, " device_path=%s",
