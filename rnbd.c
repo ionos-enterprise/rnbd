@@ -310,6 +310,14 @@ static struct param _params_path_param =
 	{TOK_PATHS, "<path>", "", "",
 	 "Path to use (i.e. gid:fe80::1@gid:fe80::2)",
 	 NULL, NULL, 0};
+static struct param _params_path_param_gid =
+	{TOK_PATHS, "gid:*", "", "",
+	 "Path to use (i.e. gid:fe80::1@gid:fe80::2)",
+	 NULL, NULL, 0};
+static struct param _params_path_param_ip =
+	{TOK_PATHS, "ip:*", "", "",
+	 "Path to use (i.e. ip:192.168.42.42@ip:192.168.53.53)",
+	 NULL, NULL, 0};
 static struct param _params_notree =
 	{TOK_NOTREE, "notree", "", "", "Don't display paths for each sessions",
 	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, notree_set)};
@@ -3025,24 +3033,24 @@ static struct param *params_fmt_parameters[] = {
 
 static struct param *params_map_parameters[] = {
 	&_params_from,
-	&_params_path_param,
-	&_params_ro,
-	&_params_rw,
-	&_params_migration,
-	&_params_help,
-	&_params_verbose,
-	&_params_null
-};
-
-static struct param *params_map_parameters_help[] = {
-	&_params_from,
-	&_params_path_param,
 	&_params_ro,
 	&_params_rw,
 	&_params_migration,
 	&_params_help,
 	&_params_verbose,
 	&_params_minus_v,
+	&_params_null
+};
+
+/* help when somthing is given after from <host> that can not be parsed */
+static struct param *params_map_parameters_help_tail[] = {
+	&_params_path_param_ip,
+	&_params_path_param_gid,
+	&_params_ro,
+	&_params_rw,
+	&_params_migration,
+	&_params_help,
+	&_params_verbose,
 	&_params_null
 };
 
@@ -3207,8 +3215,8 @@ static void handle_unknown_param(const char *param, struct param *params[])
 	} else {
 
 		qsort(params, len, sizeof(*params), param_compare);
-		printf("Did you mean:\n");
 	}
+	printf("Did you mean:\n");
 	if (cnt > 3)
 		cnt = 3;
 
@@ -3670,7 +3678,7 @@ int cmd_map(int argc, const char *argv[], const struct param *cmd,
 	err = parse_map_parameters(argc, argv, &accepted,
 				   params_map_parameters,
 				   ctx, cmd, help_context);
-	if (accepted == 0) {
+	if (!ctx->from_set) {
 
 		cmd_print_usage_short(cmd, help_context, ctx);
 		ERR(ctx->trm,
@@ -3682,14 +3690,8 @@ int cmd_map(int argc, const char *argv[], const struct param *cmd,
 
 	if (argc > 0 || (err < 0 && err != -EAGAIN)) {
 
-		handle_unknown_param(*argv,
-				    params_map_parameters);
-		if (err < 0) {
-			printf("\n");
-			print_param(ctx->pname,
-				   params_map_parameters_help,
-				   ctx);
-		}
+		handle_unknown_param(*argv, params_map_parameters_help_tail);
+				     
 		return -EINVAL;
 	}
 	return err = client_devices_map(ctx->from, ctx->name, ctx);
