@@ -3678,7 +3678,7 @@ int cmd_map(int argc, const char *argv[], const struct param *cmd,
 	err = parse_map_parameters(argc, argv, &accepted,
 				   params_map_parameters,
 				   ctx, cmd, help_context);
-	if (!ctx->from_set) {
+	if (!ctx->from_set && ctx->path_cnt == 0) {
 
 		cmd_print_usage_short(cmd, help_context, ctx);
 		ERR(ctx->trm,
