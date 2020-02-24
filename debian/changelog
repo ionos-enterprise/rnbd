@@ -1,3 +1,9 @@
+rnbd-tool (1.0.3) jessie stretch buster; urgency=medium
+
+  * Interface fixes: sorting, help, support for mode both.
+
+ -- Danil Kipnis <danil@cloud.ionos.com>  Mon, 24 Feb 2020 12:03:44 +0100
+
 rnbd-tool (1.0.2) jessie stretch buster; urgency=medium
 
   * rename ibnbd to rnbd
