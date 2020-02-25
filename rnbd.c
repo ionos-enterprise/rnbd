@@ -375,6 +375,9 @@ static struct param _params_minus_c =
 static struct param _params_minus_minus_complete =
 	{TOK_VERBOSE, "--complete", "", "", "Complete",
 	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, complete_set)};
+static struct param _params_minus_minus_term =
+	{TOK_TERM, "--term", "", "", "Assume terminal output",
+	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, trm)};
 static struct param _params_byte =
 	{TOK_BYTE, "B", "", "", "Byte", NULL, parse_unit, 0};
 static struct param _params_kib =
@@ -2890,6 +2893,7 @@ static struct param *params_flags[] = {
 	&_params_minus_s,
 	&_params_minus_c,
 	&_params_minus_minus_complete,
+	&_params_minus_minus_term,
 	&_params_null
 };
 
@@ -2898,6 +2902,7 @@ static struct param *params_flags_help[] = {
 	&_params_minus_minus_verbose,
 	&_params_minus_minus_debug,
 	&_params_minus_minus_simulate,
+	&_params_minus_minus_term,
 	&_params_null
 };
 
