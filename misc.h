@@ -19,11 +19,11 @@
 #define ERR(trm, fmt, ...)			\
 	do { \
 		if (trm) \
-			printf("%s%s", colors[CRED], colors[CBLD]); \
-		printf("error: "); \
+			fprintf(stderr, "%s%s", colors[CRED], colors[CBLD]); \
+		fprintf(stderr, "error: "); \
 		if (trm) \
-			printf("%s", colors[CNRM]); \
-		printf(fmt, ##__VA_ARGS__); \
+			fprintf(stderr, "%s", colors[CNRM]); \
+		fprintf(stderr, fmt, ##__VA_ARGS__);  \
 	} while (0)
 
 struct bit_str {
