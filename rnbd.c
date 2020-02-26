@@ -1021,18 +1021,13 @@ static int list_paths(struct rnbd_path **p_clt, int clt_p_num,
 		printf("\t\"outgoing paths\": ");
 		if (clt_p_num)
 			list_paths_json(p_clt, ctx->clms_paths_clt, ctx);
-		else if (ctx->rnbdmode == RNBD_BOTH)
-			printf("null");
-
-		if ((clt_p_num && srv_p_num) || ctx->rnbdmode == RNBD_BOTH)
-			printf(",");
-
-		printf("\n");
+		else
+			printf("null,\n");
 
 		printf("\t\"incoming paths\": ");
 		if (srv_p_num)
 			list_paths_json(p_srv, ctx->clms_paths_srv, ctx);
-		else if (ctx->rnbdmode == RNBD_BOTH)
+		else
 			printf("null");
 
 		printf("\n}\n");
