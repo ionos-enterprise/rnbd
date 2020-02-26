@@ -937,18 +937,13 @@ static int list_sessions(struct rnbd_sess **s_clt, int clt_s_num,
 		printf("\t\"outgoing sessions\": ");
 		if (clt_s_num)
 			list_sessions_json(s_clt, ctx->clms_sessions_clt, ctx);
-		else if (ctx->rnbdmode == RNBD_BOTH)
-			printf("null");
-
-		if ((clt_s_num && srv_s_num) || ctx->rnbdmode == RNBD_BOTH)
-			printf(",");
-
-		printf("\n");
+		else
+			printf("null, \n");
 
 		printf("\t\"incoming sessions\": ");
 		if (srv_s_num)
 			list_sessions_json(s_srv, ctx->clms_sessions_srv, ctx);
-		else if (ctx->rnbdmode == RNBD_BOTH)
+		else
 			printf("null");
 
 		if (!is_dump)
