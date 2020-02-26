@@ -288,7 +288,7 @@ static struct param _params_devices_client =
 	{TOK_DEVICES, "devices", "", "", "Map/unmapped/modify devices",
 	 NULL, parse_lst, 0};
 static struct param _params_devices =
-	{TOK_DEVICES, "devices", "", "", "List devices", NULL, parse_lst, 0};
+	{TOK_DEVICES, "devices", "", "", "Operate on devices", NULL, parse_lst, 0};
 static struct param _params_device =
 	{TOK_DEVICES, "device", "", "", "", NULL, parse_lst, 0};
 static struct param _params_devs =
@@ -303,7 +303,7 @@ static struct param _params_session =
 static struct param _params_sess =
 	{TOK_SESSIONS, "sess", "", "", "", NULL, parse_lst, 0};
 static struct param _params_paths =
-	{TOK_PATHS, "paths", "", "", "Handle paths", NULL, parse_lst, 0};
+	{TOK_PATHS, "paths", "", "", "Operate on paths", NULL, parse_lst, 0};
 static struct param _params_path =
 	{TOK_PATHS, "path", "", "", "", NULL, parse_lst, 0};
 static struct param _params_path_param =
