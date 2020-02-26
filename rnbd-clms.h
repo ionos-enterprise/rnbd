@@ -146,8 +146,10 @@ static struct table_column clm_rnbd_sess_srvname =
 		sessname_to_srvname, 'l', CNRM, CNRM,
 		"Server name");
 
-CLM_S(side, "Direction", FLD_STR, sess_side_to_direction, 'l', CNRM, CNRM,
-	"Direction of the session: incoming or outgoing");
+static struct table_column clm_rnbd_sess_side =
+	_CLM_S("direction", side, "Direction", FLD_STR,
+		sess_side_to_direction, 'l', CNRM, CNRM,
+		"Direction of the session: incoming or outgoing");
 
 static struct table_column *all_clms_sessions[] = {
 	&clm_rnbd_sess_sessname,
