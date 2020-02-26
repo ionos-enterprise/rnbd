@@ -847,25 +847,19 @@ static int list_devices(struct rnbd_sess_dev **d_clt, int d_clt_cnt,
 	case FMT_JSON:
 		printf("{\n");
 
-		if ((d_clt_cnt && d_srv_cnt) || ctx->rnbdmode == RNBD_BOTH)
-			printf("\t\"imports\": ");
+		printf("\t\"imports\": ");
 
 		if (d_clt_cnt)
 			list_devices_json(d_clt, ctx->clms_devices_clt, ctx);
-
-		if (d_clt_cnt && d_srv_cnt)
-			printf(",\n");
-		else if (!d_clt_cnt && ctx->rnbdmode == RNBD_BOTH)
-			printf("null,\n");
 		else
-			printf(",\n");
+			printf("null,\n");
 
-		if ((d_clt_cnt && d_srv_cnt) || ctx->rnbdmode == RNBD_BOTH)
-			printf("\t\"exports\": ");
+
+		printf("\t\"exports\": ");
 
 		if (d_srv_cnt)
 			list_devices_json(d_srv, ctx->clms_devices_srv, ctx);
-		else if (ctx->rnbdmode == RNBD_BOTH)
+		else
 			printf("null");
 
 		if (!is_dump)
