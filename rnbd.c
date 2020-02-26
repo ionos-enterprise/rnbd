@@ -1522,47 +1522,6 @@ out:
 	return ret;
 }
 
-#if 0
-static int show_both_sessions(const char *name, struct rnbd_ctx *ctx)
-{
-	struct rnbd_sess **ss_clt, **ss_srv;
-	int c_ss_clt, c_ss_srv, c_ss = 0, ret;
-
-	ss_clt = calloc(sess_clt_cnt, sizeof(*ss_clt));
-	ss_srv = calloc(sess_srv_cnt, sizeof(*ss_srv));
-
-	if ((sess_clt_cnt && !ss_clt) ||
-	    (sess_srv_cnt && !ss_srv)) {
-		ERR(ctx->trm, "Failed to alloc memory\n");
-		ret = -ENOMEM;
-		goto out;
-	}
-	c_ss = find_sess_all(name, ctx->rnbdmode, ss_clt,
-			     &c_ss_clt, ss_srv, &c_ss_srv);
-
-	if (c_ss > 1) {
-		ERR(ctx->trm, "Multiple sessions match '%s'\n", name);
-
-		printf("Sessions:\n");
-		list_sessions(ss_clt, c_ss_clt, ss_srv, c_ss_srv, false, ctx);
-
-		ret = -EINVAL;
-		goto out;
-	}
-
-	if (c_ss) {
-		ret = show_session(ss_clt, ss_srv, ctx);
-	} else {
-		ERR(ctx->trm, "There is no session matching '%s'\n", name);
-		ret = -ENOENT;
-	}
-out:
-	free(ss_clt);
-	free(ss_srv);
-	return ret;
-}
-#endif
-
 static int show_client_sessions(const char *name, struct rnbd_ctx *ctx)
 {
 	struct rnbd_sess **ss_clt;
