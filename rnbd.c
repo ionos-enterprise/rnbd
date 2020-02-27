@@ -1169,7 +1169,7 @@ static bool match_sess(struct rnbd_sess *s, const char *name)
 	return false;
 }
 
-static struct rnbd_sess *find_session(const char *name,
+static struct rnbd_sess *find_sess(const char *name,
 				       struct rnbd_sess **ss)
 {
 	int i;
@@ -1181,7 +1181,7 @@ static struct rnbd_sess *find_session(const char *name,
 	return NULL;
 }
 
-static int find_sessions_match(const char *name, struct rnbd_sess **ss,
+static int find_sess_match(const char *name, struct rnbd_sess **ss,
 			       struct rnbd_sess **res)
 {
 	int i, cnt = 0;
@@ -1195,17 +1195,16 @@ static int find_sessions_match(const char *name, struct rnbd_sess **ss,
 	return cnt;
 }
 
-static int find_sess_all(const char *name, enum rnbdmode rnbdmode,
-			 struct rnbd_sess **ss_clt,
-			 int *ss_clt_cnt, struct rnbd_sess **ss_srv,
-			 int *ss_srv_cnt)
+static int find_sess_match_all(const char *name, enum rnbdmode rnbdmode,
+			 struct rnbd_sess **ss_clt, int *ss_clt_cnt,
+			 struct rnbd_sess **ss_srv, int *ss_srv_cnt)
 {
 	int cnt_srv = 0, cnt_clt = 0;
 
 	if (rnbdmode & RNBD_CLIENT)
-		cnt_clt = find_sessions_match(name, sess_clt, ss_clt);
+		cnt_clt = find_sess_match(name, sess_clt, ss_clt);
 	if (rnbdmode & RNBD_SERVER)
-		cnt_srv = find_sessions_match(name, sess_srv, ss_srv);
+		cnt_srv = find_sess_match(name, sess_srv, ss_srv);
 
 	*ss_clt_cnt = cnt_clt;
 	*ss_srv_cnt = cnt_srv;
@@ -1439,7 +1438,7 @@ static int show_all(const char *name, struct rnbd_ctx *ctx)
 	}
 	c_pp = find_paths_all(name, ctx->rnbdmode, pp_clt, &c_pp_clt, pp_srv,
 			      &c_pp_srv);
-	c_ss = find_sess_all(name, ctx->rnbdmode, ss_clt,
+	c_ss = find_sess_match_all(name, ctx->rnbdmode, ss_clt,
 			     &c_ss_clt, ss_srv, &c_ss_srv);
 	c_ds = find_devs_all(name, ctx->rnbdmode, ds_clt,
 			     &c_ds_clt, ds_srv, &c_ds_srv);
@@ -1534,11 +1533,11 @@ static int show_client_sessions(const char *name, struct rnbd_ctx *ctx)
 		ret = -ENOMEM;
 		goto out;
 	}
-	ss_clt[0] = find_session(name, sess_clt);
+	ss_clt[0] = find_sess(name, sess_clt);
 	if (ss_clt[0])
 		c_ss_clt = 1;
 	else
-		c_ss_clt = find_sessions_match(name, sess_clt, ss_clt);
+		c_ss_clt = find_sess_match(name, sess_clt, ss_clt);
 
 	if (c_ss_clt > 1) {
 		ERR(ctx->trm, "Multiple sessions match '%s'\n", name);
@@ -1573,11 +1572,11 @@ static int show_server_sessions(const char *name, struct rnbd_ctx *ctx)
 		ret = -ENOMEM;
 		goto out;
 	}
-	ss_srv[0] = find_session(name, sess_srv);
+	ss_srv[0] = find_sess(name, sess_srv);
 	if (ss_srv[0])
 		c_ss_srv = 1;
 	else
-		c_ss_srv = find_sessions_match(name, sess_srv, ss_srv);
+		c_ss_srv = find_sess_match(name, sess_srv, ss_srv);
 
 	if (c_ss_srv > 1) {
 		ERR(ctx->trm, "Multiple sessions match '%s'\n", name);
@@ -1888,7 +1887,7 @@ static struct rnbd_sess *find_single_session(const char *session_name,
 		return NULL;
 	}
 
-	res = find_session(session_name, sessions);
+	res = find_sess(session_name, sessions);
 	if (res)
 		/* of there is an exact match, that's the one we want */
 		return res;
@@ -1899,7 +1898,7 @@ static struct rnbd_sess *find_single_session(const char *session_name,
 		ERR(ctx->trm, "Failed to alloc memory\n");
 		return NULL;
 	}
-	match_count = find_sessions_match(session_name, sessions,
+	match_count = find_sess_match(session_name, sessions,
 					  matching_sess);
 
 	if (match_count == 1) {
@@ -2443,7 +2442,7 @@ static int client_session_add(const char *session_name,
 	struct rnbd_sess *sess;
 	int ret;
 
-	sess = find_session(session_name, sess_clt);
+	sess = find_sess(session_name, sess_clt);
 
 	if (!sess) {
 		ERR(ctx->trm,
