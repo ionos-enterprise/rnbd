@@ -2878,6 +2878,9 @@ static struct param *params_mode_help[] = {
 };
 
 static struct param *params_both[] = {
+	&_params_sessions,
+	&_params_session,
+	&_params_sess,
 	&_cmd_list_devices,
 	&_cmd_dump_all,
 	&_cmd_show,
@@ -3089,6 +3092,28 @@ static struct param *cmds_server_sessions[] = {
 	&_cmd_show_sessions,
 	&_cmd_disconnect_session,
 	&_cmd_dis_session,
+	&_cmd_help,
+	&_cmd_null
+};
+
+static struct param *cmds_both_sessions[] = {
+	&_cmd_list_sessions,
+	&_cmd_show_sessions,
+	&_cmd_disconnect_session,
+	&_cmd_dis_session,
+	&_cmd_reconnect_session,
+	&_cmd_rec_session,
+	&_cmd_remap_session,
+	&_cmd_help,
+	&_cmd_null
+};
+
+static struct param *cmds_both_sessions_help[] = {
+	&_cmd_list_sessions,
+	&_cmd_show_sessions,
+	&_cmd_disconnect_session,
+	&_cmd_reconnect_session,
+	&_cmd_remap_session,
 	&_cmd_help,
 	&_cmd_null
 };
@@ -3744,6 +3769,66 @@ int cmd_remap(int argc, const char *argv[], const struct param *cmd,
 
 	return client_devices_remap(ctx->name, ctx);
 }
+
+int cmd_both_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
+{
+	const char *_help_context = ctx->pname_with_mode
+		? "session" : "both session";
+
+	int err = 0;
+	const struct param *cmd;
+
+	cmd = find_param(*argv, cmds_both_sessions);
+	if (!cmd) {
+		print_usage(_help_context, cmds_both_sessions_help, ctx);
+		if (ctx->complete_set)
+			err = -EAGAIN;
+		else
+			err = -EINVAL;
+
+		if (argc)
+			handle_unknown_param(*argv, cmds_both_sessions);
+	}
+	if (err >= 0) {
+
+		argc--; argv++;
+
+		switch (cmd->tok) {
+		case TOK_LIST:
+
+			err = parse_list_parameters(argc, argv, ctx,
+						    parse_clt_sessions_clms,
+						    cmd, _help_context);
+			if (err < 0)
+				break;
+
+			err = list_sessions(sess_clt, sess_clt_cnt - 1,
+					    sess_srv, sess_srv_cnt - 1, false, ctx);
+			break;
+		case TOK_SHOW:
+		case TOK_RECONNECT:
+		case TOK_REMAP:
+		case TOK_DISCONNECT:
+			ERR(ctx->trm, "Not implemented\n");
+			err = -ENOENT;
+			break;
+		case TOK_HELP:
+			parse_help(argc, argv, NULL, ctx);
+			print_help(_help_context,
+				   cmd, cmds_client_sessions_help, ctx);
+			break;
+		default:
+			print_usage(_help_context,
+				    cmds_client_sessions_help, ctx);
+			handle_unknown_param(cmd->param_str,
+					    cmds_client_sessions);
+			err = -EINVAL;
+			break;
+		}
+	}
+	return err;
+}
+
 
 int cmd_client_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 {
@@ -4602,6 +4687,9 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 	if (err >= 0) {
 		switch (param->tok) {
+		case TOK_SESSIONS:
+			err = cmd_both_sessions(argc, argv, ctx);
+			break;
 		case TOK_DUMP:
 			err = cmd_dump_all(argc, argv, param, "", ctx);
 			break;
