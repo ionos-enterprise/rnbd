@@ -2944,6 +2944,10 @@ static struct param *params_mode_help[] = {
 };
 
 static struct param *params_both[] = {
+	&_params_devices,
+	&_params_device,
+	&_params_devs,
+	&_params_dev,
 	&_params_sessions,
 	&_params_session,
 	&_params_sess,
@@ -4072,15 +4076,17 @@ int cmd_client_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 int cmd_client_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 {
-	const char *_help_context = ctx->pname_with_mode
+	const char *_help_context_client = ctx->pname_with_mode
 		? "device" : "client device";
+	const char *_help_context_both = ctx->pname_with_mode ? "device" :
+		(ctx->rnbdmode==RNBD_CLIENT ? "client device" : "both device");
 
 	int err = 0;
 	const struct param *cmd;
 
 	cmd = find_param(*argv, cmds_client_devices);
 	if (!cmd) {
-		print_usage(_help_context, cmds_client_devices, ctx);
+		print_usage(_help_context_both, cmds_client_devices, ctx);
 		if (ctx->complete_set)
 			err = -EAGAIN;
 		else
@@ -4097,8 +4103,9 @@ int cmd_client_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		case TOK_LIST:
 
 			err = parse_list_parameters(argc, argv, ctx,
-						    parse_clt_devices_clms,
-						    cmd, _help_context);
+						    (ctx->rnbdmode == RNBD_CLIENT ?
+						     parse_clt_devices_clms : parse_both_devices_clms),
+						    cmd, _help_context_both);
 			if (err < 0)
 				break;
 
@@ -4107,39 +4114,40 @@ int cmd_client_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			break;
 		case TOK_SHOW:
 			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
+					      _help_context_both, cmd, ctx);
 			if (err < 0)
 				break;
 
-			init_show(RNBD_CLIENT, LST_DEVICES, ctx);
+			init_show(ctx->rnbdmode, LST_DEVICES, ctx);
 
 			err = parse_list_parameters(argc, argv, ctx,
-						    parse_clt_devices_clms,
-						    cmd, _help_context);
+						    (ctx->rnbdmode == RNBD_CLIENT ?
+						     parse_clt_devices_clms : parse_both_devices_clms),
+						    cmd, _help_context_both);
 			if (err < 0)
 				break;
 
 			err = show_devices(ctx->name, ctx);
 			break;
 		case TOK_MAP:
-			err = cmd_map(argc, argv, cmd, _help_context, ctx);
+			err = cmd_map(argc, argv, cmd, _help_context_client, ctx);
 			break;
 		case TOK_RESIZE:
-			err = cmd_resize(argc, argv, cmd, _help_context, ctx);
+			err = cmd_resize(argc, argv, cmd, _help_context_client, ctx);
 			break;
 		case TOK_UNMAP:
-			err = cmd_unmap(argc, argv, cmd, _help_context, ctx);
+			err = cmd_unmap(argc, argv, cmd, _help_context_client, ctx);
 			break;
 		case TOK_REMAP:
-			err = cmd_remap(argc, argv, cmd, false, _help_context, ctx);
+			err = cmd_remap(argc, argv, cmd, false, _help_context_client, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, NULL, ctx);
-			print_help(_help_context, cmd,
+			print_help(_help_context_client, cmd,
 				   cmds_client_devices, ctx);
 			break;
 		default:
-			print_usage(_help_context, cmds_client_devices, ctx);
+			print_usage(_help_context_both, cmds_client_devices, ctx);
 			handle_unknown_param(cmd->param_str,
 					     cmds_client_devices);
 			err = -EINVAL;
@@ -4820,6 +4828,11 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 	if (err >= 0) {
 		switch (param->tok) {
+		case TOK_DEVICES:
+			/* call client function here. Note that list and show */
+			/* will behave differently because of ctx->rnbdmode. */
+			err = cmd_client_devices(argc, argv, ctx);
+			break;
 		case TOK_SESSIONS:
 			err = cmd_both_sessions(argc, argv, ctx);
 			break;
