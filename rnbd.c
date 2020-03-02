@@ -1398,6 +1398,13 @@ static int show_session(struct rnbd_sess **ss_clt, struct rnbd_sess **ss_srv,
 		table_row_stringify(ss[0], flds, cs, ctx, true, 0);
 		table_entry_print_term("", flds, cs,
 				       table_get_max_h_width(cs), ctx->trm);
+
+		/* when notree is set explicitly or if exactly one collumn */
+		/* is requested */
+		/* no information on paths of the session will be shown */
+		if (ctx->notree_set || table_clm_cnt(cs) == 1)
+			break;
+
 		printf("%s%s%s", CLR(ctx->trm, CBLD, ss[0]->sessname));
 		if (ss[0]->side == RNBD_CLIENT)
 			printf(" %s(%s)%s",
