@@ -76,7 +76,8 @@ static int parse_fmt(int argc, const char *argv[],
 enum lstmode {
 	LST_DEVICES,
 	LST_SESSIONS,
-	LST_PATHS
+	LST_PATHS,
+	LST_ALL
 };
 
 static int parse_lst(int argc, const char *argv[],
@@ -3453,6 +3454,29 @@ static void print_version(const struct rnbd_ctx *ctx)
 	       CLR(ctx->trm, CBLD, PACKAGE_VERSION));
 }
 
+static int init_show(enum rnbdmode rnbdmode,
+		     enum lstmode object_type,
+		     struct rnbd_ctx *ctx)
+{
+	(void) parse_all(0, NULL, NULL, ctx);
+	switch (object_type) {
+	case LST_PATHS:
+	case LST_ALL:
+		if (rnbdmode & RNBD_CLIENT) {
+			parse_clt_paths_clms("-src_addr", ctx);
+			parse_clt_paths_clms("-dst_addr", ctx);
+		}
+		if (rnbdmode & RNBD_SERVER) {
+			parse_srv_paths_clms("-src_addr", ctx);
+			parse_srv_paths_clms("-dst_addr", ctx);
+		}
+		break;
+	default:
+		;
+	}
+	return 0;
+}
+
 /**
  * Parse all the possible parameters to list or show commands.
  * The results are collected in the rnbd_ctx struct
@@ -3870,6 +3894,8 @@ int cmd_client_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
+			init_show(RNBD_CLIENT, LST_SESSIONS, ctx);
+
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_clt_sessions_clms,
 						    cmd, _help_context);
@@ -3991,6 +4017,8 @@ int cmd_client_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
+			init_show(RNBD_CLIENT, LST_DEVICES, ctx);
+
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_clt_devices_clms,
 						    cmd, _help_context);
@@ -4067,6 +4095,8 @@ int cmd_client_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 					      _help_context, cmd, ctx);
 			if (err < 0)
 				break;
+
+			init_show(RNBD_CLIENT, LST_PATHS, ctx);
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_clt_paths_clms,
@@ -4266,6 +4296,8 @@ int cmd_server_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
+			init_show(RNBD_SERVER, LST_SESSIONS, ctx);
+
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_srv_sessions_clms,
 						    cmd, _help_context);
@@ -4355,6 +4387,8 @@ int cmd_server_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
+			init_show(RNBD_SERVER, LST_DEVICES, ctx);
+
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_srv_devices_clms,
 						    cmd, _help_context);
@@ -4418,6 +4452,8 @@ int cmd_server_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 					      _help_context, cmd, ctx);
 			if (err < 0)
 				break;
+
+			init_show(RNBD_SERVER, LST_PATHS, ctx);
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_srv_devices_clms,
@@ -4525,6 +4561,8 @@ int cmd_client(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
+			init_show(RNBD_CLIENT, LST_ALL, ctx);
+
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_clt_clms,
 						    param, _help_context);
@@ -4628,6 +4666,8 @@ int cmd_server(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
+			init_show(RNBD_SERVER, LST_ALL, ctx);
+
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_srv_clms,
 						    param, _help_context);
@@ -4708,6 +4748,8 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 					      "name", param, ctx);
 			if (err < 0)
 				break;
+
+			init_show(RNBD_CLIENT|RNBD_SERVER, LST_ALL, ctx);
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_both_clms,
