@@ -1613,6 +1613,59 @@ out:
 	return ret;
 }
 
+static int show_both_sessions(const char *name, struct rnbd_ctx *ctx)
+{
+	struct rnbd_sess **ss_clt;
+	struct rnbd_sess **ss_srv;
+	int c_ss_clt = 0;
+	int c_ss_srv = 0, ret;
+
+	ss_srv = calloc(sess_srv_cnt, sizeof(*ss_srv));
+	ss_clt = calloc(sess_clt_cnt, sizeof(*ss_clt));
+
+	if ((sess_clt_cnt && !ss_clt) 
+	    || (sess_srv_cnt && !ss_srv)) {
+		ERR(ctx->trm, "Failed to alloc memory\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	ss_clt[0] = find_sess(name, sess_clt);
+	ss_srv[0] = find_sess(name, sess_srv);
+	if (ss_clt[0])
+		c_ss_clt = 1;
+	if (ss_srv[0])
+		c_ss_srv = 1;
+
+	if ( !ss_clt[0] && !ss_srv[0]) {
+		c_ss_clt = find_sess_match(name, sess_clt, ss_clt);
+		c_ss_srv = find_sess_match(name, sess_srv, ss_srv);
+	}
+
+	if (c_ss_clt + c_ss_srv > 1) {
+		ERR(ctx->trm, "Multiple sessions match '%s'\n", name);
+
+		printf("Sessions:\n");
+		list_sessions(ss_clt, c_ss_clt, ss_srv, c_ss_srv, false, ctx);
+
+		ret = -EINVAL;
+		goto out;
+	}
+
+	if (c_ss_clt) {
+		ret = show_session(ss_clt, NULL, ctx);
+	} else if (c_ss_srv) {
+		ret = show_session(NULL, ss_srv, ctx);
+	} else {
+		ERR(ctx->trm, "There is no session matching '%s'\n", name);
+		ret = -ENOENT;
+	}
+out:
+	free(ss_clt);
+	free(ss_srv);
+	return ret;
+}
+
 static int show_paths(const char *name, struct rnbd_ctx *ctx)
 {
 	struct rnbd_path **pp_clt, **pp_srv;
@@ -3109,28 +3162,6 @@ static struct param *cmds_server_sessions[] = {
 	&_cmd_null
 };
 
-static struct param *cmds_both_sessions[] = {
-	&_cmd_list_sessions,
-	&_cmd_show_sessions,
-	&_cmd_disconnect_session,
-	&_cmd_dis_session,
-	&_cmd_reconnect_session,
-	&_cmd_rec_session,
-	&_cmd_remap_session,
-	&_cmd_help,
-	&_cmd_null
-};
-
-static struct param *cmds_both_sessions_help[] = {
-	&_cmd_list_sessions,
-	&_cmd_show_sessions,
-	&_cmd_disconnect_session,
-	&_cmd_reconnect_session,
-	&_cmd_remap_session,
-	&_cmd_help,
-	&_cmd_null
-};
-
 static struct param *cmds_server_sessions_help[] = {
 	&_cmd_list_sessions,
 	&_cmd_show_sessions,
@@ -3159,6 +3190,14 @@ static struct param *cmds_server_paths_help[] = {
 	&_cmd_list_paths,
 	&_cmd_show_paths,
 	&_cmd_disconnect_path,
+	&_cmd_help,
+	&_cmd_null
+};
+
+static struct param *cmds_both_sessions[] = {
+	&_cmd_list_sessions,
+	&_cmd_show_sessions,
+	&_cmd_remap_session,
 	&_cmd_help,
 	&_cmd_null
 };
@@ -3258,6 +3297,21 @@ static int parse_srv_sessions_clms(const char *arg, struct rnbd_ctx *ctx)
 {
 	return table_extend_columns(arg, comma, all_clms_sessions_srv,
 				    ctx->clms_sessions_srv, CLM_MAX_CNT);
+}
+
+static int parse_both_sessions_clms(const char *arg, struct rnbd_ctx *ctx)
+{
+	int tmp_err, err;
+
+	err = table_extend_columns(arg, comma, all_clms_sessions_clt,
+				   ctx->clms_sessions_clt, CLM_MAX_CNT);
+	tmp_err = table_extend_columns(arg, comma, all_clms_sessions_srv,
+				       ctx->clms_sessions_srv, CLM_MAX_CNT);
+	if (!tmp_err && err)
+		err = tmp_err;
+
+	/* if any of the parse commands succeed return success */
+	return err;
 }
 
 static int parse_clt_paths_clms(const char *arg, struct rnbd_ctx *ctx)
@@ -3814,6 +3868,30 @@ int cmd_remap(int argc, const char *argv[], const struct param *cmd,
 	return client_devices_remap(ctx->name, ctx);
 }
 
+int cmd_session_remap(int argc, const char *argv[], const struct param *cmd,
+		      const char *help_context, struct rnbd_ctx *ctx)
+{
+	int err = parse_name_help(argc--, argv++,
+				  help_context, cmd, ctx);
+	if (err < 0)
+		return err;
+	
+	err = parse_cmd_parameters(argc, argv,
+				   params_default,
+				   ctx, cmd, help_context);
+	if (err < 0)
+		return err;
+	
+	argc -= err; argv += err;
+	
+	if (argc > 0) {
+		
+		handle_unknown_param(*argv, params_default);
+		return -EINVAL;
+	}
+	return client_session_remap(ctx->name, ctx);
+}
+
 int cmd_both_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 {
 	const char *_help_context = ctx->pname_with_mode
@@ -3824,7 +3902,7 @@ int cmd_both_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 	cmd = find_param(*argv, cmds_both_sessions);
 	if (!cmd) {
-		print_usage(_help_context, cmds_both_sessions_help, ctx);
+		print_usage(_help_context, cmds_both_sessions, ctx);
 		if (ctx->complete_set)
 			err = -EAGAIN;
 		else
@@ -3841,7 +3919,7 @@ int cmd_both_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		case TOK_LIST:
 
 			err = parse_list_parameters(argc, argv, ctx,
-						    parse_clt_sessions_clms,
+						    parse_both_sessions_clms,
 						    cmd, _help_context);
 			if (err < 0)
 				break;
@@ -3850,11 +3928,24 @@ int cmd_both_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 					    sess_srv, sess_srv_cnt - 1, false, ctx);
 			break;
 		case TOK_SHOW:
-		case TOK_RECONNECT:
+			err = parse_name_help(argc--, argv++,
+					      _help_context, cmd, ctx);
+			if (err < 0)
+				break;
+
+			init_show(RNBD_CLIENT|RNBD_SERVER, LST_SESSIONS, ctx);
+
+			err = parse_list_parameters(argc, argv, ctx,
+						    parse_both_sessions_clms,
+						    cmd, _help_context);
+			if (err < 0)
+				break;
+
+			err = show_both_sessions(ctx->name, ctx);
+			break;
 		case TOK_REMAP:
-		case TOK_DISCONNECT:
-			ERR(ctx->trm, "Not implemented\n");
-			err = -ENOENT;
+			err = cmd_session_remap(argc, argv, cmd,
+						_help_context, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, NULL, ctx);
@@ -3959,26 +4050,8 @@ int cmd_client_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 							ctx);
 			break;
 		case TOK_REMAP:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_cmd_parameters(argc, argv,
-						   params_default,
-						   ctx, cmd, _help_context);
-			if (err < 0)
-				break;
-
-			argc -= err; argv += err;
-
-			if (argc > 0) {
-
-				handle_unknown_param(*argv, params_default);
-				err = -EINVAL;
-				break;
-			}
-			err = client_session_remap(ctx->name, ctx);
+			err = cmd_session_remap(argc, argv, cmd,
+						_help_context, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, NULL, ctx);
