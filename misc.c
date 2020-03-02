@@ -77,11 +77,12 @@ void trim(char *s)
 	*new = *s;
 }
 
-int str_to_size(const char *str, uint64_t *size)
+int str_to_size(const char *str, struct rnbd_ctx *ctx)
 {
 	char buff[NAME_MAX];
 	char *unit = NULL;
 	int index = 0;
+	int shift;
 	uint64_t num;
 	int ret;
 
@@ -89,16 +90,26 @@ int str_to_size(const char *str, uint64_t *size)
 	trim(buff);
 	ret = sscanf(buff, "%" SCNu64 "%ms", &num, &unit);
 	if (ret < 1)
-		return -1;
+		return -EINVAL;
 
 	if (ret == 2) {
 		ret = get_unit_index(unit, &index);
 		free(unit);
 		if (ret)
 			return ret;
-	}
+		
+		shift = bits[index].bits;
+		if (shift > 9)
+			ctx->size_sect = num << (shift-9);
+		else
+			ctx->size_sect = num >> (9-shift);
 
-	*size = num << bits[index].bits;
+		ctx->size_state = size_unit;
+
+	} else {
+		ctx->size_sect = num;
+		ctx->size_state = size_number;
+	}
 	return 0;
 }
 

@@ -190,17 +190,23 @@ static int parse_apply_unit(const char *str, struct rnbd_ctx *ctx)
 {
 	int rc, shift;
 
-	if (!ctx->size_set)
+	if (ctx->size_state != size_number)
 		return -EINVAL;
 
 	rc = get_unit_shift(str, &shift);
 	if (rc < 0)
 		return rc;
 
-	ctx->size_sect <<= shift;
 	INF(ctx->debug_set,
 	    "unit %s accepted left shift size_sect by %d.\n",
 	    str, shift);
+
+	if (shift > 9)
+		ctx->size_sect <<= shift-9;
+	else
+		ctx->size_sect >>= 9-shift;
+	
+	ctx->size_state = size_unit;
 
 	return 0;
 }
@@ -3351,18 +3357,10 @@ static int parse_sign(char s,
 static int parse_size(const char *str,
 		      struct rnbd_ctx *ctx)
 {
-	uint64_t size;
-
 	if (parse_sign(*str, ctx))
 		str++;
 
-	if (str_to_size(str, &size))
-		return -EINVAL;
-
-	ctx->size_sect = size >> 9;
-	ctx->size_set = 1;
-
-	return 0;
+	return str_to_size(str, ctx);
 }
 
 static void init_rnbd_ctx(struct rnbd_ctx *ctx)
@@ -3714,11 +3712,21 @@ int cmd_resize(int argc, const char *argv[], const struct param *cmd,
 		err = parse_size(*argv, ctx);
 	else
 		err = -EINVAL;
-	if (err < 0) {
+	if (err < 0 || ctx->sign < 0) {
+
 		cmd_print_usage_short(cmd, help_context, ctx);
-		ERR(ctx->trm,
-		    "Please provide the size of device to be configured\n");
-		return err;
+
+		if (err == -ENOENT)
+			ERR(ctx->trm,
+			    "Please provide a valid unit for size of the device to be configured\n");
+		else if (ctx->sign < 0)
+			ERR(ctx->trm,
+			    "Please provide a positiv value for size of the device to be configured\n");
+		else
+			ERR(ctx->trm,
+			    "Please provide the size of the device to be configured\n");
+
+		return err == 0 ? -EINVAL : err;
 	}
 	argc--; argv++;
 
@@ -3731,11 +3739,17 @@ int cmd_resize(int argc, const char *argv[], const struct param *cmd,
 				cmd->help(*argv, cmd, ctx);
 				return -EAGAIN;
 			} else {
+				cmd_print_usage_short(cmd, help_context, ctx);
+
 				ERR(ctx->trm,
 				    "Please provide a valid unit for size of device to be configured\n");
 				return err;
 			}
 		}
+	} else if (ctx->size_state == size_number) {
+
+		ctx->size_sect >>= 9;
+		ctx->size_state = size_unit;
 	}
 	argc--; argv++;
 

@@ -34,6 +34,12 @@ struct bit_str {
 
 extern const struct bit_str bits[];
 
+enum rnbd_size_state {
+	size_not_set = 0,
+	size_number,
+	size_unit
+};
+
 struct path {
 	const char *src;
 	const char *dst;
@@ -44,7 +50,7 @@ struct rnbd_ctx {
 	const char *name;
 
 	uint64_t size_sect;
-	bool size_set;
+	enum rnbd_size_state size_state;
 	short sign;
 
 	enum fmt_type fmt;
@@ -110,10 +116,12 @@ int i_to_str(uint64_t d, char *str, size_t len, int prec);
 void trim(char *s);
 
 /*
- * Convert string [0-9][BKMGTPE] to uint64_t
+ * Convert string [0-9]+[BKMGTPE] to size in ctx.
+ * If unit is provided, the size is converted to sectors,
+ * otherwise it is just a raw value which we have to apply a unit on.
  * return 0 on success, negative if conversion failed
  */
-int str_to_size(const char *str, uint64_t *size);
+int str_to_size(const char *str, struct rnbd_ctx *ctx);
 
 int i_to_byte_unit(char *str, size_t len, const struct rnbd_ctx *ctx,
 		   uint64_t v, bool humanize);
