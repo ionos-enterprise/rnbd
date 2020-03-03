@@ -2951,6 +2951,8 @@ static struct param *params_both[] = {
 	&_params_sessions,
 	&_params_session,
 	&_params_sess,
+	&_params_paths,
+	&_params_path,
 	&_cmd_list_devices,
 	&_cmd_dump_all,
 	&_cmd_show,
@@ -3202,6 +3204,18 @@ static struct param *cmds_both_sessions[] = {
 	&_cmd_list_sessions,
 	&_cmd_show_sessions,
 	&_cmd_remap_session,
+	&_cmd_disconnect_session,
+	&_cmd_dis_session,
+	&_cmd_reconnect_session,
+	&_cmd_rec_session,
+	&_cmd_help,
+	&_cmd_null
+};
+
+static struct param *cmds_both_sessions_help[] = {
+	&_cmd_list_sessions,
+	&_cmd_show_sessions,
+	&_cmd_remap_session,
 	&_cmd_help,
 	&_cmd_null
 };
@@ -3209,6 +3223,10 @@ static struct param *cmds_both_sessions[] = {
 static struct param *cmds_both_paths[] = {
 	&_cmd_list_paths,
 	&_cmd_show_paths,
+	&_cmd_disconnect_session,
+	&_cmd_dis_session,
+	&_cmd_reconnect_session,
+	&_cmd_rec_session,
 	&_cmd_add,
 	&_cmd_delete,
 	&_cmd_del,
@@ -3241,12 +3259,13 @@ static int param_compare(const void *p1, const void *p2)
 				  (*c1)->param_str, (*c2)->param_str);
 }
 
-static void handle_unknown_param(const char *param, struct param *params[])
+static void handle_unknown_param(const char *param, struct param *params[],
+				 const struct rnbd_ctx *ctx)
 {
 	struct param **cs;
 	size_t len = 0, cnt = 0, i;
 
-	printf("Unknown: %s\n", param);
+	ERR(ctx->trm, "Unknown '%s'\n", param);
 
 	for (cs = params; (*cs)->param_str; cs++) {
 		(*cs)->dist = levenshtein((*cs)->param_str, param, 1, 2, 1, 0)
@@ -3625,7 +3644,7 @@ int parse_list_parameters(int argc, const char *argv[], struct rnbd_ctx *ctx,
 		cmd->help(program_name, cmd, ctx);
 		err = -EAGAIN;
 	} else if (err < 0) {
-		handle_unknown_param(*argv, params_list_parameters);
+		handle_unknown_param(*argv, params_list_parameters, ctx);
 	}
 	return err < 0 ? err : start_argc - argc;
 }
@@ -3787,7 +3806,8 @@ int cmd_map(int argc, const char *argv[], const struct param *cmd,
 
 	if (argc > 0 || (err < 0 && err != -EAGAIN)) {
 
-		handle_unknown_param(*argv, params_map_parameters_help_tail);
+		handle_unknown_param(*argv,
+				     params_map_parameters_help_tail, ctx);
 				     
 		return -EINVAL;
 	}
@@ -3849,7 +3869,7 @@ int cmd_resize(int argc, const char *argv[], const struct param *cmd,
 
 	if (argc > 0) {
 
-		handle_unknown_param(*argv, params_default);
+		handle_unknown_param(*argv, params_default, ctx);
 		return -EINVAL;
 	}
 	return client_devices_resize(ctx->name, ctx->size_sect, ctx);
@@ -3874,7 +3894,7 @@ int cmd_unmap(int argc, const char *argv[], const struct param *cmd,
 	if (argc > 0) {
 
 		handle_unknown_param(*argv,
-				     params_unmap_parameters);
+				     params_unmap_parameters, ctx);
 		return -EINVAL;
 	}
 	return client_devices_unmap(ctx->name, ctx->force_set, ctx);
@@ -3897,7 +3917,7 @@ int cmd_remap(int argc, const char *argv[], const struct param *cmd,
 
 	if (argc > 0) {
 
-		handle_unknown_param(*argv, params_default);
+		handle_unknown_param(*argv, params_default, ctx);
 		return -EINVAL;
 	}
 	if (allowSession
@@ -3926,7 +3946,7 @@ int cmd_session_remap(int argc, const char *argv[], const struct param *cmd,
 	
 	if (argc > 0) {
 		
-		handle_unknown_param(*argv, params_default);
+		handle_unknown_param(*argv, params_default, ctx);
 		return -EINVAL;
 	}
 	return client_session_remap(ctx->name, ctx);
@@ -3937,7 +3957,7 @@ int cmd_path_add(int argc, const char *argv[], const struct param *cmd,
 {
 	int accepted = 0;
 	int err = parse_name_help(argc--, argv++,
-				  "session", cmd, ctx);
+				  help_context, cmd, ctx);
 	if (err < 0)
 		return err;
 	
@@ -3959,7 +3979,7 @@ int cmd_path_add(int argc, const char *argv[], const struct param *cmd,
 	if (argc > 0 || (err < 0 && err != -EAGAIN)) {
 		
 		handle_unknown_param(*argv,
-				     params_add_path_help);
+				     params_add_path_help, ctx);
 		if (err < 0) {
 			printf("\n");
 			print_param(ctx->pname,
@@ -4000,7 +4020,7 @@ int cmd_path_delete(int argc, const char *argv[], const struct param *cmd,
 	
 	if (argc > 0) {
 		
-		handle_unknown_param(*argv, params_default);
+		handle_unknown_param(*argv, params_default, ctx);
 		return -EINVAL;
 	}
 	return client_path_delete(ctx->name, ctx);
@@ -4023,30 +4043,45 @@ int cmd_path_readd(int argc, const char *argv[], const struct param *cmd,
 	
 	if (argc > 0) {
 		
-		handle_unknown_param(*argv, params_default);
+		handle_unknown_param(*argv, params_default, ctx);
 		return -EINVAL;
 	}
 	return client_path_readd(ctx->name, ctx);
 }
 
+int cmd_ambiguous(int argc, const char *argv[], const struct param *cmd,
+		  const char *help_context, struct rnbd_ctx *ctx)
+{
+	ERR(ctx->trm, "Ambiguous command!\n");
+
+	printf("Please specify either ");
+	clr_print(ctx->trm, CCYN, "client");
+	printf(" or ");
+	clr_print(ctx->trm, CCYN, "server");
+	printf(" to reconnect/disconnect a session or a path.\n");
+
+	return -EINVAL;
+}
+
 int cmd_both_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 {
-	const char *_help_context = ctx->pname_with_mode
-		? "session" : "both session";
+	const char *_help_context = "session";
 
 	int err = 0;
 	const struct param *cmd;
 
 	cmd = find_param(*argv, cmds_both_sessions);
 	if (!cmd) {
-		print_usage(_help_context, cmds_both_sessions, ctx);
+		print_usage(_help_context, cmds_both_sessions_help, ctx);
 		if (ctx->complete_set)
 			err = -EAGAIN;
 		else
 			err = -EINVAL;
 
 		if (argc)
-			handle_unknown_param(*argv, cmds_both_sessions);
+			handle_unknown_param(*argv, cmds_both_sessions, ctx);
+		else
+			ERR(ctx->trm, "Please specify a command\n");
 	}
 	if (err >= 0) {
 
@@ -4082,18 +4117,22 @@ int cmd_both_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			break;
 		case TOK_REMAP:
 			err = cmd_session_remap(argc, argv, cmd,
-						_help_context, ctx);
+						"client session", ctx);
+			break;
+		case TOK_RECONNECT:
+		case TOK_DISCONNECT:
+			err = cmd_ambiguous(argc, argv, cmd, "both session", ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, NULL, ctx);
 			print_help(_help_context,
-				   cmd, cmds_client_sessions_help, ctx);
+				   cmd, cmds_both_sessions_help, ctx);
 			break;
 		default:
 			print_usage(_help_context,
-				    cmds_client_sessions_help, ctx);
+				    cmds_both_sessions_help, ctx);
 			handle_unknown_param(cmd->param_str,
-					    cmds_client_sessions);
+					     cmds_both_sessions, ctx);
 			err = -EINVAL;
 			break;
 		}
@@ -4105,8 +4144,7 @@ int cmd_both_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 {
 	const char *_help_context_client = ctx->pname_with_mode
 		? "path" : "client path";
-	const char *_help_context_both = ctx->pname_with_mode
-		? "path" : "both path";
+	const char *_help_context_both = "path";
 
 	int err = 0;
 	const struct param *cmd;
@@ -4120,7 +4158,9 @@ int cmd_both_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = -EINVAL;
 
 		if (argc)
-			handle_unknown_param(*argv, cmds_both_paths);
+			handle_unknown_param(*argv, cmds_both_paths, ctx);
+		else
+			ERR(ctx->trm, "Please specify a command\n");
 	}
 	if (err >= 0) {
 
@@ -4166,6 +4206,10 @@ int cmd_both_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = cmd_path_readd(argc, argv, cmd,
 					     _help_context_client, ctx);
 			break;
+		case TOK_RECONNECT:
+		case TOK_DISCONNECT:
+			err = cmd_ambiguous(argc, argv, cmd, "both path", ctx);
+			break;
 		case TOK_HELP:
 			parse_help(argc, argv, NULL, ctx);
 			print_help(_help_context_both, cmd,
@@ -4174,7 +4218,7 @@ int cmd_both_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		default:
 			print_usage(_help_context_both, cmds_both_paths_help, ctx);
 			handle_unknown_param(cmd->param_str,
-					    cmds_both_paths);
+					     cmds_both_paths, ctx);
 			err = -EINVAL;
 			break;
 		}
@@ -4200,7 +4244,9 @@ int cmd_client_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = -EINVAL;
 
 		if (argc)
-			handle_unknown_param(*argv, cmds_client_sessions);
+			handle_unknown_param(*argv, cmds_client_sessions, ctx);
+		else
+			ERR(ctx->trm, "Please specify a command\n");
 	}
 	if (err >= 0) {
 
@@ -4249,7 +4295,8 @@ int cmd_client_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			if (argc > 0) {
 
-				handle_unknown_param(*argv, params_default);
+				handle_unknown_param(*argv,
+						     params_default, ctx);
 				err = -EINVAL;
 				break;
 			}
@@ -4280,7 +4327,7 @@ int cmd_client_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			print_usage(_help_context,
 				    cmds_client_sessions_help, ctx);
 			handle_unknown_param(cmd->param_str,
-					    cmds_client_sessions);
+					     cmds_client_sessions, ctx);
 			err = -EINVAL;
 			break;
 		}
@@ -4293,7 +4340,7 @@ int cmd_client_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 	const char *_help_context_client = ctx->pname_with_mode
 		? "device" : "client device";
 	const char *_help_context_both = ctx->pname_with_mode ? "device" :
-		(ctx->rnbdmode==RNBD_CLIENT ? "client device" : "both device");
+		(ctx->rnbdmode==RNBD_CLIENT ? "client device" : "device");
 
 	int err = 0;
 	const struct param *cmd;
@@ -4307,7 +4354,9 @@ int cmd_client_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = -EINVAL;
 
 		if (argc)
-			handle_unknown_param(*argv, cmds_client_devices);
+			handle_unknown_param(*argv, cmds_client_devices, ctx);
+		else
+			ERR(ctx->trm, "Please specify a command\n");
 	}
 	if (err >= 0) {
 
@@ -4363,7 +4412,7 @@ int cmd_client_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		default:
 			print_usage(_help_context_both, cmds_client_devices, ctx);
 			handle_unknown_param(cmd->param_str,
-					     cmds_client_devices);
+					     cmds_client_devices, ctx);
 			err = -EINVAL;
 			break;
 		}
@@ -4388,7 +4437,9 @@ int cmd_client_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = -EINVAL;
 
 		if (argc)
-			handle_unknown_param(*argv, cmds_client_paths);
+			handle_unknown_param(*argv, cmds_client_paths, ctx);
+		else
+			ERR(ctx->trm, "Please specify a command\n");
 	}
 	if (err >= 0) {
 
@@ -4437,7 +4488,7 @@ int cmd_client_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			if (argc > 0) {
 
-				handle_unknown_param(*argv, params_default);
+				handle_unknown_param(*argv, params_default, ctx);
 				err = -EINVAL;
 				break;
 			}
@@ -4458,7 +4509,7 @@ int cmd_client_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			if (argc > 0) {
 
-				handle_unknown_param(*argv, params_default);
+				handle_unknown_param(*argv, params_default, ctx);
 				err = -EINVAL;
 				break;
 			}
@@ -4483,7 +4534,7 @@ int cmd_client_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		default:
 			print_usage(_help_context, cmds_client_paths_help, ctx);
 			handle_unknown_param(cmd->param_str,
-					    cmds_client_paths);
+					     cmds_client_paths, ctx);
 			err = -EINVAL;
 			break;
 		}
@@ -4508,7 +4559,9 @@ int cmd_server_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = -EINVAL;
 
 		if (argc)
-			handle_unknown_param(*argv, cmds_server_sessions);
+			handle_unknown_param(*argv, cmds_server_sessions, ctx);
+		else
+			ERR(ctx->trm, "Please specify a command\n");
 	}
 	if (err >= 0) {
 
@@ -4557,7 +4610,7 @@ int cmd_server_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			if (argc > 0) {
 
-				handle_unknown_param(*argv, params_default);
+				handle_unknown_param(*argv, params_default, ctx);
 				err = -EINVAL;
 				break;
 			}
@@ -4574,7 +4627,7 @@ int cmd_server_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			print_usage(_help_context,
 				    cmds_server_sessions_help, ctx);
 			handle_unknown_param(cmd->param_str,
-					    cmds_server_sessions);
+					    cmds_server_sessions, ctx);
 			err = -EINVAL;
 			break;
 		}
@@ -4599,7 +4652,9 @@ int cmd_server_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = -EINVAL;
 
 		if (argc)
-			handle_unknown_param(*argv, cmds_server_devices);
+			handle_unknown_param(*argv, cmds_server_devices, ctx);
+		else
+			ERR(ctx->trm, "Please specify a command\n");
 	}
 	if (err >= 0) {
 
@@ -4641,7 +4696,7 @@ int cmd_server_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		default:
 			print_usage(_help_context, cmds_server_devices, ctx);
 			handle_unknown_param(cmd->param_str,
-					    cmds_client_sessions);
+					     cmds_client_sessions, ctx);
 			err = -EINVAL;
 			break;
 		}
@@ -4666,7 +4721,9 @@ int cmd_server_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = -EINVAL;
 
 		if (argc)
-			handle_unknown_param(*argv, cmds_server_paths);
+			handle_unknown_param(*argv, cmds_server_paths, ctx);
+		else
+			ERR(ctx->trm, "Please specify a command\n");
 	}
 	if (err >= 0) {
 
@@ -4714,7 +4771,7 @@ int cmd_server_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			if (argc > 0) {
 
-				handle_unknown_param(*argv, params_default);
+				handle_unknown_param(*argv, params_default, ctx);
 				err = -EINVAL;
 				break;
 			}
@@ -4728,7 +4785,7 @@ int cmd_server_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		default:
 			print_usage(_help_context, cmds_server_paths_help, ctx);
 			handle_unknown_param(cmd->param_str,
-					    cmds_client_sessions);
+					    cmds_client_sessions, ctx);
 			err = -EINVAL;
 			break;
 		}
@@ -4757,7 +4814,7 @@ int cmd_client(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		if (!param) {
 			usage_param("rnbd client",
 				   params_object_type_help_client, ctx);
-			handle_unknown_param(*argv, params_object_type_client);
+			handle_unknown_param(*argv, params_object_type_client, ctx);
 			err = -EINVAL;
 		} else if (param->parse) {
 			(void) param->parse(argc, argv, param, ctx);
@@ -4833,7 +4890,7 @@ int cmd_client(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		default:
 			usage_param("rnbd client",
 				   params_object_type_help_client, ctx);
-			handle_unknown_param(*argv, params_object_type_client);
+			handle_unknown_param(*argv, params_object_type_client, ctx);
 			err = -EINVAL;
 			break;
 		}
@@ -4862,7 +4919,7 @@ int cmd_server(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		if (!param) {
 			usage_param("rnbd server",
 				   params_object_type_help_server, ctx);
-			handle_unknown_param(*argv, params_object_type_server);
+			handle_unknown_param(*argv, params_object_type_server, ctx);
 			err = -EINVAL;
 		} else if (param->parse) {
 			(void) param->parse(argc, argv, param, ctx);
@@ -4927,7 +4984,7 @@ int cmd_server(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		default:
 			usage_param("rnbd server",
 				   params_object_type_help_server, ctx);
-			handle_unknown_param(*argv, params_object_type_server);
+			handle_unknown_param(*argv, params_object_type_server, ctx);
 			err = -EINVAL;
 			break;
 		}
@@ -4950,7 +5007,7 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 	if (err >= 0) {
 		param = find_param(*argv, params_both);
 		if (!param) {
-			handle_unknown_param(*argv, params_both);
+			handle_unknown_param(*argv, params_both, ctx);
 			usage_param(ctx->pname, params_both_help, ctx);
 			err = -EINVAL;
 		} else if (param->parse) {
@@ -4969,6 +5026,9 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			break;
 		case TOK_SESSIONS:
 			err = cmd_both_sessions(argc, argv, ctx);
+			break;
+		case TOK_PATHS:
+			err = cmd_both_paths(argc, argv, ctx);
 			break;
 		case TOK_DUMP:
 			err = cmd_dump_all(argc, argv, param, "", ctx);
@@ -5025,7 +5085,7 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			}
 			break;
 		default:
-			handle_unknown_param(*argv, params_both);
+			handle_unknown_param(*argv, params_both, ctx);
 			usage_param(ctx->pname, params_both_help, ctx);
 			err = -EINVAL;
 			break;
@@ -5065,7 +5125,7 @@ int cmd_start(int argc, const char *argv[], struct rnbd_ctx *ctx)
 				    "RNBD mode not specified and could not be deduced.\n");
 				print_usage(NULL, params_mode_help, ctx);
 
-				handle_unknown_param(*argv, params_mode);
+				handle_unknown_param(*argv, params_mode, ctx);
 				usage_param(ctx->pname, params_mode_help, ctx);
 				err = -EINVAL;
 			}
@@ -5092,7 +5152,7 @@ int cmd_start(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			print_version(ctx);
 			break;
 		default:
-			handle_unknown_param(*argv, params_mode);
+			handle_unknown_param(*argv, params_mode, ctx);
 			usage_param(ctx->pname, params_mode_help, ctx);
 			err = -EINVAL;
 			break;
@@ -5162,7 +5222,7 @@ int main(int argc, const char *argv[])
 	    ctx.pname, get_sysfs_info(&ctx)->path_dev_name);
 
 	if (argc && *argv[0] == '-') {
-		handle_unknown_param(*argv, params_flags);
+		handle_unknown_param(*argv, params_flags, &ctx);
 		help_param(ctx.pname, params_flags_help, &ctx);
 		ret = -EINVAL;
 		goto free;
