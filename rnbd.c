@@ -3206,6 +3206,27 @@ static struct param *cmds_both_sessions[] = {
 	&_cmd_null
 };
 
+static struct param *cmds_both_paths[] = {
+	&_cmd_list_paths,
+	&_cmd_show_paths,
+	&_cmd_add,
+	&_cmd_delete,
+	&_cmd_del,
+	&_cmd_readd,
+	&_cmd_help,
+	&_cmd_null
+};
+
+static struct param *cmds_both_paths_help[] = {
+	&_cmd_list_paths,
+	&_cmd_show_paths,
+	&_cmd_add,
+	&_cmd_delete,
+	&_cmd_readd,
+	&_cmd_help,
+	&_cmd_null
+};
+
 static int levenstein_compare(int d1, int d2, const char *s1, const char *s2)
 {
 	return d1 != d2 ? d1 - d2 : strcmp(s1, s2);
@@ -3328,6 +3349,21 @@ static int parse_srv_paths_clms(const char *arg, struct rnbd_ctx *ctx)
 {
 	return table_extend_columns(arg, comma, all_clms_paths_srv,
 				    ctx->clms_paths_srv, CLM_MAX_CNT);
+}
+
+static int parse_both_paths_clms(const char *arg, struct rnbd_ctx *ctx)
+{
+	int tmp_err, err;
+
+	err = table_extend_columns(arg, comma, all_clms_paths_clt,
+				   ctx->clms_paths_clt, CLM_MAX_CNT);
+	tmp_err = table_extend_columns(arg, comma, all_clms_paths_srv,
+				       ctx->clms_paths_srv, CLM_MAX_CNT);
+	if (!tmp_err && err)
+		err = tmp_err;
+
+	/* if any of the parse commands succeed return success */
+	return err;
 }
 
 static int parse_clt_clms(const char *arg, struct rnbd_ctx *ctx)
@@ -3896,6 +3932,103 @@ int cmd_session_remap(int argc, const char *argv[], const struct param *cmd,
 	return client_session_remap(ctx->name, ctx);
 }
 
+int cmd_path_add(int argc, const char *argv[], const struct param *cmd,
+		 const char *help_context, struct rnbd_ctx *ctx)
+{
+	int accepted = 0;
+	int err = parse_name_help(argc--, argv++,
+				  "session", cmd, ctx);
+	if (err < 0)
+		return err;
+	
+	err = parse_map_parameters(argc, argv, &accepted,
+				   params_add_path_parameters,
+				   ctx, cmd, help_context);
+	if (accepted == 0) {
+		
+		cmd_print_usage_short(cmd, help_context, ctx);
+		ERR(ctx->trm,
+		    "Please specify the path to add to session %s\n",
+		    ctx->name);
+		print_opt(_params_path_param.param_str,
+			  _params_path_param.descr);
+		return -EINVAL;
+	}
+	argc -= accepted; argv += accepted;
+	
+	if (argc > 0 || (err < 0 && err != -EAGAIN)) {
+		
+		handle_unknown_param(*argv,
+				     params_add_path_help);
+		if (err < 0) {
+			printf("\n");
+			print_param(ctx->pname,
+				    params_add_path_help,
+				    ctx);
+		}
+		return -EINVAL;
+	}
+	if (ctx->path_cnt <= 0) {
+		cmd_print_usage_short(cmd, help_context, ctx);
+		ERR(ctx->trm,
+		    "No valid path provided. Please provide a path to add to session '%s'.\n",
+		    ctx->name);
+	}
+	if (ctx->path_cnt > 1) {
+		cmd_print_usage_short(cmd, help_context, ctx);
+		ERR(ctx->trm,
+		    "You provided %d paths. Please provide exactly one path to add to session '%s'.\n",
+		    ctx->path_cnt, ctx->name);
+	}
+	return client_session_add(ctx->name, ctx->paths, ctx);
+}
+
+int cmd_path_delete(int argc, const char *argv[], const struct param *cmd,
+		    const char *help_context, struct rnbd_ctx *ctx)
+{
+	int err = parse_name_help(argc--, argv++,
+				  help_context, cmd, ctx);
+	if (err < 0)
+		return err;
+	
+	err = parse_cmd_parameters(argc, argv, params_default,
+				   ctx, cmd, help_context);
+	if (err < 0)
+		return err;
+	
+	argc -= err; argv += err;
+	
+	if (argc > 0) {
+		
+		handle_unknown_param(*argv, params_default);
+		return -EINVAL;
+	}
+	return client_path_delete(ctx->name, ctx);
+}
+
+int cmd_path_readd(int argc, const char *argv[], const struct param *cmd,
+		   const char *help_context, struct rnbd_ctx *ctx)
+{
+	int err = parse_name_help(argc--, argv++,
+				  help_context, cmd, ctx);
+	if (err < 0)
+		return err;
+	
+	err = parse_cmd_parameters(argc, argv, params_default,
+				   ctx, cmd, help_context);
+	if (err < 0)
+		return err;
+	
+	argc -= err; argv += err;
+	
+	if (argc > 0) {
+		
+		handle_unknown_param(*argv, params_default);
+		return -EINVAL;
+	}
+	return client_path_readd(ctx->name, ctx);
+}
+
 int cmd_both_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 {
 	const char *_help_context = ctx->pname_with_mode
@@ -3961,6 +4094,87 @@ int cmd_both_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 				    cmds_client_sessions_help, ctx);
 			handle_unknown_param(cmd->param_str,
 					    cmds_client_sessions);
+			err = -EINVAL;
+			break;
+		}
+	}
+	return err;
+}
+
+int cmd_both_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
+{
+	const char *_help_context_client = ctx->pname_with_mode
+		? "path" : "client path";
+	const char *_help_context_both = ctx->pname_with_mode
+		? "path" : "both path";
+
+	int err = 0;
+	const struct param *cmd;
+
+	cmd = find_param(*argv, cmds_both_paths);
+	if (!cmd) {
+		print_usage(_help_context_both, cmds_both_paths_help, ctx);
+		if (ctx->complete_set)
+			err = -EAGAIN;
+		else
+			err = -EINVAL;
+
+		if (argc)
+			handle_unknown_param(*argv, cmds_both_paths);
+	}
+	if (err >= 0) {
+
+		argc--; argv++;
+
+		switch (cmd->tok) {
+		case TOK_LIST:
+
+			err = parse_list_parameters(argc, argv, ctx,
+						    parse_both_paths_clms,
+						    cmd, _help_context_both);
+			if (err < 0)
+				break;
+
+			err = list_paths(paths_clt, paths_clt_cnt - 1,
+					 paths_srv, paths_srv_cnt - 1,
+					 false, ctx);
+			break;
+		case TOK_SHOW:
+			err = parse_name_help(argc--, argv++,
+					      _help_context_both, cmd, ctx);
+			if (err < 0)
+				break;
+
+			init_show(RNBD_CLIENT|RNBD_SERVER, LST_PATHS, ctx);
+
+			err = parse_list_parameters(argc, argv, ctx,
+						    parse_both_paths_clms,
+						    cmd, _help_context_both);
+			if (err < 0)
+				break;
+
+			err = show_paths(ctx->name, ctx);
+			break;
+		case TOK_ADD:
+			err = cmd_path_add(argc, argv, cmd, _help_context_client, ctx);
+			break;
+		case TOK_DELETE:
+			err = cmd_path_delete(argc, argv, cmd,
+					      _help_context_client, ctx);
+			break;
+		case TOK_READD:
+			err = cmd_path_readd(argc, argv, cmd,
+					     _help_context_client, ctx);
+			break;
+		case TOK_HELP:
+			parse_help(argc, argv, NULL, ctx);
+			print_help(_help_context_both, cmd,
+				   cmds_both_paths_help, ctx);
+			break;
+		default:
+			print_usage(_help_context_both, cmds_both_paths_help, ctx);
+			handle_unknown_param(cmd->param_str,
+					    cmds_both_paths);
 			err = -EINVAL;
 			break;
 		}
@@ -4162,7 +4376,7 @@ int cmd_client_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 	const char *_help_context = ctx->pname_with_mode
 		? "path" : "client path";
 
-	int accepted = 0, err = 0;
+	int err = 0;
 	const struct param *cmd;
 
 	cmd = find_param(*argv, cmds_client_paths);
@@ -4251,95 +4465,15 @@ int cmd_client_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = client_path_reconnect(ctx->name, ctx);
 			break;
 		case TOK_ADD:
-			err = parse_name_help(argc--, argv++,
-					      "session", cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_map_parameters(argc, argv, &accepted,
-						   params_add_path_parameters,
-						   ctx, cmd, _help_context);
-			if (accepted == 0) {
-
-				cmd_print_usage_short(cmd, _help_context, ctx);
-				ERR(ctx->trm,
-				    "Please specify the path to add to session %s\n",
-				    ctx->name);
-				print_opt(_params_path_param.param_str,
-					  _params_path_param.descr);
-				err = -EINVAL;
-				break;
-			}
-			argc -= accepted; argv += accepted;
-
-			if (argc > 0 || (err < 0 && err != -EAGAIN)) {
-
-				handle_unknown_param(*argv,
-						     params_add_path_help);
-				if (err < 0) {
-					printf("\n");
-					print_param(ctx->pname,
-						   params_add_path_help,
-						   ctx);
-				}
-				err = -EINVAL;
-				break;
-			}
-			if (ctx->path_cnt <= 0) {
-				cmd_print_usage_short(cmd, _help_context, ctx);
-				ERR(ctx->trm,
-				    "No valid path provided. Please provide a path to add to session '%s'.\n",
-				    ctx->name);
-			}
-			if (ctx->path_cnt > 1) {
-				cmd_print_usage_short(cmd, _help_context, ctx);
-				ERR(ctx->trm,
-				    "You provided %d paths. Please provide exactly one path to add to session '%s'.\n",
-				    ctx->path_cnt, ctx->name);
-			}
-			err = client_session_add(ctx->name, ctx->paths, ctx);
+			err = cmd_path_add(argc, argv, cmd, _help_context, ctx);
 			break;
 		case TOK_DELETE:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_cmd_parameters(argc, argv, params_default,
-						   ctx, cmd, _help_context);
-			if (err < 0)
-				break;
-
-			argc -= err; argv += err;
-
-			if (argc > 0) {
-
-				handle_unknown_param(*argv, params_default);
-				err = -EINVAL;
-				break;
-			}
-			err = client_path_delete(ctx->name, ctx);
+			err = cmd_path_delete(argc, argv, cmd,
+					      _help_context, ctx);
 			break;
 		case TOK_READD:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_cmd_parameters(argc, argv, params_default,
-						   ctx, cmd, _help_context);
-			if (err < 0)
-				break;
-
-			argc -= err; argv += err;
-
-			if (argc > 0) {
-
-				handle_unknown_param(*argv, params_default);
-				err = -EINVAL;
-				break;
-			}
-			err = client_path_readd(ctx->name, ctx);
+			err = cmd_path_readd(argc, argv, cmd,
+					     _help_context, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, NULL, ctx);
