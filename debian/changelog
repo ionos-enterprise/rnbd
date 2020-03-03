@@ -1,3 +1,9 @@
+rnbd-tool (1.0.4) jessie stretch buster; urgency=medium
+
+  * Interface enhancement: implement both mode for devices, sessions, and paths.
+
+ -- Lutz Pogrell <lutz.pogrell@cloud.ionos.com>  Tue, 25 Mar 2020 16:06:12 +0100
+
 rnbd-tool (1.0.3) jessie stretch buster; urgency=medium
 
   * Interface fixes: sorting, help, support for mode both.
