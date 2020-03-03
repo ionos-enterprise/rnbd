@@ -36,7 +36,7 @@ echo ".SH SUBCOMMANDS"
 for m in $modes; do
 	for o in $objects; do
 		for c in $cmds; do
-			if rnbd $m $o $c help > /dev/null; then
+			if rnbd $m $o $c help 2>1 > /dev/null; then
 				echo -e ".B\n"
 				rnbd $m $o $c help all| sed 's/[[:space:]]*$//' | sed 's/Usage: //'
 				echo -e "\n"

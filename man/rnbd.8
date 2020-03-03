@@ -1,4 +1,4 @@
-.TH RNBD "8" "February 2020" "rnbd 1.0.1" "System Administration Utilities"
+.TH RNBD "8" "March 2020" "rnbd 1.0.3" "System Administration Utilities"
 .SH NAME
 rnbd - Configuration tool for RNBD driver and RTRS library.
 .SH SYNOPSIS
@@ -9,6 +9,7 @@ rnbd client|server|help|version ...
     --verbose       Verbose output
     --debug         Debug mode
     --simulate      Only print modifying operations, do not execute
+    --term          Assume terminal output
 
 
 rnbd client|server|help|version ...
@@ -23,15 +24,15 @@ rnbd client devices|sessions|paths|help ...
 
     devices         Map/unmapped/modify devices
     sessions        Operate on sessions
-    paths           Handle paths
+    paths           Operate on paths
     help            Display help and exit
 
 
 rnbd server devices|sessions|paths|help ...
 
-    devices         List devices
+    devices         Operate on devices
     sessions        Operate on sessions
-    paths           Handle paths
+    paths           Operate on paths
     help            Display help and exit
 
 
@@ -194,9 +195,10 @@ Options:
                     tx_bytes        TX             Bytes send
                     inflights       Inflights      Inflights
                     reconnects      Reconnects     Reconnects
-                    side            Direction      Direction of the session: incoming or outgoing
+                    direction       Direction      Direction of the session: incoming or outgoing
+                    srvname         Server Name    Server name
 
-                    Default: sessname,state,path_uu,mp_short,tx_bytes,rx_bytes,inflights,reconnects
+                    Default: sessname,state,path_uu,mp_short,tx_bytes,rx_bytes,reconnects
 
     {format}        Output format: csv|json|xml
     {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
@@ -233,9 +235,10 @@ Options:
                     tx_bytes        TX             Bytes send
                     inflights       Inflights      Inflights
                     reconnects      Reconnects     Reconnects
-                    side            Direction      Direction of the session: incoming or outgoing
+                    direction       Direction      Direction of the session: incoming or outgoing
+                    srvname         Server Name    Server name
 
-                    Default: sessname,state,path_uu,mp_short,tx_bytes,rx_bytes,inflights,reconnects
+                    Default: sessname,state,path_uu,mp_short,tx_bytes,rx_bytes,reconnects
 
     {format}        Output format: csv|json|xml
     {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
@@ -378,7 +381,7 @@ Options:
 
 .B
 
-rnbd session add <session> <path> [OPTIONS]
+rnbd client path add <session> <path> [OPTIONS]
 
 Add a new path to an existing session
 
@@ -438,7 +441,6 @@ Options:
                     mapping_path    Mapping Path   Mapping name of the remote device
                     devname         Device         Device name under /dev/. I.e. rnbd0
                     devpath         Device path    Device path under /dev/. I.e. /dev/rnbd0
-                    state           State          State of the RNBD device. (client only)
                     access_mode     Access Mode    RW mode of the device: ro, rw or migration
                     rx_sect         RX             Amount of data read from the device
                     tx_sect         TX             Amount of data written to the device
@@ -473,7 +475,6 @@ Options:
                     mapping_path    Mapping Path   Mapping name of the remote device
                     devname         Device         Device name under /dev/. I.e. rnbd0
                     devpath         Device path    Device path under /dev/. I.e. /dev/rnbd0
-                    state           State          State of the RNBD device. (client only)
                     access_mode     Access Mode    RW mode of the device: ro, rw or migration
                     rx_sect         RX             Amount of data read from the device
                     tx_sect         TX             Amount of data written to the device
@@ -499,16 +500,10 @@ Options:
                     Field           Header         Description
                     sessname        Session name   Name of the session
                     path_cnt        Path cnt       Number of paths
-                    act_path_cnt    Act path cnt   Number of active paths
-                    state           State          State of the session.
-                    path_uu         PS             Up (U) or down (_) state of every path
-                    mp              MP Policy      Multipath policy
-                    mp_short        MP             Multipath policy (short)
                     rx_bytes        RX             Bytes received
                     tx_bytes        TX             Bytes send
                     inflights       Inflights      Inflights
-                    reconnects      Reconnects     Reconnects
-                    side            Direction      Direction of the session: incoming or outgoing
+                    direction       Direction      Direction of the session: incoming or outgoing
                     Default: sessname,path_cnt,tx_bytes,rx_bytes,inflights
 
     {format}        Output format: csv|json|xml
@@ -537,16 +532,10 @@ Options:
                     Field           Header         Description
                     sessname        Session name   Name of the session
                     path_cnt        Path cnt       Number of paths
-                    act_path_cnt    Act path cnt   Number of active paths
-                    state           State          State of the session.
-                    path_uu         PS             Up (U) or down (_) state of every path
-                    mp              MP Policy      Multipath policy
-                    mp_short        MP             Multipath policy (short)
                     rx_bytes        RX             Bytes received
                     tx_bytes        TX             Bytes send
                     inflights       Inflights      Inflights
-                    reconnects      Reconnects     Reconnects
-                    side            Direction      Direction of the session: incoming or outgoing
+                    direction       Direction      Direction of the session: incoming or outgoing
                     Default: sessname,path_cnt,tx_bytes,rx_bytes,inflights
 
     {format}        Output format: csv|json|xml
@@ -588,11 +577,9 @@ Options:
                     dst_addr_s      Server Addr    Normalized server address.
                     hca_name        HCA            HCA name
                     hca_port        Port           HCA port
-                    state           State          Name of the path
                     rx_bytes        RX             Bytes received
                     tx_bytes        TX             Bytes send
                     inflights       Inflights      Inflights
-                    reconnects      Reconnects     Reconnects
                     direction       Direction      Direction of the path: incoming or outgoing
                     Default: sessname,hca_name,hca_port,src_addr_s,tx_bytes,rx_bytes,inflights
 
@@ -628,11 +615,9 @@ Options:
                     dst_addr_s      Server Addr    Normalized server address.
                     hca_name        HCA            HCA name
                     hca_port        Port           HCA port
-                    state           State          Name of the path
                     rx_bytes        RX             Bytes received
                     tx_bytes        TX             Bytes send
                     inflights       Inflights      Inflights
-                    reconnects      Reconnects     Reconnects
                     direction       Direction      Direction of the path: incoming or outgoing
                     Default: sessname,hca_name,hca_port,src_addr_s,tx_bytes,rx_bytes,inflights
 
