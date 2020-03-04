@@ -1334,6 +1334,24 @@ static int find_paths_all(const char *name, enum rnbdmode rnbdmode,
 	return cnt_clt + cnt_srv;
 }
 
+static void list_default(struct rnbd_ctx *ctx)
+{
+	memcpy(&(ctx->clms_devices_clt), &def_clms_devices_clt,
+	       ARRSIZE(def_clms_devices_clt) * sizeof(all_clms_devices[0]));
+	memcpy(&(ctx->clms_devices_srv), &def_clms_devices_srv,
+	       ARRSIZE(def_clms_devices_srv) * sizeof(all_clms_devices[0]));
+
+	memcpy(&(ctx->clms_sessions_clt), &def_clms_sessions_clt,
+	       ARRSIZE(def_clms_sessions_clt) * sizeof(all_clms_sessions[0]));
+	memcpy(&(ctx->clms_sessions_srv), &def_clms_sessions_srv,
+	       ARRSIZE(def_clms_sessions_srv) * sizeof(all_clms_sessions[0]));
+
+	memcpy(&(ctx->clms_paths_clt), &def_clms_paths_clt,
+	       ARRSIZE(def_clms_paths_clt) * sizeof(all_clms_paths[0]));
+	memcpy(&(ctx->clms_paths_srv), &def_clms_paths_srv,
+	       ARRSIZE(def_clms_paths_srv) * sizeof(all_clms_paths[0]));
+}
+
 static int show_path(struct rnbd_path **pp_clt, struct rnbd_path **pp_srv,
 		     struct rnbd_ctx *ctx)
 {
@@ -1458,6 +1476,9 @@ static int show_all(const char *name, struct rnbd_ctx *ctx)
 			     &c_ds_clt, ds_srv, &c_ds_srv);
 	if (c_pp + c_ss + c_ds > 1) {
 		ERR(ctx->trm, "Multiple entries match '%s'\n", name);
+
+		list_default(ctx);
+
 		if (c_pp) {
 			printf("Paths:\n");
 			list_paths(pp_clt, c_pp_clt,
@@ -1516,6 +1537,8 @@ static int show_devices(const char *name, struct rnbd_ctx *ctx)
 	if (c_ds > 1) {
 		ERR(ctx->trm, "Multiple devices match '%s'\n", name);
 
+		list_default(ctx);
+
 		printf("Devices:\n");
 		list_devices(ds_clt, c_ds_clt, ds_srv, c_ds_srv, false, ctx);
 
@@ -1556,6 +1579,8 @@ static int show_client_sessions(const char *name, struct rnbd_ctx *ctx)
 	if (c_ss_clt > 1) {
 		ERR(ctx->trm, "Multiple sessions match '%s'\n", name);
 
+		list_default(ctx);
+
 		printf("Sessions:\n");
 		list_sessions(ss_clt, c_ss_clt, NULL, 0, false, ctx);
 
@@ -1594,6 +1619,8 @@ static int show_server_sessions(const char *name, struct rnbd_ctx *ctx)
 
 	if (c_ss_srv > 1) {
 		ERR(ctx->trm, "Multiple sessions match '%s'\n", name);
+
+		list_default(ctx);
 
 		printf("Sessions:\n");
 		list_sessions(NULL, 0, ss_srv, c_ss_srv, false, ctx);
@@ -1645,6 +1672,8 @@ static int show_both_sessions(const char *name, struct rnbd_ctx *ctx)
 	if (c_ss_clt + c_ss_srv > 1) {
 		ERR(ctx->trm, "Multiple sessions match '%s'\n", name);
 
+		list_default(ctx);
+
 		printf("Sessions:\n");
 		list_sessions(ss_clt, c_ss_clt, ss_srv, c_ss_srv, false, ctx);
 
@@ -1685,6 +1714,8 @@ static int show_paths(const char *name, struct rnbd_ctx *ctx)
 
 	if (c_pp > 1) {
 		ERR(ctx->trm, "Multiple paths match '%s'\n", name);
+
+		list_default(ctx);
 
 		printf("Paths:\n");
 		list_paths(pp_clt, c_pp_clt, pp_srv, c_pp_srv, false, ctx);
@@ -3480,23 +3511,9 @@ static void init_rnbd_ctx(struct rnbd_ctx *ctx)
 {
 	memset(ctx, 0, sizeof(struct rnbd_ctx));
 
-	memcpy(&(ctx->clms_devices_clt), &def_clms_devices_clt,
-	       ARRSIZE(def_clms_devices_clt) * sizeof(all_clms_devices[0]));
-	memcpy(&(ctx->clms_devices_srv), &def_clms_devices_srv,
-	       ARRSIZE(def_clms_devices_srv) * sizeof(all_clms_devices[0]));
-
-	memcpy(&(ctx->clms_sessions_clt), &def_clms_sessions_clt,
-	       ARRSIZE(def_clms_sessions_clt) * sizeof(all_clms_sessions[0]));
-	memcpy(&(ctx->clms_sessions_srv), &def_clms_sessions_srv,
-	       ARRSIZE(def_clms_sessions_srv) * sizeof(all_clms_sessions[0]));
-
-	memcpy(&(ctx->clms_paths_clt), &def_clms_paths_clt,
-	       ARRSIZE(def_clms_paths_clt) * sizeof(all_clms_paths[0]));
-	memcpy(&(ctx->clms_paths_srv), &def_clms_paths_srv,
-	       ARRSIZE(def_clms_paths_srv) * sizeof(all_clms_paths[0]));
-
+	list_default(ctx);
+	
 	ctx->trm = (isatty(STDOUT_FILENO) == 1);
-
 }
 
 static void deinit_rnbd_ctx(struct rnbd_ctx *ctx)
@@ -4999,10 +5016,12 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 	if (argc < 1) {
 		usage_param("rnbd both", params_both_help, ctx);
-		if (ctx->complete_set)
+		if (ctx->complete_set) {
 			err = -EAGAIN;
-		else
+		} else {
+			ERR(ctx->trm, "no object specified\n");
 			err = -EINVAL;
+		}
 	}
 	if (err >= 0) {
 		param = find_param(*argv, params_both);
