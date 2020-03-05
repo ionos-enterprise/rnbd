@@ -4152,41 +4152,12 @@ int cmd_server_session_disconnect(int argc, const char *argv[], const struct par
 				    server_path_disconnect,
 				    ctx);
 }
-int cmd_server_path_disconnect(int argc, const char *argv[], const struct param *cmd,
-			       const char *help_context, struct rnbd_ctx *ctx)
-{
-	int accepted = 0;
-	int err = parse_name_help(argc--, argv++,
-				  help_context, cmd, ctx);
-	if (err < 0)
-		return err;
 
-	err = parse_map_parameters(argc, argv, &accepted,
-				   params_default,
-				   ctx, cmd, help_context);
-	if (err < 0)
-		return err;
-	
-	argc -= err; argv += err;
-	
-	if (argc > 0) {
-		
-		handle_unknown_param(*argv, params_default, ctx);
-		return -EINVAL;
-	}
-	if (ctx->path_cnt == 0) {
-		err = server_path_disconnect(NULL, ctx->name, ctx);
-	} else if (ctx->path_cnt == 1) {
-		err = server_path_disconnect(ctx->name, ctx->paths[0].provided, ctx);
-	} else {
-		ERR(ctx->trm, "Multiple paths specified\n");
-		err = -EINVAL;
-	}
-	return err;
-}
-
-int cmd_client_path_disconnect(int argc, const char *argv[], const struct param *cmd,
-			       const char *help_context, struct rnbd_ctx *ctx)
+int cmd_path_operation(int (*operation)(const char *session_name,
+					const char *path_name,
+					struct rnbd_ctx *ctx),
+		       int argc, const char *argv[], const struct param *cmd,
+		       const char *help_context, struct rnbd_ctx *ctx)
 {
 	int accepted = 0;
 	int err = parse_name_help(argc--, argv++,
@@ -4208,42 +4179,9 @@ int cmd_client_path_disconnect(int argc, const char *argv[], const struct param 
 		return -EINVAL;
 	}
 	if (ctx->path_cnt == 0) {
-		err = client_path_disconnect(NULL, ctx->name, ctx);
+		err = (*operation)(NULL, ctx->name, ctx);
 	} else if (ctx->path_cnt == 1) {
-		err = client_path_disconnect(ctx->name, ctx->paths[0].provided, ctx);
-	} else {
-		ERR(ctx->trm, "Multiple paths specified\n");
-		err = -EINVAL;
-	}
-	return err;
-}
-
-int cmd_client_path_reconnect(int argc, const char *argv[], const struct param *cmd,
-			      const char *help_context, struct rnbd_ctx *ctx)
-{
-	int accepted = 0;
-	int err = parse_name_help(argc--, argv++,
-				  help_context, cmd, ctx);
-	if (err < 0)
-		return err;
-	
-	err = parse_map_parameters(argc, argv, &accepted,
-				   params_default,
-				   ctx, cmd, help_context);
-	if (err < 0)
-		return err;
-	
-	argc -= err; argv += err;
-	
-	if (argc > 0) {
-		
-		handle_unknown_param(*argv, params_default, ctx);
-		return -EINVAL;
-	}
-	if (ctx->path_cnt == 0) {
-		err = client_path_reconnect(NULL, ctx->name, ctx);
-	} else if (ctx->path_cnt == 1) {
-		err = client_path_reconnect(ctx->name, ctx->paths[0].provided, ctx);
+		err = (*operation)(ctx->name, ctx->paths[0].provided, ctx);
 	} else {
 		ERR(ctx->trm, "Multiple paths specified\n");
 		err = -EINVAL;
@@ -4644,10 +4582,12 @@ int cmd_client_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = show_paths(NULL, ctx->name, ctx);
 			break;
 		case TOK_DISCONNECT:
-			err = cmd_client_path_disconnect(argc, argv, cmd, _help_context, ctx);
+			err = cmd_path_operation(client_path_disconnect,
+						 argc, argv, cmd, _help_context, ctx);
 			break;
 		case TOK_RECONNECT:
-			err = cmd_client_path_reconnect(argc, argv, cmd, _help_context, ctx);
+			err = cmd_path_operation(client_path_reconnect,
+						 argc, argv, cmd, _help_context, ctx);
 			break;
 		case TOK_ADD:
 			err = cmd_path_add(argc, argv, cmd, _help_context, ctx);
@@ -4871,7 +4811,8 @@ int cmd_server_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = show_paths(NULL, ctx->name, ctx);
 			break;
 		case TOK_DISCONNECT:
-			err = cmd_server_path_disconnect(argc, argv, cmd, _help_context, ctx);
+			err = cmd_path_operation(server_path_disconnect,
+						 argc, argv, cmd, _help_context, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, NULL, ctx);
