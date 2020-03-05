@@ -1700,10 +1700,11 @@ out:
 	return ret;
 }
 
-static int show_paths(const char *session_name, const char *path_name, struct rnbd_ctx *ctx)
+static int show_paths(const char *name, struct rnbd_ctx *ctx)
 {
 	struct rnbd_path **pp_clt, **pp_srv;
 	int c_pp_clt, c_pp_srv, c_pp = 0, ret;
+	const char *session_name; const char *path_name;
 
 	pp_clt = calloc(paths_clt_cnt, sizeof(*pp_clt));
 	pp_srv = calloc(paths_srv_cnt, sizeof(*pp_srv));
@@ -1714,15 +1715,22 @@ static int show_paths(const char *session_name, const char *path_name, struct rn
 		ret = -ENOMEM;
 		goto out;
 	}
+	if (ctx->path_cnt == 1) {
+		session_name = name;
+		path_name = ctx->paths[0].provided;
+	} else {
+		session_name = NULL;
+		path_name = name;
+		if (ctx->path_cnt > 1)
+			ERR(ctx->trm, "Multiple paths specified\n");
+	}
 	c_pp = find_paths_all(session_name, path_name,
 			      ctx->rnbdmode, pp_clt,
 			      &c_pp_clt, pp_srv, &c_pp_srv);
 
 	if (c_pp > 1) {
-		if (session_name)
-			ERR(ctx->trm, "Multiple paths match '%s %s'\n", session_name, path_name);
-		else
-			ERR(ctx->trm, "Multiple paths match '%s'\n", path_name);
+
+		ERR(ctx->trm, "Multiple paths match '%s'\n", name);
 
 		list_default(ctx);
 
@@ -1735,6 +1743,8 @@ static int show_paths(const char *session_name, const char *path_name, struct rn
 
 	if (c_pp) {
 		ret = show_path(pp_clt, pp_srv, ctx);
+		if (ret == 0 && ctx->path_cnt > 1)
+			ret = -EINVAL;
 	} else {
 		if (session_name)
 			ERR(ctx->trm, "There is no path matching '%s %s'\n", session_name, path_name);
@@ -3652,7 +3662,7 @@ static int init_show(enum rnbdmode rnbdmode,
  */
 int parse_list_parameters(int argc, const char *argv[], struct rnbd_ctx *ctx,
 		int (*parse_clms)(const char *arg, struct rnbd_ctx *ctx),
-		const struct param *cmd, const char *program_name)
+			  const struct param *cmd, const char *program_name, int allow_paths)
 {
 	int err = 0; int start_argc = argc;
 	const struct param *param;
@@ -3673,18 +3683,27 @@ int parse_list_parameters(int argc, const char *argv[], struct rnbd_ctx *ctx,
 
 			argc--; argv++;
 			continue;
-		} else if (err == -EINVAL) {
+		}
+		if (err == -EINVAL) {
 
 			err = parse_precision(*argv, ctx);
 			if (err == 0) {
 				argc--; argv++;
+				continue;
 			}
+		}
+		if (err == -EINVAL && allow_paths)
+			err = parse_path(*argv, ctx);
+
+		if (err == 0) {
+
+			argc--; argv++;
 		}
 	}
 	if (ctx->help_set) {
 		cmd->help(program_name, cmd, ctx);
 		err = -EAGAIN;
-	} else if (err < 0) {
+	} else if (err == -EINVAL) {
 		handle_unknown_param(*argv, params_list_parameters, ctx);
 	}
 	return err < 0 ? err : start_argc - argc;
@@ -3789,7 +3808,7 @@ int cmd_dump_all(int argc, const char *argv[], const struct param *cmd,
 	/* parse from beginning again! */
 	err = parse_list_parameters(argc, argv, ctx,
 				    parse_both_clms,
-				    cmd, "");
+				    cmd, "", 0);
 	if (err < 0)
 		return err;
 
@@ -4232,7 +4251,7 @@ int cmd_both_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_both_sessions_clms,
-						    cmd, _help_context);
+						    cmd, _help_context, 0);
 			if (err < 0)
 				break;
 
@@ -4249,7 +4268,7 @@ int cmd_both_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_both_sessions_clms,
-						    cmd, _help_context);
+						    cmd, _help_context, 0);
 			if (err < 0)
 				break;
 
@@ -4311,7 +4330,7 @@ int cmd_both_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_both_paths_clms,
-						    cmd, _help_context_both);
+						    cmd, _help_context_both, 0);
 			if (err < 0)
 				break;
 
@@ -4329,11 +4348,11 @@ int cmd_both_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_both_paths_clms,
-						    cmd, _help_context_both);
+						    cmd, _help_context_both, 1);
 			if (err < 0)
 				break;
 
-			err = show_paths(NULL, ctx->name, ctx);
+			err = show_paths(ctx->name, ctx);
 			break;
 		case TOK_ADD:
 			err = cmd_path_add(argc, argv, cmd, _help_context_client, ctx);
@@ -4398,7 +4417,7 @@ int cmd_client_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_clt_sessions_clms,
-						    cmd, _help_context);
+						    cmd, _help_context, 0);
 			if (err < 0)
 				break;
 
@@ -4415,7 +4434,7 @@ int cmd_client_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_clt_sessions_clms,
-						    cmd, _help_context);
+						    cmd, _help_context, 0);
 			if (err < 0)
 				break;
 
@@ -4478,7 +4497,7 @@ int cmd_client_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = parse_list_parameters(argc, argv, ctx,
 						    (ctx->rnbdmode == RNBD_CLIENT ?
 						     parse_clt_devices_clms : parse_both_devices_clms),
-						    cmd, _help_context_both);
+						    cmd, _help_context_both, 0);
 			if (err < 0)
 				break;
 
@@ -4496,7 +4515,7 @@ int cmd_client_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = parse_list_parameters(argc, argv, ctx,
 						    (ctx->rnbdmode == RNBD_CLIENT ?
 						     parse_clt_devices_clms : parse_both_devices_clms),
-						    cmd, _help_context_both);
+						    cmd, _help_context_both, 0);
 			if (err < 0)
 				break;
 
@@ -4560,7 +4579,7 @@ int cmd_client_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_clt_paths_clms,
-						    cmd, _help_context);
+						    cmd, _help_context, 0);
 			if (err < 0)
 				break;
 
@@ -4577,11 +4596,11 @@ int cmd_client_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_clt_paths_clms,
-						    cmd, _help_context);
+						    cmd, _help_context, 1);
 			if (err < 0)
 				break;
 
-			err = show_paths(NULL, ctx->name, ctx);
+			err = show_paths(ctx->name, ctx);
 			break;
 		case TOK_DISCONNECT:
 			err = cmd_path_operation(client_path_disconnect,
@@ -4650,7 +4669,7 @@ int cmd_server_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_srv_sessions_clms,
-						    cmd, _help_context);
+						    cmd, _help_context, 0);
 			if (err < 0)
 				break;
 
@@ -4667,7 +4686,7 @@ int cmd_server_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_srv_sessions_clms,
-						    cmd, _help_context);
+						    cmd, _help_context, 0);
 			if (err < 0)
 				break;
 
@@ -4723,7 +4742,7 @@ int cmd_server_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_srv_devices_clms,
-						    cmd, _help_context);
+						    cmd, _help_context, 0);
 			if (err < 0)
 				break;
 
@@ -4740,7 +4759,7 @@ int cmd_server_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_srv_devices_clms,
-						    cmd, _help_context);
+						    cmd, _help_context, 0);
 			if (err < 0)
 				break;
 
@@ -4791,7 +4810,7 @@ int cmd_server_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		case TOK_LIST:
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_srv_paths_clms,
-						    cmd, _help_context);
+						    cmd, _help_context, 0);
 			if (err < 0)
 				break;
 
@@ -4808,11 +4827,11 @@ int cmd_server_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_srv_devices_clms,
-						    cmd, _help_context);
+						    cmd, _help_context, 1);
 			if (err < 0)
 				break;
 
-			err = show_paths(NULL, ctx->name, ctx);
+			err = show_paths(ctx->name, ctx);
 			break;
 		case TOK_DISCONNECT:
 			err = cmd_path_operation(server_path_disconnect,
@@ -4882,7 +4901,7 @@ int cmd_client(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_clt_devices_clms,
-						    param, _help_context);
+						    param, _help_context, 0);
 			if (err < 0)
 				break;
 
@@ -4899,7 +4918,7 @@ int cmd_client(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_clt_clms,
-						    param, _help_context);
+						    param, _help_context, 0);
 			if (err < 0)
 				break;
 
@@ -4987,7 +5006,7 @@ int cmd_server(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_srv_devices_clms,
-						    param, _help_context);
+						    param, _help_context, 0);
 			if (err < 0)
 				break;
 
@@ -5004,7 +5023,7 @@ int cmd_server(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_srv_clms,
-						    param, _help_context);
+						    param, _help_context, 0);
 			if (err < 0)
 				break;
 
@@ -5079,7 +5098,7 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		case TOK_LIST:
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_both_devices_clms,
-						    param, "");
+						    param, "", 0);
 			if (err < 0)
 				break;
 
@@ -5097,7 +5116,7 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_both_clms,
-						    param, "");
+						    param, "", 0);
 			if (err < 0)
 				break;
 
