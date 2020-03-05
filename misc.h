@@ -41,6 +41,7 @@ enum rnbd_size_state {
 };
 
 struct path {
+	const char *provided;
 	const char *src;
 	const char *dst;
 };

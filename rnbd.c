@@ -1242,6 +1242,7 @@ static int parse_path1(const char *arg,
 	if (!is_path_addr(dst))
 		goto free_error;
 
+	path->provided = strdup(arg);
 	path->src = src;
 	path->dst = dst;
 
@@ -1302,13 +1303,15 @@ static bool match_path(struct rnbd_path *p, const char *name)
 	return false;
 }
 
-static int find_paths(const char *name, struct rnbd_path **pp,
-		      struct rnbd_path **res)
+static int find_paths(const char *session_name, const char *path_name,
+		      struct rnbd_path **pp, struct rnbd_path **res)
 {
 	int i, cnt = 0;
 
 	for (i = 0; pp[i]; i++)
-		if (match_path(pp[i], name))
+		if (match_path(pp[i], path_name)
+		    && (session_name == NULL
+			|| !strcmp(session_name, pp[i]->sess->sessname)))
 			res[cnt++] = pp[i];
 
 	res[cnt] = NULL;
@@ -1316,7 +1319,9 @@ static int find_paths(const char *name, struct rnbd_path **pp,
 	return cnt;
 }
 
-static int find_paths_all(const char *name, enum rnbdmode rnbdmode,
+static int find_paths_all(const char *session_name,
+			  const char *path_name,
+			  enum rnbdmode rnbdmode,
 			  struct rnbd_path **pp_clt,
 			  int *pp_clt_cnt, struct rnbd_path **pp_srv,
 			  int *pp_srv_cnt)
@@ -1324,9 +1329,9 @@ static int find_paths_all(const char *name, enum rnbdmode rnbdmode,
 	int cnt_clt = 0, cnt_srv = 0;
 
 	if (rnbdmode & RNBD_CLIENT)
-		cnt_clt = find_paths(name, paths_clt, pp_clt);
+		cnt_clt = find_paths(session_name, path_name, paths_clt, pp_clt);
 	if (rnbdmode & RNBD_SERVER)
-		cnt_srv = find_paths(name, paths_srv, pp_srv);
+		cnt_srv = find_paths(session_name, path_name, paths_srv, pp_srv);
 
 	*pp_clt_cnt = cnt_clt;
 	*pp_srv_cnt = cnt_srv;
@@ -1468,7 +1473,7 @@ static int show_all(const char *name, struct rnbd_ctx *ctx)
 		ret = -ENOMEM;
 		goto out;
 	}
-	c_pp = find_paths_all(name, ctx->rnbdmode, pp_clt, &c_pp_clt, pp_srv,
+	c_pp = find_paths_all(NULL, name, ctx->rnbdmode, pp_clt, &c_pp_clt, pp_srv,
 			      &c_pp_srv);
 	c_ss = find_sess_match_all(name, ctx->rnbdmode, ss_clt,
 			     &c_ss_clt, ss_srv, &c_ss_srv);
@@ -1695,7 +1700,7 @@ out:
 	return ret;
 }
 
-static int show_paths(const char *name, struct rnbd_ctx *ctx)
+static int show_paths(const char *session_name, const char *path_name, struct rnbd_ctx *ctx)
 {
 	struct rnbd_path **pp_clt, **pp_srv;
 	int c_pp_clt, c_pp_srv, c_pp = 0, ret;
@@ -1709,11 +1714,15 @@ static int show_paths(const char *name, struct rnbd_ctx *ctx)
 		ret = -ENOMEM;
 		goto out;
 	}
-	c_pp = find_paths_all(name, ctx->rnbdmode, pp_clt,
+	c_pp = find_paths_all(session_name, path_name,
+			      ctx->rnbdmode, pp_clt,
 			      &c_pp_clt, pp_srv, &c_pp_srv);
 
 	if (c_pp > 1) {
-		ERR(ctx->trm, "Multiple paths match '%s'\n", name);
+		if (session_name)
+			ERR(ctx->trm, "Multiple paths match '%s %s'\n", session_name, path_name);
+		else
+			ERR(ctx->trm, "Multiple paths match '%s'\n", path_name);
 
 		list_default(ctx);
 
@@ -1727,7 +1736,10 @@ static int show_paths(const char *name, struct rnbd_ctx *ctx)
 	if (c_pp) {
 		ret = show_path(pp_clt, pp_srv, ctx);
 	} else {
-		ERR(ctx->trm, "There is no path matching '%s'\n", name);
+		if (session_name)
+			ERR(ctx->trm, "There is no path matching '%s %s'\n", session_name, path_name);
+		else
+			ERR(ctx->trm, "There is no path matching '%s'\n", path_name);
 		ret = -ENOENT;
 	}
 out:
@@ -2013,10 +2025,11 @@ static struct rnbd_sess *find_single_session(const char *session_name,
 	return res;
 }
 
-static struct rnbd_path *find_single_path(const char *path_name,
-					   struct rnbd_ctx *ctx,
-					   struct rnbd_path **paths,
-					   int path_cnt)
+static struct rnbd_path *find_single_path(const char *session_name,
+					  const char *path_name,
+					  struct rnbd_ctx *ctx,
+					  struct rnbd_path **paths,
+					  int path_cnt)
 {
 	struct rnbd_path **matching_paths, *res = NULL;
 	int match_count;
@@ -2033,7 +2046,7 @@ static struct rnbd_path *find_single_path(const char *path_name,
 		ERR(ctx->trm, "Failed to alloc memory\n");
 		return NULL;
 	}
-	match_count = find_paths(path_name, paths, matching_paths);
+	match_count = find_paths(session_name, path_name, paths, matching_paths);
 
 	if (match_count == 1) {
 		res = *matching_paths;
@@ -2061,7 +2074,7 @@ static int client_devices_map(const char *from_name, const char *device_name,
 
 		/* User provided only a path to designate a session to use. */
 
-		path = find_single_path(ctx->paths[0].dst, ctx,
+		path = find_single_path(NULL, ctx->paths[0].dst, ctx,
 					paths_clt, paths_clt_cnt);
 		if (path) {
 			sess = path->sess;
@@ -2334,7 +2347,7 @@ static int client_devices_remap(const char *device_name, struct rnbd_ctx *ctx)
 }
 
 static int client_session_remap(const char *session_name,
-				 struct rnbd_ctx *ctx)
+				struct rnbd_ctx *ctx)
 {
 	int tmp_err, err = 0;
 	struct rnbd_sess_dev *const *sds_iter;
@@ -2365,7 +2378,8 @@ static int client_session_remap(const char *session_name,
 
 static int session_do_all_paths(enum rnbdmode mode,
 				const char *session_name,
-				int (*do_it)(const char *path_name,
+				int (*do_it)(const char *session_name,
+					     const char *path_name,
 					     struct rnbd_ctx *ctx),
 				struct rnbd_ctx *ctx)
 {
@@ -2398,7 +2412,7 @@ static int session_do_all_paths(enum rnbdmode mode,
 	     *paths_iter && !err; paths_iter++) {
 
 		if ((*paths_iter)->sess == sess)
-			err = do_it((*paths_iter)->pathname, ctx);
+			err = do_it(session_name, (*paths_iter)->pathname, ctx);
 	}
 	return err;
 }
@@ -2609,7 +2623,9 @@ static void help_delpath(const char *program_name,
 	print_param_descr("help");
 }
 
-static int client_path_do(const char *path_name, const char *sysfs_entry,
+static int client_path_do(const char *session_name,
+			  const char *path_name,
+			  const char *sysfs_entry,
 			  const char *message_success,
 			  const char *message_fail, struct rnbd_ctx *ctx)
 {
@@ -2617,7 +2633,8 @@ static int client_path_do(const char *path_name, const char *sysfs_entry,
 	struct rnbd_path *path;
 	int ret;
 
-	path = find_single_path(path_name, ctx, paths_clt, paths_clt_cnt);
+	path = find_single_path(session_name, path_name,
+				ctx, paths_clt, paths_clt_cnt);
 
 	if (!path)
 		return -EINVAL;
@@ -2636,41 +2653,45 @@ static int client_path_do(const char *path_name, const char *sysfs_entry,
 	return ret;
 }
 
-static int client_path_delete(const char *path_name,
-				 struct rnbd_ctx *ctx)
+static int client_path_delete(const char *session_name,
+			      const char *path_name,
+			      struct rnbd_ctx *ctx)
 {
-	return client_path_do(path_name, "remove_path",
-				 "Successfully removed path '%s' from '%s'.\n",
-				 "Failed to remove path '%s' from session '%s': %s (%d)\n",
-				 ctx);
+	return client_path_do(session_name, path_name, "remove_path",
+			      "Successfully removed path '%s' from '%s'.\n",
+			      "Failed to remove path '%s' from session '%s': %s (%d)\n",
+			      ctx);
 }
 
-static int client_path_reconnect(const char *path_name,
-				    struct rnbd_ctx *ctx)
+static int client_path_reconnect(const char *session_name,
+				 const char *path_name,
+				 struct rnbd_ctx *ctx)
 {
-	return client_path_do(path_name, "reconnect",
+	return client_path_do(session_name, path_name, "reconnect",
 			      "Successfully reconnected path '%s' of session '%s'.\n",
 			      "Failed to reconnect path '%s' from session '%s': %s (%d)\n",
 			      ctx);
 }
 
-static int client_path_disconnect(const char *path_name,
+static int client_path_disconnect(const char *session_name,
+				  const char *path_name,
 				  struct rnbd_ctx *ctx)
 {
-	return client_path_do(path_name, "disconnect",
+	return client_path_do(session_name, path_name, "disconnect",
 			      "Successfully disconnected path '%s' from session '%s'.\n",
 			      "Failed to disconnect path '%s' of session '%s': %s (%d)\n",
 			      ctx);
 }
 
-static int client_path_readd(const char *path_name,
+static int client_path_readd(const char *session_name,
+			     const char *path_name,
 			     struct rnbd_ctx *ctx)
 {
 	char sysfs_path[4096];
 	struct rnbd_path *path;
 	int ret;
 
-	path = find_single_path(path_name, ctx, paths_clt, paths_clt_cnt);
+	path = find_single_path(session_name, path_name, ctx, paths_clt, paths_clt_cnt);
 
 	if (!path)
 		return -EINVAL;
@@ -2706,14 +2727,15 @@ static int client_path_readd(const char *path_name,
 	return ret;
 }
 
-static int server_path_disconnect(const char *path_name,
+static int server_path_disconnect(const char *session_name,
+				  const char *path_name,
 				  struct rnbd_ctx *ctx)
 {
 	char sysfs_path[4096];
 	struct rnbd_path *path;
 	int ret;
 
-	path = find_single_path(path_name, ctx, paths_srv, paths_srv_cnt);
+	path = find_single_path(session_name, path_name, ctx, paths_srv, paths_srv_cnt);
 
 	if (!path)
 		return -EINVAL;
@@ -3525,6 +3547,8 @@ static void deinit_rnbd_ctx(struct rnbd_ctx *ctx)
 			free((char *)ctx->paths[i].src);
 		if (ctx->paths[i].dst)
 			free((char *)ctx->paths[i].dst);
+		if (ctx->paths[i].provided)
+			free((char *)ctx->paths[i].provided);
 	}
 }
 
@@ -4040,7 +4064,7 @@ int cmd_path_delete(int argc, const char *argv[], const struct param *cmd,
 		handle_unknown_param(*argv, params_default, ctx);
 		return -EINVAL;
 	}
-	return client_path_delete(ctx->name, ctx);
+	return client_path_delete(NULL, ctx->name, ctx);
 }
 
 int cmd_path_readd(int argc, const char *argv[], const struct param *cmd,
@@ -4063,7 +4087,168 @@ int cmd_path_readd(int argc, const char *argv[], const struct param *cmd,
 		handle_unknown_param(*argv, params_default, ctx);
 		return -EINVAL;
 	}
-	return client_path_readd(ctx->name, ctx);
+	return client_path_readd(NULL, ctx->name, ctx);
+}
+
+int cmd_client_session_reconnect(int argc, const char *argv[], const struct param *cmd,
+				 const char *help_context, struct rnbd_ctx *ctx)
+{
+	int err = parse_name_help(argc--, argv++,
+				  help_context, cmd, ctx);
+	if (err < 0)
+		return err;
+	
+	err = parse_cmd_parameters(argc, argv,
+				   params_default,
+				   ctx, cmd, help_context);
+	if (err < 0)
+		return err;
+	
+	argc -= err; argv += err;
+	
+	if (argc > 0) {
+		
+		handle_unknown_param(*argv,
+				     params_default, ctx);
+		return -EINVAL;
+	}
+	/* We want the session to change it's state to */
+	/* disconnected. So disconnect all paths first.*/
+	err = session_do_all_paths(RNBD_CLIENT, ctx->name,
+				   client_path_disconnect,
+				   ctx);
+	/* If the session does not exist at all we will   */
+	/* get -EINVAL. In all other error cases we try   */
+	/* to reconnect the path to reconnect the session.*/
+	if (err != -EINVAL)
+		err = session_do_all_paths(RNBD_CLIENT,
+					   ctx->name,
+					   client_path_reconnect,
+					   ctx);
+	return err;
+}
+
+int cmd_server_session_disconnect(int argc, const char *argv[], const struct param *cmd,
+				  const char *help_context, struct rnbd_ctx *ctx)
+{
+	int err = parse_name_help(argc--, argv++,
+				  help_context, cmd, ctx);
+	if (err < 0)
+		return err;
+	
+	err = parse_cmd_parameters(argc, argv,
+				   params_default,
+				   ctx, cmd, help_context);
+	if (err < 0)
+		return err;
+	
+	argc -= err; argv += err;
+	
+	if (argc > 0) {
+		
+		return -EINVAL;
+	}
+	return session_do_all_paths(RNBD_SERVER, ctx->name,
+				    server_path_disconnect,
+				    ctx);
+}
+int cmd_server_path_disconnect(int argc, const char *argv[], const struct param *cmd,
+			       const char *help_context, struct rnbd_ctx *ctx)
+{
+	int accepted = 0;
+	int err = parse_name_help(argc--, argv++,
+				  help_context, cmd, ctx);
+	if (err < 0)
+		return err;
+
+	err = parse_map_parameters(argc, argv, &accepted,
+				   params_default,
+				   ctx, cmd, help_context);
+	if (err < 0)
+		return err;
+	
+	argc -= err; argv += err;
+	
+	if (argc > 0) {
+		
+		handle_unknown_param(*argv, params_default, ctx);
+		return -EINVAL;
+	}
+	if (ctx->path_cnt == 0) {
+		err = server_path_disconnect(NULL, ctx->name, ctx);
+	} else if (ctx->path_cnt == 1) {
+		err = server_path_disconnect(ctx->name, ctx->paths[0].provided, ctx);
+	} else {
+		ERR(ctx->trm, "Multiple paths specified\n");
+		err = -EINVAL;
+	}
+	return err;
+}
+
+int cmd_client_path_disconnect(int argc, const char *argv[], const struct param *cmd,
+			       const char *help_context, struct rnbd_ctx *ctx)
+{
+	int accepted = 0;
+	int err = parse_name_help(argc--, argv++,
+				  help_context, cmd, ctx);
+	if (err < 0)
+		return err;
+	
+	err = parse_map_parameters(argc, argv, &accepted,
+				   params_default,
+				   ctx, cmd, help_context);
+	if (err < 0)
+		return err;
+	
+	argc -= err; argv += err;
+	
+	if (argc > 0) {
+		
+		handle_unknown_param(*argv, params_default, ctx);
+		return -EINVAL;
+	}
+	if (ctx->path_cnt == 0) {
+		err = client_path_disconnect(NULL, ctx->name, ctx);
+	} else if (ctx->path_cnt == 1) {
+		err = client_path_disconnect(ctx->name, ctx->paths[0].provided, ctx);
+	} else {
+		ERR(ctx->trm, "Multiple paths specified\n");
+		err = -EINVAL;
+	}
+	return err;
+}
+
+int cmd_client_path_reconnect(int argc, const char *argv[], const struct param *cmd,
+			      const char *help_context, struct rnbd_ctx *ctx)
+{
+	int accepted = 0;
+	int err = parse_name_help(argc--, argv++,
+				  help_context, cmd, ctx);
+	if (err < 0)
+		return err;
+	
+	err = parse_map_parameters(argc, argv, &accepted,
+				   params_default,
+				   ctx, cmd, help_context);
+	if (err < 0)
+		return err;
+	
+	argc -= err; argv += err;
+	
+	if (argc > 0) {
+		
+		handle_unknown_param(*argv, params_default, ctx);
+		return -EINVAL;
+	}
+	if (ctx->path_cnt == 0) {
+		err = client_path_reconnect(NULL, ctx->name, ctx);
+	} else if (ctx->path_cnt == 1) {
+		err = client_path_reconnect(ctx->name, ctx->paths[0].provided, ctx);
+	} else {
+		ERR(ctx->trm, "Multiple paths specified\n");
+		err = -EINVAL;
+	}
+	return err;
 }
 
 int cmd_ambiguous(int argc, const char *argv[], const struct param *cmd,
@@ -4210,7 +4395,7 @@ int cmd_both_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = show_paths(ctx->name, ctx);
+			err = show_paths(NULL, ctx->name, ctx);
 			break;
 		case TOK_ADD:
 			err = cmd_path_add(argc, argv, cmd, _help_context_client, ctx);
@@ -4242,7 +4427,6 @@ int cmd_both_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 	}
 	return err;
 }
-
 
 int cmd_client_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 {
@@ -4298,38 +4482,7 @@ int cmd_client_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = show_client_sessions(ctx->name, ctx);
 			break;
 		case TOK_RECONNECT:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_cmd_parameters(argc, argv, params_default,
-						   ctx, cmd, _help_context);
-			if (err < 0)
-				break;
-
-			argc -= err; argv += err;
-
-			if (argc > 0) {
-
-				handle_unknown_param(*argv,
-						     params_default, ctx);
-				err = -EINVAL;
-				break;
-			}
-			/* We want the session to change it's state to */
-			/* disconnected. So disconnect all paths first.*/
-			err = session_do_all_paths(RNBD_CLIENT, ctx->name,
-						   client_path_disconnect,
-						   ctx);
-			/* If the session does not exist at all we will   */
-			/* get -EINVAL. In all other error cases we try   */
-			/* to reconnect the path to reconnect the session.*/
-			if (err != -EINVAL)
-				err = session_do_all_paths(RNBD_CLIENT,
-							ctx->name,
-							client_path_reconnect,
-							ctx);
+			err = cmd_client_session_reconnect(argc, argv, cmd, _help_context, ctx);
 			break;
 		case TOK_REMAP:
 			err = cmd_session_remap(argc, argv, cmd,
@@ -4488,49 +4641,13 @@ int cmd_client_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = show_paths(ctx->name, ctx);
+			err = show_paths(NULL, ctx->name, ctx);
 			break;
 		case TOK_DISCONNECT:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_cmd_parameters(argc, argv, params_default,
-						   ctx, cmd, _help_context);
-			if (err < 0)
-				break;
-
-			argc -= err; argv += err;
-
-			if (argc > 0) {
-
-				handle_unknown_param(*argv, params_default, ctx);
-				err = -EINVAL;
-				break;
-			}
-			err = client_path_disconnect(ctx->name, ctx);
+			err = cmd_client_path_disconnect(argc, argv, cmd, _help_context, ctx);
 			break;
 		case TOK_RECONNECT:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_cmd_parameters(argc, argv, params_default,
-						   ctx, cmd, _help_context);
-			if (err < 0)
-				break;
-
-			argc -= err; argv += err;
-
-			if (argc > 0) {
-
-				handle_unknown_param(*argv, params_default, ctx);
-				err = -EINVAL;
-				break;
-			}
-			err = client_path_reconnect(ctx->name, ctx);
+			err = cmd_client_path_reconnect(argc, argv, cmd, _help_context, ctx);
 			break;
 		case TOK_ADD:
 			err = cmd_path_add(argc, argv, cmd, _help_context, ctx);
@@ -4613,27 +4730,7 @@ int cmd_server_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = show_server_sessions(ctx->name, ctx);
 			break;
 		case TOK_DISCONNECT:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_cmd_parameters(argc, argv, params_default,
-						   ctx, cmd, _help_context);
-			if (err < 0)
-				break;
-
-			argc -= err; argv += err;
-
-			if (argc > 0) {
-
-				handle_unknown_param(*argv, params_default, ctx);
-				err = -EINVAL;
-				break;
-			}
-			err = session_do_all_paths(RNBD_SERVER, ctx->name,
-						   server_path_disconnect,
-						   ctx);
+			err = cmd_server_session_disconnect(argc, argv, cmd, _help_context, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, NULL, ctx);
@@ -4771,28 +4868,10 @@ int cmd_server_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			if (err < 0)
 				break;
 
-			err = show_paths(ctx->name, ctx);
+			err = show_paths(NULL, ctx->name, ctx);
 			break;
 		case TOK_DISCONNECT:
-			err = parse_name_help(argc--, argv++,
-					      _help_context, cmd, ctx);
-			if (err < 0)
-				break;
-
-			err = parse_cmd_parameters(argc, argv, params_default,
-						   ctx, cmd, _help_context);
-			if (err < 0)
-				break;
-
-			argc -= err; argv += err;
-
-			if (argc > 0) {
-
-				handle_unknown_param(*argv, params_default, ctx);
-				err = -EINVAL;
-				break;
-			}
-			err = server_path_disconnect(ctx->name, ctx);
+			err = cmd_server_path_disconnect(argc, argv, cmd, _help_context, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, NULL, ctx);
