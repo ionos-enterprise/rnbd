@@ -4339,12 +4339,14 @@ int cmd_both_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = cmd_path_add(argc, argv, cmd, _help_context_client, ctx);
 			break;
 		case TOK_DELETE:
-			err = cmd_path_delete(argc, argv, cmd,
-					      _help_context_client, ctx);
+			err = cmd_path_operation(client_path_delete,
+						 argc, argv, cmd,
+						 _help_context_client, ctx);
 			break;
 		case TOK_READD:
-			err = cmd_path_readd(argc, argv, cmd,
-					     _help_context_client, ctx);
+			err = cmd_path_operation(client_path_readd,
+						 argc, argv, cmd,
+						 _help_context_client, ctx);
 			break;
 		case TOK_RECONNECT:
 		case TOK_DISCONNECT:
@@ -4593,12 +4595,14 @@ int cmd_client_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = cmd_path_add(argc, argv, cmd, _help_context, ctx);
 			break;
 		case TOK_DELETE:
-			err = cmd_path_delete(argc, argv, cmd,
-					      _help_context, ctx);
+			err = cmd_path_operation(client_path_delete,
+						 argc, argv, cmd,
+						 _help_context, ctx);
 			break;
 		case TOK_READD:
-			err = cmd_path_readd(argc, argv, cmd,
-					     _help_context, ctx);
+			err = cmd_path_operation(client_path_readd,
+						 argc, argv, cmd,
+						 _help_context, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, NULL, ctx);
