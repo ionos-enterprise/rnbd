@@ -1,4 +1,4 @@
-.TH RNBD "8" "March 2020" "rnbd 1.0.3" "System Administration Utilities"
+.TH RNBD "8" "March 2020" "rnbd 1.0.4" "System Administration Utilities"
 .SH NAME
 rnbd - Configuration tool for RNBD driver and RTRS library.
 .SH SYNOPSIS
@@ -50,9 +50,9 @@ rnbd client device list [OPTIONS]
 List information on devices.
 
 Options:
-    {fields}        Comma separated list of fields to be printed. The list can be
-                    prefixed with '+' or '-' to add or remove fields from the
-                    default selection.
+    {fields}        Comma separated list of fields to be printed.
+                    The list can be prefixed with '+' or '-' to add or remove
+                    fields from the default selection.
 
                     Field           Header         Description
                     sessname        Session        Name of the RTRS session of the device
@@ -86,9 +86,9 @@ Arguments:
                     I.e. rnbd0, /dev/rnbd0, d12aef94-4110-4321-9373-3be8494a557b.
 
 Options:
-    {fields}        Comma separated list of fields to be printed. The list can be
-                    prefixed with '+' or '-' to add or remove fields from the
-                    default selection.
+    {fields}        Comma separated list of fields to be printed.
+                    The list can be prefixed with '+' or '-' to add or remove
+                    fields from the default selection.
 
                     Field           Header         Description
                     sessname        Session        Name of the RTRS session of the device
@@ -179,9 +179,9 @@ rnbd client session list [OPTIONS]
 List information on sessions.
 
 Options:
-    {fields}        Comma separated list of fields to be printed. The list can be
-                    prefixed with '+' or '-' to add or remove fields from the
-                    default selection.
+    {fields}        Comma separated list of fields to be printed.
+                    The list can be prefixed with '+' or '-' to add or remove
+                    fields from the default selection.
 
                     Field           Header         Description
                     sessname        Session name   Name of the session
@@ -219,9 +219,9 @@ Arguments:
                     I.e. ps401a-1@st401b-2, st401b-2, <ip1>@<ip2>, etc.
 
 Options:
-    {fields}        Comma separated list of fields to be printed. The list can be
-                    prefixed with '+' or '-' to add or remove fields from the
-                    default selection.
+    {fields}        Comma separated list of fields to be printed.
+                    The list can be prefixed with '+' or '-' to add or remove
+                    fields from the default selection.
 
                     Field           Header         Description
                     sessname        Session name   Name of the session
@@ -281,9 +281,9 @@ rnbd client path list [OPTIONS]
 List information on paths.
 
 Options:
-    {fields}        Comma separated list of fields to be printed. The list can be
-                    prefixed with '+' or '-' to add or remove fields from the
-                    default selection.
+    {fields}        Comma separated list of fields to be printed.
+                    The list can be prefixed with '+' or '-' to add or remove
+                    fields from the default selection.
 
                     Field           Header         Description
                     sessname        Sessname       Name of the session.
@@ -313,18 +313,20 @@ Options:
 
 .B
 
-rnbd client path show <path> [OPTIONS]
+rnbd client path show [session] <path> [OPTIONS]
 
 Show information about an rnbd transport path.
 
 Arguments:
-    <path>          In order to display path information, path name or identifier
+    [session]       Optional session name to select a path in the case paths
+                    with same addresses are used in multiple sessions.
+    <path>          To display path information a path name or identifier
                     has to be provided, i.e. st401b-2:1.
 
 Options:
-    {fields}        Comma separated list of fields to be printed. The list can be
-                    prefixed with '+' or '-' to add or remove fields from the
-                    default selection.
+    {fields}        Comma separated list of fields to be printed.
+                    The list can be prefixed with '+' or '-' to add or remove
+                    fields from the default selection.
 
                     Field           Header         Description
                     sessname        Sessname       Name of the session.
@@ -351,11 +353,13 @@ Options:
 
 .B
 
-rnbd client path disconnect <path> [OPTIONS]
+rnbd client path disconnect [session] <path> [OPTIONS]
 
 Disconnect a path of a given session
 
 Arguments:
+    [session]       Optional session name to select a path in the case paths
+                    with same addresses are used in multiple sessions.
     <identifier>    Name or identifier of of a path:
                     [pathname], [sessname:port], etc.
 
@@ -366,11 +370,13 @@ Options:
 
 .B
 
-rnbd client path reconnect <path> [OPTIONS]
+rnbd client path reconnect [session] <path> [OPTIONS]
 
 Disconnect and connect again a single path of a session
 
 Arguments:
+    [session]       Optional session name to select a path in the case paths
+                    with same addresses are used in multiple sessions.
     <identifier>    Name or identifier of a path:
                     [pathname], [sessname:port], etc.
 
@@ -397,11 +403,13 @@ Options:
 
 .B
 
-rnbd client path delete <path> [OPTIONS]
+rnbd client path delete [session] <path> [OPTIONS]
 
 Delete a given path from the corresponding session
 
 Arguments:
+    [session]       Optional session name to select a path in the case paths
+                    with same addresses are used in multiple sessions.
     <path>          Name or any unique identifier of a path:
                     [pathname], [sessname:port], etc.
 
@@ -412,11 +420,13 @@ Options:
 
 .B
 
-rnbd client path readd <path> [OPTIONS]
+rnbd client path readd [session] <path> [OPTIONS]
 
 Delete and add again a given path to the corresponding session
 
 Arguments:
+    [session]       Optional session name to select a path in the case paths
+                    with same addresses are used in multiple sessions.
     <path>          Name or any unique identifier of a path:
                     [pathname], [sessname:port], etc.
 
@@ -432,9 +442,9 @@ rnbd server device list [OPTIONS]
 List information on devices.
 
 Options:
-    {fields}        Comma separated list of fields to be printed. The list can be
-                    prefixed with '+' or '-' to add or remove fields from the
-                    default selection.
+    {fields}        Comma separated list of fields to be printed.
+                    The list can be prefixed with '+' or '-' to add or remove
+                    fields from the default selection.
 
                     Field           Header         Description
                     sessname        Session        Name of the RTRS session of the device
@@ -466,9 +476,9 @@ Arguments:
                     I.e. rnbd0, /dev/rnbd0, d12aef94-4110-4321-9373-3be8494a557b.
 
 Options:
-    {fields}        Comma separated list of fields to be printed. The list can be
-                    prefixed with '+' or '-' to add or remove fields from the
-                    default selection.
+    {fields}        Comma separated list of fields to be printed.
+                    The list can be prefixed with '+' or '-' to add or remove
+                    fields from the default selection.
 
                     Field           Header         Description
                     sessname        Session        Name of the RTRS session of the device
@@ -493,9 +503,9 @@ rnbd server session list [OPTIONS]
 List information on sessions.
 
 Options:
-    {fields}        Comma separated list of fields to be printed. The list can be
-                    prefixed with '+' or '-' to add or remove fields from the
-                    default selection.
+    {fields}        Comma separated list of fields to be printed.
+                    The list can be prefixed with '+' or '-' to add or remove
+                    fields from the default selection.
 
                     Field           Header         Description
                     sessname        Session name   Name of the session
@@ -525,9 +535,9 @@ Arguments:
                     I.e. ps401a-1@st401b-2, st401b-2, <ip1>@<ip2>, etc.
 
 Options:
-    {fields}        Comma separated list of fields to be printed. The list can be
-                    prefixed with '+' or '-' to add or remove fields from the
-                    default selection.
+    {fields}        Comma separated list of fields to be printed.
+                    The list can be prefixed with '+' or '-' to add or remove
+                    fields from the default selection.
 
                     Field           Header         Description
                     sessname        Session name   Name of the session
@@ -564,9 +574,9 @@ rnbd server path list [OPTIONS]
 List information on paths.
 
 Options:
-    {fields}        Comma separated list of fields to be printed. The list can be
-                    prefixed with '+' or '-' to add or remove fields from the
-                    default selection.
+    {fields}        Comma separated list of fields to be printed.
+                    The list can be prefixed with '+' or '-' to add or remove
+                    fields from the default selection.
 
                     Field           Header         Description
                     sessname        Sessname       Name of the session.
@@ -593,18 +603,20 @@ Options:
 
 .B
 
-rnbd server path show <path> [OPTIONS]
+rnbd server path show [session] <path> [OPTIONS]
 
 Show information about an rnbd transport path.
 
 Arguments:
-    <path>          In order to display path information, path name or identifier
+    [session]       Optional session name to select a path in the case paths
+                    with same addresses are used in multiple sessions.
+    <path>          To display path information a path name or identifier
                     has to be provided, i.e. st401b-2:1.
 
 Options:
-    {fields}        Comma separated list of fields to be printed. The list can be
-                    prefixed with '+' or '-' to add or remove fields from the
-                    default selection.
+    {fields}        Comma separated list of fields to be printed.
+                    The list can be prefixed with '+' or '-' to add or remove
+                    fields from the default selection.
 
                     Field           Header         Description
                     sessname        Sessname       Name of the session.
@@ -628,11 +640,13 @@ Options:
 
 .B
 
-rnbd server path disconnect <path> [OPTIONS]
+rnbd server path disconnect [session] <path> [OPTIONS]
 
 Disconnect a path of a given session
 
 Arguments:
+    [session]       Optional session name to select a path in the case paths
+                    with same addresses are used in multiple sessions.
     <identifier>    Name or identifier of of a path:
                     [pathname], [sessname:port], etc.
 

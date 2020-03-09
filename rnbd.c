@@ -628,10 +628,11 @@ static void help_object(const char *program_name,
 static void help_fields(void)
 {
 	print_opt("{fields}",
-		  "Comma separated list of fields to be printed. The list can be");
+		  "Comma separated list of fields to be printed.");
 	print_opt("",
-		  "prefixed with '+' or '-' to add or remove fields from the ");
-	print_opt("", "default selection.\n");
+		  "The list can be prefixed with '+' or '-' to add or remove");
+	print_opt("",
+		  "fields from the default selection.\n");
 }
 
 static void print_fields(const struct rnbd_ctx *ctx,
@@ -1927,8 +1928,11 @@ static void help_show_paths(const char *program_name,
 	if (!help_print_fields(ctx)) {
 
 		printf("\nArguments:\n");
+		print_opt("[session]",
+			  "Optional session name to select a path in the case paths");
+		print_opt("", "with same addresses are used in multiple sessions.");
 		print_opt("<path>",
-			  "In order to display path information, path name or identifier");
+			  "To display path information a path name or identifier");
 		print_opt("", "has to be provided, i.e. st401b-2:1.");
 
 		printf("\nOptions:\n");
@@ -2511,6 +2515,9 @@ static void help_reconnect_path(const char *program_name,
 	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	printf("\nArguments:\n");
+	print_opt("[session]",
+		  "Optional session name to select a path in the case paths");
+	print_opt("", "with same addresses are used in multiple sessions.");
 	print_opt("<identifier>",
 		  "Name or identifier of a path:");
 	print_opt("", "[pathname], [sessname:port], etc.");
@@ -2547,6 +2554,9 @@ static void help_disconnect_path(const char *program_name,
 	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	printf("\nArguments:\n");
+	print_opt("[session]",
+		  "Optional session name to select a path in the case paths");
+	print_opt("", "with same addresses are used in multiple sessions.");
 	print_opt("<identifier>", "Name or identifier of of a path:");
 	print_opt("", "[pathname], [sessname:port], etc.");
 
@@ -2624,6 +2634,9 @@ static void help_delpath(const char *program_name,
 	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	printf("\nArguments:\n");
+	print_opt("[session]",
+		  "Optional session name to select a path in the case paths");
+	print_opt("", "with same addresses are used in multiple sessions.");
 	print_opt("<path>",
 		  "Name or any unique identifier of a path:");
 	print_opt("", "[pathname], [sessname:port], etc.");
@@ -2817,7 +2830,7 @@ static struct param _cmd_show_paths =
 		"Show information about a",
 		"",
 		"Show information about an rnbd transport path.",
-		"<path>",
+		"[session] <path>",
 		NULL, help_show_paths};
 static struct param _cmd_map =
 	{TOK_MAP, "map",
@@ -2880,14 +2893,14 @@ static struct param _cmd_disconnect_path =
 		"Disconnect a",
 		"",
 		"Disconnect a path of a given session",
-		"<path>",
+		"[session] <path>",
 		NULL, help_disconnect_path};
 static struct param _cmd_dis_path =
 	{TOK_DISCONNECT, "dis",
 		"Disconnect a",
 		"",
 		"Disconnect a path of a given session",
-		"<path>",
+		"[session] <path>",
 		NULL, help_disconnect_path};
 static struct param _cmd_reconnect_session =
 	{TOK_RECONNECT, "reconnect",
@@ -2908,14 +2921,14 @@ static struct param _cmd_reconnect_path =
 		"Reconnect a",
 		"",
 		"Disconnect and connect again a single path of a session",
-		"<path>",
+		"[session] <path>",
 		 NULL, help_reconnect_path};
 static struct param _cmd_rec_path =
 	{TOK_RECONNECT, "rec",
 		"Reconnect a",
 		"",
 		"Disconnect and connect again a single path of a session",
-		"<path>",
+		"[session] <path>",
 		 NULL, help_reconnect_path};
 static struct param _cmd_add =
 	{TOK_ADD, "add",
@@ -2929,21 +2942,21 @@ static struct param _cmd_delete =
 		"Delete a",
 		"",
 		"Delete a given path from the corresponding session",
-		"<path>",
+		"[session] <path>",
 		 NULL, help_delpath};
 static struct param _cmd_del =
 	{TOK_DELETE, "del",
 		"Delete a",
 		"",
 		"Delete a given path from the corresponding session",
-		"<path>",
+		"[session] <path>",
 		 NULL, help_delpath};
 static struct param _cmd_readd =
 	{TOK_READD, "readd",
 		"Readd a",
 		"",
 		"Delete and add again a given path to the corresponding session",
-		"<path>",
+		"[session] <path>",
 		 NULL, help_delpath};
 static struct param _cmd_help =
 	{TOK_HELP, "help",
