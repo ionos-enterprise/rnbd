@@ -4839,7 +4839,7 @@ int cmd_server_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			init_show(RNBD_SERVER, LST_PATHS, ctx);
 
 			err = parse_list_parameters(argc, argv, ctx,
-						    parse_srv_devices_clms,
+						    parse_srv_paths_clms,
 						    cmd, _help_context, 1);
 			if (err < 0)
 				break;
