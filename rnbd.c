@@ -4252,7 +4252,7 @@ int cmd_both_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 		if (argc)
 			handle_unknown_param(*argv, cmds_both_sessions, ctx);
-		else
+		else if (!ctx->complete_set)
 			ERR(ctx->trm, "Please specify a command\n");
 	}
 	if (err >= 0) {
@@ -4331,7 +4331,7 @@ int cmd_both_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 		if (argc)
 			handle_unknown_param(*argv, cmds_both_paths, ctx);
-		else
+		else if (!ctx->complete_set)
 			ERR(ctx->trm, "Please specify a command\n");
 	}
 	if (err >= 0) {
@@ -4418,7 +4418,7 @@ int cmd_client_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 		if (argc)
 			handle_unknown_param(*argv, cmds_client_sessions, ctx);
-		else
+		else if (!ctx->complete_set)
 			ERR(ctx->trm, "Please specify a command\n");
 	}
 	if (err >= 0) {
@@ -4497,7 +4497,7 @@ int cmd_client_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 		if (argc)
 			handle_unknown_param(*argv, cmds_client_devices, ctx);
-		else
+		else if (!ctx->complete_set)
 			ERR(ctx->trm, "Please specify a command\n");
 	}
 	if (err >= 0) {
@@ -4580,7 +4580,7 @@ int cmd_client_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 		if (argc)
 			handle_unknown_param(*argv, cmds_client_paths, ctx);
-		else
+		else if (!ctx->complete_set)
 			ERR(ctx->trm, "Please specify a command\n");
 	}
 	if (err >= 0) {
@@ -4670,7 +4670,7 @@ int cmd_server_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 		if (argc)
 			handle_unknown_param(*argv, cmds_server_sessions, ctx);
-		else
+		else if (!ctx->complete_set)
 			ERR(ctx->trm, "Please specify a command\n");
 	}
 	if (err >= 0) {
@@ -4743,7 +4743,7 @@ int cmd_server_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 		if (argc)
 			handle_unknown_param(*argv, cmds_server_devices, ctx);
-		else
+		else if (!ctx->complete_set)
 			ERR(ctx->trm, "Please specify a command\n");
 	}
 	if (err >= 0) {
@@ -4812,7 +4812,7 @@ int cmd_server_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 		if (argc)
 			handle_unknown_param(*argv, cmds_server_paths, ctx);
-		else
+		else if (!ctx->complete_set)
 			ERR(ctx->trm, "Please specify a command\n");
 	}
 	if (err >= 0) {
@@ -5172,41 +5172,41 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 int cmd_start(int argc, const char *argv[], struct rnbd_ctx *ctx)
 {
 	int err = 0;
-	const struct param *param;
+	const struct param *param = 0;
 
-	if (argc < 1) {
-		usage_param(ctx->pname, params_mode_help, ctx);
-		ERR(ctx->trm, "Please specify an argument\n");
-		err = -EINVAL;
-	}
-	if (err >= 0) {
+	if (argc >= 1)
 		param = find_param(*argv, params_mode);
-		if (!param) {
-			ctx->rnbdmode = mode_for_host();
-
-			INF(ctx->debug_set,
-			    "RNBD mode deduced from sysfs: '%s'.\n",
-			    mode_to_string(ctx->rnbdmode));
-
-			switch (ctx->rnbdmode) {
-			case RNBD_CLIENT:
-				return cmd_client(argc, argv, ctx);
-			case RNBD_SERVER:
-				return cmd_server(argc, argv, ctx);
-			case RNBD_BOTH:
-				return cmd_both(argc, argv, ctx);
-			default:
-				ERR(ctx->trm,
-				    "RNBD mode not specified and could not be deduced.\n");
-				print_usage(NULL, params_mode_help, ctx);
-
-				handle_unknown_param(*argv, params_mode, ctx);
+	if (!param) {
+		ctx->rnbdmode = mode_for_host();
+		
+		INF(ctx->debug_set,
+		    "RNBD mode deduced from sysfs: '%s'.\n",
+		    mode_to_string(ctx->rnbdmode));
+		
+		switch (ctx->rnbdmode) {
+		case RNBD_CLIENT:
+			return cmd_client(argc, argv, ctx);
+		case RNBD_SERVER:
+			return cmd_server(argc, argv, ctx);
+		case RNBD_BOTH:
+			if (argc < 1) {
 				usage_param(ctx->pname, params_mode_help, ctx);
-				err = -EINVAL;
+				if (!ctx->complete_set)
+					ERR(ctx->trm, "Please specify an argument\n");
+				return -EINVAL;
 			}
-		} else if (param->parse) {
-			(void) param->parse(argc, argv, param, ctx);
+			return cmd_both(argc, argv, ctx);
+		default:
+			ERR(ctx->trm,
+			    "RNBD mode not specified and could not be deduced.\n");
+			print_usage(NULL, params_mode_help, ctx);
+			
+			handle_unknown_param(*argv, params_mode, ctx);
+			usage_param(ctx->pname, params_mode_help, ctx);
+			err = -EINVAL;
 		}
+	} else if (param->parse) {
+		(void) param->parse(argc, argv, param, ctx);
 	}
 
 	if (err >= 0) {
