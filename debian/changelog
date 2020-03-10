@@ -1,8 +1,14 @@
+rnbd-tool (1.0.5) jessie stretch buster; urgency=medium
+
+  * Path handling: allow optional session name for path operations.
+
+ -- Lutz Pogrell <lutz.pogrell@cloud.ionos.com>  Tue, 09 Mar 2020 13:20:31 +0100
+
 rnbd-tool (1.0.4) jessie stretch buster; urgency=medium
 
   * Interface enhancement: implement both mode for devices, sessions, and paths.
 
- -- Lutz Pogrell <lutz.pogrell@cloud.ionos.com>  Tue, 25 Mar 2020 16:06:12 +0100
+ -- Lutz Pogrell <lutz.pogrell@cloud.ionos.com>  Tue, 03 Mar 2020 16:06:12 +0100
 
 rnbd-tool (1.0.3) jessie stretch buster; urgency=medium
 
