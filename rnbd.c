@@ -1453,6 +1453,7 @@ static int show_all(const char *name, struct rnbd_ctx *ctx)
 	struct rnbd_sess_dev **ds_clt, **ds_srv;
 	struct rnbd_path **pp_clt, **pp_srv;
 	struct rnbd_sess **ss_clt, **ss_srv;
+	const char *session_name; const char *path_name;
 	int c_ds_clt, c_ds_srv, c_ds = 0,
 	    c_pp_clt, c_pp_srv, c_pp = 0,
 	    c_ss_clt, c_ss_srv, c_ss = 0, ret;
@@ -1474,13 +1475,26 @@ static int show_all(const char *name, struct rnbd_ctx *ctx)
 		ret = -ENOMEM;
 		goto out;
 	}
-	c_pp = find_paths_all(NULL, name, ctx->rnbdmode, pp_clt, &c_pp_clt, pp_srv,
+	if (ctx->path_cnt == 1) {
+		session_name = name;
+		path_name = ctx->paths[0].provided;
+	} else {
+		session_name = NULL;
+		path_name = name;
+		if (ctx->path_cnt > 1)
+			ERR(ctx->trm, "Multiple paths specified\n");
+	}
+	c_pp = find_paths_all(session_name, path_name,
+			      ctx->rnbdmode, pp_clt, &c_pp_clt, pp_srv,
 			      &c_pp_srv);
-	c_ss = find_sess_match_all(name, ctx->rnbdmode, ss_clt,
-			     &c_ss_clt, ss_srv, &c_ss_srv);
-	c_ds = find_devs_all(name, ctx->rnbdmode, ds_clt,
-			     &c_ds_clt, ds_srv, &c_ds_srv);
-	if (c_pp + c_ss + c_ds > 1) {
+	if (!(c_pp && ctx->path_cnt == 1))
+		c_ss = find_sess_match_all(name, ctx->rnbdmode, ss_clt,
+					   &c_ss_clt, ss_srv, &c_ss_srv);
+	if (!(c_pp && ctx->path_cnt == 1))
+		c_ds = find_devs_all(name, ctx->rnbdmode, ds_clt,
+				     &c_ds_clt, ds_srv, &c_ds_srv);
+	if ((ctx->path_cnt == 1 && c_pp > 1)
+	    || (ctx->path_cnt != 1 && c_pp + c_ss + c_ds > 1)) {
 		ERR(ctx->trm, "Multiple entries match '%s'\n", name);
 
 		list_default(ctx);
@@ -1503,6 +1517,9 @@ static int show_all(const char *name, struct rnbd_ctx *ctx)
 		ret = -EINVAL;
 		goto out;
 	}
+
+	if (ctx->path_cnt == 1 && c_ss + c_ds > 0)
+		ERR(ctx->trm, "Provided path ignored!\n");
 
 	if (c_ds)
 		ret = show_device(ds_clt, ds_srv, ctx);
@@ -4931,7 +4948,7 @@ int cmd_client(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_clt_clms,
-						    param, _help_context, 0);
+						    param, _help_context, 1);
 			if (err < 0)
 				break;
 
@@ -5036,7 +5053,7 @@ int cmd_server(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_srv_clms,
-						    param, _help_context, 0);
+						    param, _help_context, 1);
 			if (err < 0)
 				break;
 
@@ -5129,7 +5146,7 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    parse_both_clms,
-						    param, "", 0);
+						    param, "", 1);
 			if (err < 0)
 				break;
 
