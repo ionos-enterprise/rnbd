@@ -4526,13 +4526,18 @@ int cmd_client_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = parse_list_parameters(argc, argv, ctx,
 						    (ctx->rnbdmode == RNBD_CLIENT ?
-						     parse_clt_devices_clms : parse_both_devices_clms),
+						     parse_clt_devices_clms :
+						     parse_both_devices_clms),
 						    cmd, _help_context_both, 0);
 			if (err < 0)
 				break;
 
 			err = list_devices(sds_clt, sds_clt_cnt - 1,
-					   NULL, 0, false, ctx);
+					   (ctx->rnbdmode == RNBD_CLIENT ?
+					    NULL : sds_srv),
+					   (ctx->rnbdmode == RNBD_CLIENT ?
+					    0 : sds_srv_cnt - 1),
+					   false, ctx);
 			break;
 		case TOK_SHOW:
 			err = parse_name_help(argc--, argv++,
