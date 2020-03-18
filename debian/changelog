@@ -1,3 +1,9 @@
+rnbd-tool (1.0.6) jessie stretch buster; urgency=medium
+
+  * bugfix: rnbd dev list should list the same as rnbd list also in both mode
+
+ -- Lutz Pogrell <lutz.pogrell@cloud.ionos.com>  Wed, 18 Mar 2020 09:40:54 +0100
+
 rnbd-tool (1.0.5) jessie stretch buster; urgency=medium
 
   * Path handling: allow optional session name for path operations.
