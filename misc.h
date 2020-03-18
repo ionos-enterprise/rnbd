@@ -177,6 +177,9 @@ bool is_path_addr(const char *arg);
 int addr_to_norm(char *str, size_t len, const struct rnbd_ctx *ctx,
 		 enum color *clr, void *v, bool humanize);
 
+int path_to_norm(char *str, size_t len, const struct rnbd_ctx *ctx,
+		 enum color *clr, void *v, bool humanize);
+
 bool match_path_addr(const char *left, const char *right);
 
 int sessname_from_host(const char *from_name, char *out_buf, size_t buf_len);

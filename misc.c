@@ -287,6 +287,17 @@ int addr_to_norm(char *str, size_t len, const struct rnbd_ctx *ctx,
 	return rnbd_addr_to_norm(str, len, v);
 }
 
+int path_to_norm(char *str, size_t len, const struct rnbd_ctx *ctx,
+		 enum color *clr, void *v, bool humanize)
+{
+	*clr = CNRM;
+
+	if (!humanize)
+		return snprintf(str, len, "%s", (char *) v);
+
+	return rnbd_pathname_to_norm(str, len, v);
+}
+
 int path_to_sessname(char *str, size_t len, const struct rnbd_ctx *ctx,
 		     enum color *clr, void *v, bool humanize)
 {
