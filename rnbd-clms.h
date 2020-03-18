@@ -306,8 +306,6 @@ static struct table_column *def_clms_paths_clt[] = {
 	&clm_rnbd_path_state,
 	&clm_rnbd_path_tx_bytes,
 	&clm_rnbd_path_rx_bytes,
-	&clm_rnbd_path_inflights,
-	&clm_rnbd_path_reconnects,
 	NULL
 };
 
@@ -318,7 +316,6 @@ static struct table_column *def_clms_paths_srv[] = {
 	&clm_rnbd_path_src_addr,
 	&clm_rnbd_path_tx_bytes,
 	&clm_rnbd_path_rx_bytes,
-	&clm_rnbd_path_inflights,
 	NULL
 };
 
