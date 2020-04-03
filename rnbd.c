@@ -2328,7 +2328,9 @@ static int client_devices_unmap(const char *device_name, bool force,
 	if (!ds)
 		return -EINVAL;
 
-	sprintf(tmp, "/sys/block/%s/ibnbd", ds->dev->devname);
+	sprintf(tmp, "/sys/block/%s/%s", ds->dev->devname,
+		get_sysfs_info(ctx)->path_dev_name);
+
 	ret = printf_sysfs(tmp, "unmap_device", ctx, "%s",
 			   force ? "force" : "normal");
 	if (ret)
@@ -2348,7 +2350,9 @@ static int client_device_remap(const struct rnbd_dev *dev,
 	char tmp[PATH_MAX];
 	int ret;
 
-	sprintf(tmp, "/sys/block/%s/ibnbd", dev->devname);
+	sprintf(tmp, "/sys/block/%s/%s", dev->devname,
+		get_sysfs_info(ctx)->path_dev_name);
+
 	ret = printf_sysfs(tmp, "remap_device", ctx, "1");
 	if (ret == -EALREADY) {
 		INF(ctx->verbose_set,
