@@ -258,6 +258,20 @@ static int parse_flag(int argc, const char *argv[],
 	return 1;
 }
 
+static void print_version(const struct rnbd_ctx *ctx)
+{
+	printf("%s version %s%s%s\n", ctx->pname,
+	       CLR(ctx->trm, CBLD, PACKAGE_VERSION));
+}
+
+static int parse_version(int argc, const char *argv[],
+			 const struct param *param, struct rnbd_ctx *ctx)
+{
+	print_version(ctx);
+
+	return -EAGAIN;
+}
+
 static int parse_debug(int argc, const char *argv[],
 		     const struct param *param, struct rnbd_ctx *ctx)
 {
@@ -349,14 +363,17 @@ static struct param _params_help =
 static struct param _params_version =
 	{TOK_VERSION, "version", "", "", "Display version of this tool and exit",
 	 NULL, NULL, NULL, 0};
+static struct param _params_minus_minus_version =
+	{TOK_VERSION, "--version", "", "", "Display version of this tool and exit",
+	 NULL, parse_version, NULL, 0};
 static struct param _params_verbose =
 	{TOK_VERBOSE, "verbose", "", "", "Verbose output",
 	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, verbose_set)};
 static struct param _params_minus_h =
-	{TOK_VERBOSE, "-h", "", "", "Help output",
+	{TOK_HELP, "-h", "", "", "Help output",
 	 NULL, parse_help, NULL, offsetof(struct rnbd_ctx, help_set)};
 static struct param _params_minus_minus_help =
-	{TOK_VERBOSE, "--help", "", "", "Help output",
+	{TOK_HELP, "--help", "", "", "Help output",
 	 NULL, parse_help, NULL, offsetof(struct rnbd_ctx, help_set)};
 static struct param _params_minus_v =
 	{TOK_VERBOSE, "-v", "", "", "Verbose output",
@@ -3000,6 +3017,7 @@ static struct param *params_flags[] = {
 	&_params_minus_c,
 	&_params_minus_minus_complete,
 	&_params_minus_minus_term,
+	&_params_minus_minus_version,
 	&_params_null
 };
 
@@ -3029,6 +3047,7 @@ static struct param *params_mode[] = {
 	&_params_both,
 	&_params_help,
 	&_params_version,
+	&_params_minus_minus_version,
 	&_params_null
 };
 
@@ -3651,12 +3670,6 @@ static void help_start(const struct rnbd_ctx *ctx)
 	}
 }
 
-static void print_version(const struct rnbd_ctx *ctx)
-{
-	printf("%s version %s%s%s\n", ctx->pname,
-	       CLR(ctx->trm, CBLD, PACKAGE_VERSION));
-}
-
 static int init_show(enum rnbdmode rnbdmode,
 		     enum lstmode object_type,
 		     struct rnbd_ctx *ctx)
@@ -3757,7 +3770,6 @@ int parse_cmd_parameters(int argc, const char *argv[],
 		param = find_param(*argv, params);
 		if (param)
 			err = param->parse(argc, argv, param, ctx);
-
 		if (!param || err <= 0)
 			break;
 
