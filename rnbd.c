@@ -1819,6 +1819,17 @@ static int parse_name_help(int argc, const char *argv[], const char *what,
 	return 0;
 }
 
+static int parse_option_name(int argc, const char *argv[],
+			     const struct param *cmd, struct rnbd_ctx *ctx)
+{
+	if (argc <= 0)
+		return 0;
+
+	ctx->name = *argv;
+
+	return 1;
+}
+
 static void help_show(const char *program_name,
 		      const struct param *cmd,
 		      const struct rnbd_ctx *ctx)
@@ -2237,9 +2248,9 @@ static int client_devices_map(const char *from_name, const char *device_name,
 }
 
 static struct rnbd_sess_dev *find_single_device(const char *name,
-						 struct rnbd_ctx *ctx,
-						 struct rnbd_sess_dev **devs,
-						 int dev_cnt)
+						struct rnbd_ctx *ctx,
+						struct rnbd_sess_dev **devs,
+						int dev_cnt)
 {
 	struct rnbd_sess_dev *res = NULL, **matching_devs;
 	int match_count;
@@ -2521,6 +2532,27 @@ static void help_remap_session(const char *program_name,
 		  "Identifier of a session to remap all devices on.");
 
 	printf("\nOptions:\n");
+	print_param_descr("force");
+	print_param_descr("verbose");
+	print_param_descr("help");
+}
+
+static void help_close_device(const char *program_name,
+			      const struct param *cmd,
+			      const struct rnbd_ctx *ctx)
+{
+	if (!program_name)
+		program_name = "<device name> ";
+
+	cmd_print_usage_descr(cmd, program_name, ctx);
+
+	printf("\nArguments:\n");
+	print_opt("<device>",
+		  "Identifier of a device to be closed.");
+
+	printf("\nOptions:\n");
+	print_opt("<session>",
+		  "Identifier of a session for which the device is to be closed.");
 	print_param_descr("force");
 	print_param_descr("verbose");
 	print_param_descr("help");
@@ -2818,6 +2850,31 @@ static int server_path_disconnect(const char *session_name,
 	return ret;
 }
 
+static int server_devices_force_close(const char *device_name,
+				      const char *session_name,
+				      struct rnbd_ctx *ctx)
+{
+	char sysfs_path[4096];
+	int ret;
+
+	snprintf(sysfs_path, sizeof(sysfs_path), "%s/devices/%s/sessions/%s",
+		 get_sysfs_info(ctx)->path_dev_srv,
+		 device_name, session_name);
+
+	ret = printf_sysfs(sysfs_path, "force_close", ctx, "1");
+	if (ret)
+		ERR(ctx->trm,
+		    "Failed to close device '%s' for session '%s': %s (%d)\n",
+		    device_name, session_name,
+		    strerror(-ret), ret);
+	else
+		INF(ctx->verbose_set,
+		    "Successfully closed device '%s' for session '%s'.\n",
+		    device_name, session_name);
+
+	return ret;
+}
+
 static struct param _cmd_dump_all =
 	{TOK_DUMP, "dump",
 		"Dump information about all",
@@ -2912,6 +2969,13 @@ static struct param _cmd_remap_session =
 		"Unmap and map again all devices of a given session",
 		"<session>",
 		 NULL, help_remap_session};
+static struct param _cmd_close_device =
+	{TOK_CLOSE, "close",
+		"Close a",
+		" for a session",
+		"Close a particular device for a given session",
+		"<device>",
+		 NULL, help_close_device};
 static struct param _cmd_disconnect_session =
 	{TOK_DISCONNECT, "disconnect",
 		"Disconnect a",
@@ -3295,6 +3359,7 @@ static struct param *cmds_server_sessions_help[] = {
 static struct param *cmds_server_devices[] = {
 	&_cmd_list_devices,
 	&_cmd_show_devices,
+	&_cmd_close_device,
 	&_cmd_help,
 	&_cmd_null
 };
@@ -3761,7 +3826,8 @@ int parse_list_parameters(int argc, const char *argv[], struct rnbd_ctx *ctx,
  */
 int parse_cmd_parameters(int argc, const char *argv[],
 			 struct param *const params[], struct rnbd_ctx *ctx,
-			 const struct param *cmd, const char *program_name)
+			 const struct param *cmd, const char *program_name,
+			 int allow_option_name)
 {
 	int err = 0; int start_argc = argc;
 	const struct param *param;
@@ -3770,9 +3836,14 @@ int parse_cmd_parameters(int argc, const char *argv[],
 		param = find_param(*argv, params);
 		if (param)
 			err = param->parse(argc, argv, param, ctx);
-		if (!param || err <= 0)
-			break;
-
+		if (!param || err <= 0) {
+			if (allow_option_name
+			    && parse_option_name(argc, argv, cmd, ctx)) {
+				err = 1;
+			} else {
+				break;
+			}
+		}
 		argc -= err; argv += err;
 	}
 	if (ctx->help_set && cmd) {
@@ -3991,7 +4062,7 @@ int cmd_unmap(int argc, const char *argv[], const struct param *cmd,
 
 	err = parse_cmd_parameters(argc, argv,
 				   params_unmap_parameters,
-				   ctx, cmd, help_context);
+				   ctx, cmd, help_context, 0);
 	if (err < 0)
 		return err;
 
@@ -4015,7 +4086,7 @@ int cmd_remap(int argc, const char *argv[], const struct param *cmd,
 		return err;
 
 	err = parse_cmd_parameters(argc, argv, params_default,
-				   ctx, cmd, help_context);
+				   ctx, cmd, help_context, 0);
 	if (err < 0)
 		return err;
 
@@ -4034,6 +4105,30 @@ int cmd_remap(int argc, const char *argv[], const struct param *cmd,
 	return client_devices_remap(ctx->name, ctx);
 }
 
+int cmd_close_device(int argc, const char *argv[], const struct param *cmd,
+		     const char *help_context, struct rnbd_ctx *ctx)
+{
+	int err = parse_name_help(argc--, argv++,
+				  help_context, cmd, ctx);
+	if (err < 0)
+		return err;
+
+	err = parse_cmd_parameters(argc, argv, params_unmap_parameters,
+				   ctx, cmd, help_context, 0);
+	if (err < 0)
+		return err;
+
+	argc -= err; argv += err;
+
+	if (argc > 0) {
+
+		handle_unknown_param(*argv, params_default, ctx);
+		return -EINVAL;
+	}
+
+	return client_devices_remap(ctx->name, ctx);
+}
+
 int cmd_session_remap(int argc, const char *argv[], const struct param *cmd,
 		      const char *help_context, struct rnbd_ctx *ctx)
 {
@@ -4044,7 +4139,7 @@ int cmd_session_remap(int argc, const char *argv[], const struct param *cmd,
 	
 	err = parse_cmd_parameters(argc, argv,
 				   params_default,
-				   ctx, cmd, help_context);
+				   ctx, cmd, help_context, 0);
 	if (err < 0)
 		return err;
 	
@@ -4118,7 +4213,7 @@ int cmd_path_delete(int argc, const char *argv[], const struct param *cmd,
 		return err;
 	
 	err = parse_cmd_parameters(argc, argv, params_default,
-				   ctx, cmd, help_context);
+				   ctx, cmd, help_context, 0);
 	if (err < 0)
 		return err;
 	
@@ -4141,7 +4236,7 @@ int cmd_path_readd(int argc, const char *argv[], const struct param *cmd,
 		return err;
 	
 	err = parse_cmd_parameters(argc, argv, params_default,
-				   ctx, cmd, help_context);
+				   ctx, cmd, help_context, 0);
 	if (err < 0)
 		return err;
 	
@@ -4165,7 +4260,7 @@ int cmd_client_session_reconnect(int argc, const char *argv[], const struct para
 	
 	err = parse_cmd_parameters(argc, argv,
 				   params_default,
-				   ctx, cmd, help_context);
+				   ctx, cmd, help_context, 0);
 	if (err < 0)
 		return err;
 	
@@ -4203,7 +4298,7 @@ int cmd_server_session_disconnect(int argc, const char *argv[], const struct par
 	
 	err = parse_cmd_parameters(argc, argv,
 				   params_default,
-				   ctx, cmd, help_context);
+				   ctx, cmd, help_context, 0);
 	if (err < 0)
 		return err;
 	
@@ -4216,6 +4311,109 @@ int cmd_server_session_disconnect(int argc, const char *argv[], const struct par
 	return session_do_all_paths(RNBD_SERVER, ctx->name,
 				    server_path_disconnect,
 				    ctx);
+}
+
+int cmd_server_devices_force_close(int argc, const char *argv[], const struct param *cmd,
+				   const char *help_context, struct rnbd_ctx *ctx)
+{
+	const char *device_name = NULL;
+	const char *session_name = NULL;
+	struct rnbd_sess_dev **ds_exp = NULL;
+	struct rnbd_sess_dev *ds_match = NULL;
+	struct rnbd_sess **ss_srv = NULL;
+	int devs_cnt, i;
+	int err = parse_name_help(argc--, argv++,
+				  help_context, cmd, ctx);
+	if (err < 0)
+		return err;
+	
+	device_name = ctx->name;
+	ctx->name = NULL;
+	
+	err = parse_cmd_parameters(argc, argv,
+				   params_unmap_parameters,
+				   ctx, cmd, help_context, 1);
+	if (err < 0)
+		return err;
+	
+	argc -= err; argv += err;
+	
+	if (argc > 0) {
+		
+		return -EINVAL;
+	}
+
+	ds_exp = calloc(sds_srv_cnt, sizeof(*ds_exp));
+	if (!ds_exp) {
+		ERR(ctx->trm, "Failed to allocate memory\n");
+		return -ENOMEM;
+	}
+
+	devs_cnt = find_devices(device_name, sds_srv, ds_exp);
+
+	if (ctx->name) {
+		int sess_cnt = 0;
+		
+		ss_srv = calloc(sess_srv_cnt, sizeof(*ss_srv));
+		
+		if (sess_srv_cnt && !ss_srv) {
+			ERR(ctx->trm, "Failed to alloc memory\n");
+			err = -ENOMEM;
+			goto cleanup_err;
+		}
+		session_name = ctx->name;
+		ss_srv[0] = find_sess(session_name, sess_srv);
+		if (ss_srv[0])
+			sess_cnt = 1;
+		else
+			sess_cnt = find_sess_match(session_name, sess_srv, ss_srv);
+		
+		if (sess_cnt > 1) {
+			ERR(ctx->trm, "Multiple sessions match '%s'\n", session_name);
+			err = -EINVAL;
+			goto cleanup_err;
+		} else if (sess_cnt <= 0) {
+			ERR(ctx->trm, "There is no session matching '%s'\n", session_name);
+			err = -ENOENT;
+			goto cleanup_err;
+		}
+		for (i = 0; i < devs_cnt; i++) {
+			if (ds_exp[i]->sess == ss_srv[0]) {
+				ds_match = ds_exp[i];
+				break;
+			}
+		}
+		free(ss_srv);
+		ss_srv = NULL;
+		if (!ds_match) {
+			ERR(ctx->trm,
+			    "There is no match for device '%s' and session '%s'\n",
+			    device_name, session_name);
+			err = -ENOENT;
+			goto cleanup_err;
+		}
+	} else if (devs_cnt == 1) {
+		ds_match = ds_exp[0];
+	} else if (devs_cnt > 1) {
+		ERR(ctx->trm,
+		    "Device name %s is ambiguous. Please provide a session name to make it unique.\n",
+		    device_name);
+		err = -EINVAL;
+		goto cleanup_err;
+	} else {
+		ERR(ctx->trm,
+		    "No matching device for %s found.\n", device_name);
+		err = -ENOENT;
+		goto cleanup_err;
+	}
+	free(ds_exp);
+	return server_devices_force_close(ds_match->dev->devname, ds_match->sess->sessname, ctx);
+cleanup_err:
+	if (ss_srv)
+		free(ss_srv);
+	if (ds_exp)
+		free(ds_exp);
+	return err;
 }
 
 int cmd_path_operation(int (*operation)(const char *session_name,
@@ -4816,6 +5014,9 @@ int cmd_server_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 
 			err = show_devices(ctx->name, ctx);
 			break;
+		case TOK_CLOSE:
+			err = cmd_server_devices_force_close(argc, argv, cmd, _help_context, ctx);
+			break;
 		case TOK_HELP:
 			parse_help(argc, argv, NULL, ctx);
 			print_help(_help_context, cmd,
@@ -5325,7 +5526,7 @@ int main(int argc, const char *argv[])
 	rnbd_ctx_default(&ctx);
 
 	ret = parse_cmd_parameters(--argc, ++argv, params_flags,
-				   &ctx, NULL, NULL);
+				   &ctx, NULL, NULL, 0);
 	if (ret < 0)
 		goto free;
 
