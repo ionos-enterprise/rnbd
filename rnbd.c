@@ -205,7 +205,7 @@ static int parse_apply_unit(const char *str, struct rnbd_ctx *ctx)
 		ctx->size_sect <<= shift-9;
 	else
 		ctx->size_sect >>= 9-shift;
-	
+
 	ctx->size_state = size_unit;
 
 	return 0;
@@ -361,10 +361,12 @@ static struct param _params_help =
 	{TOK_HELP, "help", "", "", "Display help and exit",
 	 NULL, parse_help, NULL, offsetof(struct rnbd_ctx, help_set)};
 static struct param _params_version =
-	{TOK_VERSION, "version", "", "", "Display version of this tool and exit",
+	{TOK_VERSION, "version", "", "",
+	 "Display version of this tool and exit",
 	 NULL, NULL, NULL, 0};
 static struct param _params_minus_minus_version =
-	{TOK_VERSION, "--version", "", "", "Display version of this tool and exit",
+	{TOK_VERSION, "--version", "", "",
+	 "Display version of this tool and exit",
 	 NULL, parse_version, NULL, 0};
 static struct param _params_verbose =
 	{TOK_VERBOSE, "verbose", "", "", "Verbose output",
@@ -963,7 +965,7 @@ static int list_sessions(struct rnbd_sess **s_clt, int clt_s_num,
 		if (clt_s_num)
 			list_sessions_json(s_clt, ctx->clms_sessions_clt, ctx);
 		else
-			printf("null, \n");
+			printf("null,\n");
 
 		printf("\t\"incoming sessions\": ");
 		if (srv_s_num)
@@ -1181,7 +1183,8 @@ static int show_device(struct rnbd_sess_dev **clt, struct rnbd_sess_dev **srv,
 	return 0;
 }
 
-static bool match_sess(struct rnbd_sess *s, const char *name)
+static bool match_sess(struct rnbd_sess *s, const char *name,
+		       enum rnbdmode rnbdmode)
 {
 	char *at;
 
@@ -1189,13 +1192,20 @@ static bool match_sess(struct rnbd_sess *s, const char *name)
 		return true;
 
 	at = strchr(s->sessname, '@');
-	if (at && (!strcmp(name, at + 1)))
-		return true;
+	if (at) {
+		if ((rnbdmode & RNBD_CLIENT)
+		    && (!strcmp(name, at + 1)))
+			return true;
+		if ((rnbdmode & RNBD_SERVER)
+		    && !strncmp(name, s->sessname, at-s->sessname)
+		    && (strlen(name) == at-s->sessname))
+			return true;
+	}
 	return false;
 }
 
 static struct rnbd_sess *find_sess(const char *name,
-				       struct rnbd_sess **ss)
+				   struct rnbd_sess **ss)
 {
 	int i;
 
@@ -1206,13 +1216,13 @@ static struct rnbd_sess *find_sess(const char *name,
 	return NULL;
 }
 
-static int find_sess_match(const char *name, struct rnbd_sess **ss,
-			       struct rnbd_sess **res)
+static int find_sess_match(const char *name, enum rnbdmode rnbdmode,
+			   struct rnbd_sess **ss, struct rnbd_sess **res)
 {
 	int i, cnt = 0;
 
 	for (i = 0; ss[i]; i++)
-		if (match_sess(ss[i], name))
+		if (match_sess(ss[i], name, rnbdmode))
 			res[cnt++] = ss[i];
 
 	res[cnt] = NULL;
@@ -1227,9 +1237,9 @@ static int find_sess_match_all(const char *name, enum rnbdmode rnbdmode,
 	int cnt_srv = 0, cnt_clt = 0;
 
 	if (rnbdmode & RNBD_CLIENT)
-		cnt_clt = find_sess_match(name, sess_clt, ss_clt);
+		cnt_clt = find_sess_match(name, rnbdmode, sess_clt, ss_clt);
 	if (rnbdmode & RNBD_SERVER)
-		cnt_srv = find_sess_match(name, sess_srv, ss_srv);
+		cnt_srv = find_sess_match(name, rnbdmode, sess_srv, ss_srv);
 
 	*ss_clt_cnt = cnt_clt;
 	*ss_srv_cnt = cnt_srv;
@@ -1614,7 +1624,7 @@ static int show_client_sessions(const char *name, struct rnbd_ctx *ctx)
 	if (ss_clt[0])
 		c_ss_clt = 1;
 	else
-		c_ss_clt = find_sess_match(name, sess_clt, ss_clt);
+		c_ss_clt = find_sess_match(name, ctx->rnbdmode, sess_clt, ss_clt);
 
 	if (c_ss_clt > 1) {
 		ERR(ctx->trm, "Multiple sessions match '%s'\n", name);
@@ -1655,7 +1665,7 @@ static int show_server_sessions(const char *name, struct rnbd_ctx *ctx)
 	if (ss_srv[0])
 		c_ss_srv = 1;
 	else
-		c_ss_srv = find_sess_match(name, sess_srv, ss_srv);
+		c_ss_srv = find_sess_match(name, ctx->rnbdmode, sess_srv, ss_srv);
 
 	if (c_ss_srv > 1) {
 		ERR(ctx->trm, "Multiple sessions match '%s'\n", name);
@@ -1690,7 +1700,7 @@ static int show_both_sessions(const char *name, struct rnbd_ctx *ctx)
 	ss_srv = calloc(sess_srv_cnt, sizeof(*ss_srv));
 	ss_clt = calloc(sess_clt_cnt, sizeof(*ss_clt));
 
-	if ((sess_clt_cnt && !ss_clt) 
+	if ((sess_clt_cnt && !ss_clt)
 	    || (sess_srv_cnt && !ss_srv)) {
 		ERR(ctx->trm, "Failed to alloc memory\n");
 		ret = -ENOMEM;
@@ -1704,9 +1714,9 @@ static int show_both_sessions(const char *name, struct rnbd_ctx *ctx)
 	if (ss_srv[0])
 		c_ss_srv = 1;
 
-	if ( !ss_clt[0] && !ss_srv[0]) {
-		c_ss_clt = find_sess_match(name, sess_clt, ss_clt);
-		c_ss_srv = find_sess_match(name, sess_srv, ss_srv);
+	if (!ss_clt[0] && !ss_srv[0]) {
+		c_ss_clt = find_sess_match(name, ctx->rnbdmode, sess_clt, ss_clt);
+		c_ss_srv = find_sess_match(name, ctx->rnbdmode, sess_srv, ss_srv);
 	}
 
 	if (c_ss_clt + c_ss_srv > 1) {
@@ -1975,7 +1985,8 @@ static void help_show_paths(const char *program_name,
 		printf("\nArguments:\n");
 		print_opt("[session]",
 			  "Optional session name to select a path in the case paths");
-		print_opt("", "with same addresses are used in multiple sessions.");
+		print_opt("",
+			  "with same addresses are used in multiple sessions.");
 		print_opt("<path>",
 			  "To display path information a path name or identifier");
 		print_opt("", "has to be provided, i.e. st401b-2:1.");
@@ -2060,14 +2071,14 @@ static struct rnbd_sess *find_single_session(const char *session_name,
 	if (res)
 		/* of there is an exact match, that's the one we want */
 		return res;
-	
+
 	matching_sess = calloc(sess_cnt, sizeof(*matching_sess));
 
 	if (sess_cnt && !matching_sess) {
 		ERR(ctx->trm, "Failed to alloc memory\n");
 		return NULL;
 	}
-	match_count = find_sess_match(session_name, sessions,
+	match_count = find_sess_match(session_name, ctx->rnbdmode, sessions,
 					  matching_sess);
 
 	if (match_count == 1) {
@@ -2508,9 +2519,11 @@ static void help_remap_device_or_session(const char *program_name,
 	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	printf("\nArguments:\n");
-	print_opt("<identifier>", "Identifier of a device or session to be remapped.");
+	print_opt("<identifier>",
+		  "Identifier of a device or session to be remapped.");
 	print_opt("", "If identifier designates a session,");
-	print_opt("", "all devices of this particular session will be remapped.");
+	print_opt("",
+		  "all devices of this particular session will be remapped.");
 
 	printf("\nOptions:\n");
 	print_param_descr("force");
@@ -3662,7 +3675,7 @@ static void init_rnbd_ctx(struct rnbd_ctx *ctx)
 	memset(ctx, 0, sizeof(struct rnbd_ctx));
 
 	list_default(ctx);
-	
+
 	ctx->trm = (isatty(STDOUT_FILENO) == 1);
 }
 
@@ -3985,7 +3998,7 @@ int cmd_map(int argc, const char *argv[], const struct param *cmd,
 
 		handle_unknown_param(*argv,
 				     params_map_parameters_help_tail, ctx);
-				     
+
 		return -EINVAL;
 	}
 	return err = client_devices_map(ctx->from, ctx->name, ctx);
@@ -4100,7 +4113,7 @@ int cmd_remap(int argc, const char *argv[], const struct param *cmd,
 	if (allowSession
 	    && find_single_session(ctx->name, ctx, sess_clt,
 				   sds_clt_cnt, false))
-		    return client_session_remap(ctx->name, ctx);
+		return client_session_remap(ctx->name, ctx);
 
 	return client_devices_remap(ctx->name, ctx);
 }
@@ -4136,17 +4149,17 @@ int cmd_session_remap(int argc, const char *argv[], const struct param *cmd,
 				  help_context, cmd, ctx);
 	if (err < 0)
 		return err;
-	
+
 	err = parse_cmd_parameters(argc, argv,
 				   params_default,
 				   ctx, cmd, help_context, 0);
 	if (err < 0)
 		return err;
-	
+
 	argc -= err; argv += err;
-	
+
 	if (argc > 0) {
-		
+
 		handle_unknown_param(*argv, params_default, ctx);
 		return -EINVAL;
 	}
@@ -4161,24 +4174,24 @@ int cmd_path_add(int argc, const char *argv[], const struct param *cmd,
 				  help_context, cmd, ctx);
 	if (err < 0)
 		return err;
-	
+
 	err = parse_map_parameters(argc, argv, &accepted,
 				   params_add_path_parameters,
 				   ctx, cmd, help_context);
 	if (accepted == 0) {
-		
+
 		cmd_print_usage_short(cmd, help_context, ctx);
 		ERR(ctx->trm,
-		    "Please specify the path to add to session %s\n",
+		    ":Please specify the path to add to session %s\n",
 		    ctx->name);
 		print_opt(_params_path_param.param_str,
 			  _params_path_param.descr);
 		return -EINVAL;
 	}
 	argc -= accepted; argv += accepted;
-	
+
 	if (argc > 0 || (err < 0 && err != -EAGAIN)) {
-		
+
 		handle_unknown_param(*argv,
 				     params_add_path_help, ctx);
 		if (err < 0) {
@@ -4211,16 +4224,16 @@ int cmd_path_delete(int argc, const char *argv[], const struct param *cmd,
 				  help_context, cmd, ctx);
 	if (err < 0)
 		return err;
-	
+
 	err = parse_cmd_parameters(argc, argv, params_default,
 				   ctx, cmd, help_context, 0);
 	if (err < 0)
 		return err;
-	
+
 	argc -= err; argv += err;
-	
+
 	if (argc > 0) {
-		
+
 		handle_unknown_param(*argv, params_default, ctx);
 		return -EINVAL;
 	}
@@ -4234,16 +4247,16 @@ int cmd_path_readd(int argc, const char *argv[], const struct param *cmd,
 				  help_context, cmd, ctx);
 	if (err < 0)
 		return err;
-	
+
 	err = parse_cmd_parameters(argc, argv, params_default,
 				   ctx, cmd, help_context, 0);
 	if (err < 0)
 		return err;
-	
+
 	argc -= err; argv += err;
-	
+
 	if (argc > 0) {
-		
+
 		handle_unknown_param(*argv, params_default, ctx);
 		return -EINVAL;
 	}
@@ -4257,17 +4270,17 @@ int cmd_client_session_reconnect(int argc, const char *argv[], const struct para
 				  help_context, cmd, ctx);
 	if (err < 0)
 		return err;
-	
+
 	err = parse_cmd_parameters(argc, argv,
 				   params_default,
 				   ctx, cmd, help_context, 0);
 	if (err < 0)
 		return err;
-	
+
 	argc -= err; argv += err;
-	
+
 	if (argc > 0) {
-		
+
 		handle_unknown_param(*argv,
 				     params_default, ctx);
 		return -EINVAL;
@@ -4295,19 +4308,18 @@ int cmd_server_session_disconnect(int argc, const char *argv[], const struct par
 				  help_context, cmd, ctx);
 	if (err < 0)
 		return err;
-	
+
 	err = parse_cmd_parameters(argc, argv,
 				   params_default,
 				   ctx, cmd, help_context, 0);
 	if (err < 0)
 		return err;
-	
+
 	argc -= err; argv += err;
-	
-	if (argc > 0) {
-		
+
+	if (argc > 0)
 		return -EINVAL;
-	}
+
 	return session_do_all_paths(RNBD_SERVER, ctx->name,
 				    server_path_disconnect,
 				    ctx);
@@ -4326,22 +4338,20 @@ int cmd_server_devices_force_close(int argc, const char *argv[], const struct pa
 				  help_context, cmd, ctx);
 	if (err < 0)
 		return err;
-	
+
 	device_name = ctx->name;
 	ctx->name = NULL;
-	
+
 	err = parse_cmd_parameters(argc, argv,
 				   params_unmap_parameters,
 				   ctx, cmd, help_context, 1);
 	if (err < 0)
 		return err;
-	
+
 	argc -= err; argv += err;
-	
-	if (argc > 0) {
-		
+
+	if (argc > 0)
 		return -EINVAL;
-	}
 
 	ds_exp = calloc(sds_srv_cnt, sizeof(*ds_exp));
 	if (!ds_exp) {
@@ -4353,9 +4363,9 @@ int cmd_server_devices_force_close(int argc, const char *argv[], const struct pa
 
 	if (ctx->name) {
 		int sess_cnt = 0;
-		
+
 		ss_srv = calloc(sess_srv_cnt, sizeof(*ss_srv));
-		
+
 		if (sess_srv_cnt && !ss_srv) {
 			ERR(ctx->trm, "Failed to alloc memory\n");
 			err = -ENOMEM;
@@ -4366,8 +4376,8 @@ int cmd_server_devices_force_close(int argc, const char *argv[], const struct pa
 		if (ss_srv[0])
 			sess_cnt = 1;
 		else
-			sess_cnt = find_sess_match(session_name, sess_srv, ss_srv);
-		
+			sess_cnt = find_sess_match(session_name, ctx->rnbdmode, sess_srv, ss_srv);
+
 		if (sess_cnt > 1) {
 			ERR(ctx->trm, "Multiple sessions match '%s'\n", session_name);
 			err = -EINVAL;
@@ -4427,17 +4437,17 @@ int cmd_path_operation(int (*operation)(const char *session_name,
 				  help_context, cmd, ctx);
 	if (err < 0)
 		return err;
-	
+
 	err = parse_map_parameters(argc, argv, &accepted,
 				   params_default,
 				   ctx, cmd, help_context);
 	if (err < 0)
 		return err;
-	
+
 	argc -= err; argv += err;
-	
+
 	if (argc > 0) {
-		
+
 		handle_unknown_param(*argv, params_default, ctx);
 		return -EINVAL;
 	}
@@ -4713,7 +4723,7 @@ int cmd_client_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 	const char *_help_context_client = ctx->pname_with_mode
 		? "device" : "client device";
 	const char *_help_context_both = ctx->pname_with_mode ? "device" :
-		(ctx->rnbdmode==RNBD_CLIENT ? "client device" : "device");
+		(ctx->rnbdmode == RNBD_CLIENT ? "client device" : "device");
 
 	int err = 0;
 	const struct param *cmd;
@@ -5186,7 +5196,8 @@ int cmd_client(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = cmd_unmap(argc, argv, param, _help_context, ctx);
 			break;
 		case TOK_REMAP:
-			err = cmd_remap(argc, argv, param, true, _help_context, ctx);
+			err = cmd_remap(argc, argv, param, true,
+					_help_context, ctx);
 			break;
 		case TOK_HELP:
 			if (ctx->pname_with_mode
@@ -5202,7 +5213,8 @@ int cmd_client(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		default:
 			usage_param("rnbd client",
 				   params_object_type_help_client, ctx);
-			handle_unknown_param(*argv, params_object_type_client, ctx);
+			handle_unknown_param(*argv, params_object_type_client,
+					     ctx);
 			err = -EINVAL;
 			break;
 		}
@@ -5231,7 +5243,8 @@ int cmd_server(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		if (!param) {
 			usage_param("rnbd server",
 				   params_object_type_help_server, ctx);
-			handle_unknown_param(*argv, params_object_type_server, ctx);
+			handle_unknown_param(*argv, params_object_type_server,
+					     ctx);
 			err = -EINVAL;
 		} else if (param->parse) {
 			(void) param->parse(argc, argv, param, ctx);
@@ -5296,7 +5309,8 @@ int cmd_server(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		default:
 			usage_param("rnbd server",
 				   params_object_type_help_server, ctx);
-			handle_unknown_param(*argv, params_object_type_server, ctx);
+			handle_unknown_param(*argv, params_object_type_server,
+					     ctx);
 			err = -EINVAL;
 			break;
 		}
@@ -5384,7 +5398,8 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = cmd_unmap(argc, argv, param, "device", ctx);
 			break;
 		case TOK_REMAP:
-			err = cmd_remap(argc, argv, param, false, "device", ctx);
+			err = cmd_remap(argc, argv, param, false,
+					"device", ctx);
 			break;
 		case TOK_HELP:
 			help_param(ctx->pname, params_both_help, ctx);
@@ -5417,11 +5432,11 @@ int cmd_start(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		param = find_param(*argv, params_mode);
 	if (!param) {
 		ctx->rnbdmode = mode_for_host();
-		
+
 		INF(ctx->debug_set,
 		    "RNBD mode deduced from sysfs: '%s'.\n",
 		    mode_to_string(ctx->rnbdmode));
-		
+
 		switch (ctx->rnbdmode) {
 		case RNBD_CLIENT:
 			return cmd_client(argc, argv, ctx);
@@ -5431,7 +5446,8 @@ int cmd_start(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			if (argc < 1) {
 				usage_param(ctx->pname, params_mode_help, ctx);
 				if (!ctx->complete_set)
-					ERR(ctx->trm, "Please specify an argument\n");
+					ERR(ctx->trm,
+					    "Please specify an argument\n");
 				return -EINVAL;
 			}
 			return cmd_both(argc, argv, ctx);
@@ -5439,7 +5455,7 @@ int cmd_start(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			ERR(ctx->trm,
 			    "RNBD mode not specified and could not be deduced.\n");
 			print_usage(NULL, params_mode_help, ctx);
-			
+
 			handle_unknown_param(*argv, params_mode, ctx);
 			usage_param(ctx->pname, params_mode_help, ctx);
 			err = -EINVAL;
