@@ -1,4 +1,4 @@
-.TH RNBD "8" "May 2020" "rnbd 1.0.7" "System Administration Utilities"
+.TH RNBD "8" "October 2020" "rnbd 1.0.7" "System Administration Utilities"
 .SH NAME
 rnbd - Configuration tool for RNBD driver and RTRS library.
 .SH SYNOPSIS
@@ -490,6 +490,22 @@ Options:
     {format}        Output format: csv|json|xml
     {unit}          Units to use for size (in binary): B|K|M|G|T|P|E
     help            Display help and exit. [fields|all]
+
+
+.B
+
+rnbd server device close <device> [OPTIONS]
+
+Close a particular device for a given session
+
+Arguments:
+    <device>        Identifier of a device to be closed.
+
+Options:
+    <session>       Identifier of a session for which the device is to be closed.
+    force           Force operation
+    verbose         Verbose output
+    help            Display help and exit
 
 
 .B
