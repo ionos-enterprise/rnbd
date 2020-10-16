@@ -3196,6 +3196,7 @@ static struct param *params_object_type_server[] = {
 	&_params_sess,
 	&_params_paths,
 	&_params_path,
+	&_cmd_close_device,
 	&_cmd_dump_all,
 	&_cmd_list_devices,
 	&_cmd_show,
@@ -5298,6 +5299,9 @@ int cmd_server(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			break;
 		case TOK_DUMP:
 			err = cmd_dump_all(argc, argv, param, "", ctx);
+			break;
+		case TOK_CLOSE:
+			err = cmd_server_devices_force_close(argc, argv, param, _help_context, ctx);
 			break;
 		case TOK_LIST:
 
