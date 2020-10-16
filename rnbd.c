@@ -4387,6 +4387,9 @@ int cmd_server_devices_force_close(int argc, const char *argv[], const struct pa
 			err = -ENOENT;
 			goto cleanup_err;
 		}
+		INF(ctx->debug_set,
+		    "Session name '%s' matches %s.\n",
+		    session_name, ss_srv[0]->sessname);
 		for (i = 0; i < devs_cnt; i++) {
 			if (ds_exp[i]->sess == ss_srv[0]) {
 				ds_match = ds_exp[i];
@@ -4396,6 +4399,17 @@ int cmd_server_devices_force_close(int argc, const char *argv[], const struct pa
 		free(ss_srv);
 		ss_srv = NULL;
 		if (!ds_match) {
+			if (ctx->debug_set && devs_cnt) {
+				INF(ctx->debug_set,
+				    "Device name '%s' matching:\n",
+				    device_name);
+				for (i = 0; i < devs_cnt; i++) {
+					INF(ctx->debug_set,
+					    "Device %s (%s).\n",
+					    ds_exp[i]->dev->devname,
+					    ds_exp[i]->mapping_path);
+				}
+			}
 			ERR(ctx->trm,
 			    "There is no match for device '%s' and session '%s'\n",
 			    device_name, session_name);
@@ -4408,6 +4422,15 @@ int cmd_server_devices_force_close(int argc, const char *argv[], const struct pa
 		ERR(ctx->trm,
 		    "Device name %s is ambiguous. Please provide a session name to make it unique.\n",
 		    device_name);
+		if (ctx->debug_set) {
+			INF(ctx->debug_set,
+			    "Candidate session are:\n");
+			for (i = 0; i < devs_cnt; i++) {
+				INF(ctx->debug_set,
+				    "Session %s.\n",
+				    ds_exp[i]->sess->sessname);
+			}
+		}
 		err = -EINVAL;
 		goto cleanup_err;
 	} else {
@@ -4417,7 +4440,16 @@ int cmd_server_devices_force_close(int argc, const char *argv[], const struct pa
 		goto cleanup_err;
 	}
 	free(ds_exp);
-	return server_devices_force_close(ds_match->dev->devname, ds_match->sess->sessname, ctx);
+
+	INF(ctx->verbose_set,
+	    "Device name '%s' matches %s (%s).\n",
+	    device_name, ds_match->dev->devname, ds_match->mapping_path);
+	INF(ctx->verbose_set,
+	    "Will be closed for session %s.\n",
+	    ds_match->sess->sessname);
+
+	return server_devices_force_close(ds_match->dev->devname,
+					  ds_match->sess->sessname, ctx);
 cleanup_err:
 	if (ss_srv)
 		free(ss_srv);
