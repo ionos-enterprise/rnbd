@@ -253,7 +253,7 @@ static int parse_all(int argc, const char *argv[],
 static int parse_flag(int argc, const char *argv[],
 		     const struct param *param, struct rnbd_ctx *ctx)
 {
-	*(short *)(((char *)ctx)+(param->offset)) = 1;
+	*(bool *)(((char *)ctx)+(param->offset)) = 1;
 
 	return 1;
 }
