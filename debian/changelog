@@ -1,5 +1,6 @@
 rnbd-tool (1.0.8) jessie stretch buster; urgency=medium
 
+  * comand line: fix handling of noheaders nototals notree
   * Add close device from server side
 
  -- Lutz Pogrell <lutz.pogrell@cloud.ionos.com>  Wed, 21 Oct 2020 09:24:09 +0200
