@@ -1,5 +1,6 @@
 rnbd-tool (1.0.8) jessie stretch buster; urgency=medium
 
+  * comand line: improve error message when kernel modules are not loaded
   * comand line: fix handling of noheaders nototals notree
   * Add close device from server side
 
