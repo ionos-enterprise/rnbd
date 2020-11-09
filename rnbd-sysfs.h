@@ -104,6 +104,6 @@ int scanf_sysfs(const char *dir, const char *entry, const char *format, ...);
 enum rnbdmode mode_for_host(void);
 const char *mode_to_string(enum rnbdmode mode);
 
-void check_compat_sysfs(const struct rnbd_ctx *ctx);
+void check_compat_sysfs(struct rnbd_ctx *ctx);
 const struct rnbd_sysfs_info * const
 get_sysfs_info(const struct rnbd_ctx *ctx);

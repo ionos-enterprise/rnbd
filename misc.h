@@ -49,6 +49,7 @@ struct path {
 struct rnbd_ctx {
 	const char *pname;
 	const char *name;
+	bool sysfs_avail;
 
 	uint64_t size_sect;
 	enum rnbd_size_state size_state;

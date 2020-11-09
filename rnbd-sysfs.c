@@ -672,19 +672,22 @@ enum rnbdmode mode_for_host(void)
  * But if none or both are pressent, use "rnbd".
  * However if the executable name is "ibnbd" use this in any case.
  */
-void check_compat_sysfs(const struct rnbd_ctx *ctx)
+void check_compat_sysfs(struct rnbd_ctx *ctx)
 {
 	if ((faccessat(AT_FDCWD, PATH_DEV_CLT, F_OK, AT_EACCESS) == 0
 	    || faccessat(AT_FDCWD, PATH_DEV_SRV, F_OK, AT_EACCESS) == 0)
-	    && (strcmp(ctx->pname, COMPAT_PATH_DEV_NAME) != 0))
+	    && (strcmp(ctx->pname, COMPAT_PATH_DEV_NAME) != 0)) {
+		ctx->sysfs_avail = 1;
 		/* default is already set */
 		return;
-
+	}
 	if ((faccessat(AT_FDCWD, COMPAT_PATH_DEV_CLT, F_OK, AT_EACCESS) == 0)
 	    || (faccessat(AT_FDCWD, COMPAT_PATH_DEV_SRV, F_OK, AT_EACCESS) == 0)
-	    || (strcmp(ctx->pname, COMPAT_PATH_DEV_NAME) == 0))
+	    || (strcmp(ctx->pname, COMPAT_PATH_DEV_NAME) == 0)) {
 
+		ctx->sysfs_avail = 1;
 		use_sysfs_info = &_compat_sysfs_info;
+	}
 }
 
 const char *mode_to_string(enum rnbdmode mode)

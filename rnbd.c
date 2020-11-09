@@ -2249,8 +2249,11 @@ static int client_devices_map(const char *from_name, const char *device_name,
 	ret = printf_sysfs(get_sysfs_info(ctx)->path_dev_clt,
 			   "map_device", ctx, "%s", cmd);
 	if (ret)
-		ERR(ctx->trm, "Failed to map device: %s (%d)\n",
-		    strerror(-ret), ret);
+		if (ctx->sysfs_avail)
+			ERR(ctx->trm, "Failed to map device: %s (%d)\n",
+			    strerror(-ret), ret);
+		else
+			ERR(ctx->trm, "Failed to map device: modules not loaded.\n");
 	else
 		INF(ctx->verbose_set, "Successfully mapped '%s' from '%s'.\n",
 		    device_name, from_name ? from_name : sessname);
