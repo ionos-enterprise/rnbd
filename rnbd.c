@@ -2604,7 +2604,7 @@ static void help_reconnect_path(const char *program_name,
 	print_opt("[session]",
 		  "Optional session name to select a path in the case paths");
 	print_opt("", "with same addresses are used in multiple sessions.");
-	print_opt("<identifier>",
+	print_opt("<path>",
 		  "Name or identifier of a path:");
 	print_opt("", "[pathname], [sessname:port], etc.");
 
