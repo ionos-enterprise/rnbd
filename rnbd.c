@@ -3027,22 +3027,8 @@ static struct param _cmd_reconnect_session =
 		"Disconnect and connect again a whole session",
 		"<session>",
 		 NULL, help_reconnect_session};
-static struct param _cmd_rec_session =
-	{TOK_RECONNECT, "rec",
-		"Reconnect a",
-		"",
-		"Disconnect and connect again a whole session",
-		"<session>",
-		 NULL, help_reconnect_session};
 static struct param _cmd_reconnect_path =
 	{TOK_RECONNECT, "reconnect",
-		"Reconnect a",
-		"",
-		"Disconnect and connect again a single path of a session",
-		"[session] <path>",
-		 NULL, help_reconnect_path};
-static struct param _cmd_rec_path =
-	{TOK_RECONNECT, "rec",
 		"Reconnect a",
 		"",
 		"Disconnect and connect again a single path of a session",
@@ -3303,7 +3289,6 @@ static struct param *cmds_client_sessions[] = {
 	&_cmd_list_sessions,
 	&_cmd_show_sessions,
 	&_cmd_reconnect_session,
-	&_cmd_rec_session,
 	&_cmd_remap_session,
 	&_cmd_help,
 	&_cmd_null
@@ -3335,7 +3320,6 @@ static struct param *cmds_client_paths[] = {
 	&_cmd_disconnect_path,
 	&_cmd_dis_path,
 	&_cmd_reconnect_path,
-	&_cmd_rec_path,
 	&_cmd_add,
 	&_cmd_delete,
 	&_cmd_del,
@@ -3405,7 +3389,6 @@ static struct param *cmds_both_sessions[] = {
 	&_cmd_disconnect_session,
 	&_cmd_dis_session,
 	&_cmd_reconnect_session,
-	&_cmd_rec_session,
 	&_cmd_help,
 	&_cmd_null
 };
@@ -3424,7 +3407,6 @@ static struct param *cmds_both_paths[] = {
 	&_cmd_disconnect_session,
 	&_cmd_dis_session,
 	&_cmd_reconnect_session,
-	&_cmd_rec_session,
 	&_cmd_add,
 	&_cmd_delete,
 	&_cmd_del,
