@@ -437,6 +437,10 @@ static struct param _params_minus_f =
 #endif
 static struct param _params_all =
 	{TOK_ALL, "all", "", "", "Print all columns", NULL, parse_all, 0};
+static struct param _params_all_recover =
+	{TOK_ALL, "all", "", "", "Recover all",
+	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, all_set)};
+
 static struct param _params_null =
 	{TOK_NONE, 0};
 
@@ -447,6 +451,7 @@ static struct param *params_options[] = {
 	&_params_force,
 	&_params_help,
 	&_params_verbose,
+	&_params_all_recover,
 	&_params_null
 };
 
@@ -2591,6 +2596,24 @@ static void help_reconnect_session(const char *program_name,
 	print_param_descr("help");
 }
 
+static void help_recover_session(const char *program_name,
+				   const struct param *cmd,
+				   const struct rnbd_ctx *ctx)
+{
+	if (!program_name)
+		program_name = "<session>|all ";
+
+	cmd_print_usage_descr(cmd, program_name, ctx);
+
+	printf("\nArguments:\n");
+	print_opt("<session>", "Name or identifier of a session.");
+
+	printf("\nOptions:\n");
+	print_param_descr("all");
+	print_param_descr("verbose");
+	print_param_descr("help");
+}
+
 static void help_reconnect_path(const char *program_name,
 				const struct param *cmd,
 				const struct rnbd_ctx *ctx)
@@ -3027,6 +3050,13 @@ static struct param _cmd_reconnect_session =
 		"Disconnect and connect again a whole session",
 		"<session>",
 		 NULL, help_reconnect_session};
+static struct param _cmd_recover_session =
+	{TOK_RECOVER, "recover",
+		"Recover a",
+		"",
+		"Recover a session: reconnect disconnected paths.",
+		"<session>|all",
+		 NULL, help_recover_session};
 static struct param _cmd_reconnect_path =
 	{TOK_RECONNECT, "reconnect",
 		"Reconnect a",
@@ -3289,6 +3319,7 @@ static struct param *cmds_client_sessions[] = {
 	&_cmd_list_sessions,
 	&_cmd_show_sessions,
 	&_cmd_reconnect_session,
+	&_cmd_recover_session,
 	&_cmd_remap_session,
 	&_cmd_help,
 	&_cmd_null
@@ -3298,6 +3329,7 @@ static struct param *cmds_client_sessions_help[] = {
 	&_cmd_list_sessions,
 	&_cmd_show_sessions,
 	&_cmd_reconnect_session,
+	&_cmd_recover_session,
 	&_cmd_remap_session,
 	&_cmd_help,
 	&_cmd_null
@@ -3389,6 +3421,7 @@ static struct param *cmds_both_sessions[] = {
 	&_cmd_disconnect_session,
 	&_cmd_dis_session,
 	&_cmd_reconnect_session,
+	&_cmd_recover_session,
 	&_cmd_help,
 	&_cmd_null
 };
@@ -3397,6 +3430,7 @@ static struct param *cmds_both_sessions_help[] = {
 	&_cmd_list_sessions,
 	&_cmd_show_sessions,
 	&_cmd_remap_session,
+	&_cmd_recover_session,
 	&_cmd_help,
 	&_cmd_null
 };
@@ -4287,6 +4321,20 @@ int cmd_client_session_reconnect(int argc, const char *argv[], const struct para
 	return err;
 }
 
+int cmd_client_session_recover(int argc, const char *argv[],
+			       const struct param *cmd,
+			       const char *help_context, struct rnbd_ctx *ctx)
+{
+	int err = parse_name_help(argc--, argv++,
+				  help_context, cmd, ctx);
+	if (err < 0)
+		return err;
+	/*
+	 * TODO
+	 */
+	return err;
+}
+
 int cmd_server_session_disconnect(int argc, const char *argv[], const struct param *cmd,
 				  const char *help_context, struct rnbd_ctx *ctx)
 {
@@ -4554,6 +4602,10 @@ int cmd_both_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		case TOK_DISCONNECT:
 			err = cmd_ambiguous(argc, argv, cmd, "both session", ctx);
 			break;
+		case TOK_RECOVER:
+			err = cmd_client_session_recover(argc, argv, cmd, _help_context, ctx);
+			break;
+
 		case TOK_HELP:
 			parse_help(argc, argv, NULL, ctx);
 			print_help(_help_context,
@@ -4714,6 +4766,9 @@ int cmd_client_sessions(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			break;
 		case TOK_RECONNECT:
 			err = cmd_client_session_reconnect(argc, argv, cmd, _help_context, ctx);
+			break;
+		case TOK_RECOVER:
+			err = cmd_client_session_recover(argc, argv, cmd, _help_context, ctx);
 			break;
 		case TOK_REMAP:
 			err = cmd_session_remap(argc, argv, cmd,

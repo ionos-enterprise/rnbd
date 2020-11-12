@@ -98,6 +98,7 @@ struct rnbd_ctx {
 	bool noheaders_set;
 	bool nototals_set;
 	bool force_set;
+	bool all_set;
 
 	struct path paths[MAX_PATHS_PER_SESSION]; /* lazy */
 	int path_cnt;
