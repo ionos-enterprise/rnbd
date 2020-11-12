@@ -29,7 +29,7 @@ echo "(instead of rnbd client session list), rnbd show client@server (instead of
 
 modes="client server"
 objects="device session path"
-cmds="list show map resize unmap remap close disconnect reconnect add delete readd"
+cmds="list show map resize unmap remap close disconnect reconnect add delete readd recover"
 
 echo ".SH SUBCOMMANDS"
 
