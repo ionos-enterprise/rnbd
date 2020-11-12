@@ -61,14 +61,14 @@ _rnbd()
 	COMPREPLY=()
 
 	if ((COMP_CWORD == 1)); then
-		opts="help list show dump client server device session path map resize unmap remap version"
+		opts="help list show dump client server device session path map resize unmap remap recover version"
 		COMPREPLY=( $( compgen -W "${opts}" -- "${cur}" ) )
 		return 0
 	fi
 
 	case ${prev} in
 	client|clt)
-		opts="$($ocmd) list show dump map resize unmap remap"
+		opts="$($ocmd) list show dump map resize unmap remap recover"
 		;;
 	server|srv)
 		opts="$($ocmd) list show dump"
@@ -115,7 +115,7 @@ _rnbd()
 		esac
 		return 0
 		;;
-	reconnect|resize|unmap|remap|disconnect|delete)
+	reconnect|resize|unmap|remap|disconnect|delete|recover)
 		cmd="${COMP_WORDS[@]:0:COMP_CWORD-2} "
 		case ${pprev} in
 		sess|session|sessions)
@@ -131,6 +131,11 @@ _rnbd()
 			_path_names "$cur" "$cmd"
 			;;
 		esac
+
+		if [ ${prev} == "recover" ]; then
+			COMPREPLY=("all" ${COMPREPLY[@]})
+		fi
+
 		return 0
 		;;
 	from)
