@@ -2805,6 +2805,36 @@ static int client_path_reconnect(const char *session_name,
 			      ctx);
 }
 
+static int client_path_recover(const char *session_name,
+			       const char *path_name,
+			       struct rnbd_ctx *ctx)
+{
+	struct rnbd_path *path;
+
+	path = find_single_path(session_name, path_name, ctx, paths_clt, paths_clt_cnt);
+
+	if (!path)
+		return -ENOENT;
+
+	/*
+	 * Return success for connected paths
+	 */
+	if (!strcmp(path->state, "connected")) {
+		INF(ctx->debug_set,
+		    "Path '%s' is connected, skipping.\n",
+		    path_name);
+		return 0;
+	}
+
+	INF(ctx->debug_set, "Path '%s' is '%s', recovering.\n",
+		    path_name, path->state);
+
+	return client_path_do(session_name, path_name, "reconnect",
+			      "Successfully reconnected path '%s' of session '%s'.\n",
+			      "Failed to reconnect path '%s' from session '%s': %s (%d)\n",
+			      ctx);
+}
+
 static int client_path_disconnect(const char *session_name,
 				  const char *path_name,
 				  struct rnbd_ctx *ctx)
@@ -4325,13 +4355,51 @@ int cmd_client_session_recover(int argc, const char *argv[],
 			       const struct param *cmd,
 			       const char *help_context, struct rnbd_ctx *ctx)
 {
-	int err = parse_name_help(argc--, argv++,
-				  help_context, cmd, ctx);
+	struct rnbd_sess *sess;
+	int i, err;
+
+	err = parse_name_help(argc--, argv++,
+			      help_context, cmd, ctx);
 	if (err < 0)
 		return err;
-	/*
-	 * TODO
-	 */
+
+	err = parse_cmd_parameters(argc, argv,
+				   params_default,
+				   ctx, cmd, help_context, 0);
+	if (err < 0)
+		return err;
+
+	argc -= err; argv += err;
+
+	if (argc > 0) {
+
+		handle_unknown_param(*argv,
+				     params_default, ctx);
+		return -EINVAL;
+	}
+
+	if (!strcmp(ctx->name, "all")) {
+		sess = find_single_session(ctx->name, ctx,
+					   sess_clt, sess_clt_cnt,
+					   false);
+		/*
+		 * If session with the name "all" doesn't exist
+		 * recover all sessions
+		 */
+		if (!sess) {
+			for (i = 0; sess_clt[i]; i++)
+				err |= session_do_all_paths(RNBD_CLIENT,
+							sess_clt[i]->sessname,
+							client_path_recover,
+							ctx);
+			return err;
+		}
+	}
+
+	err = session_do_all_paths(RNBD_CLIENT,
+				   ctx->name,
+				   client_path_recover,
+				   ctx);
 	return err;
 }
 
@@ -4940,6 +5008,10 @@ int cmd_client_paths(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			break;
 		case TOK_RECONNECT:
 			err = cmd_path_operation(client_path_reconnect,
+						 argc, argv, cmd, _help_context, ctx);
+			break;
+		case TOK_RECOVER:
+			err = cmd_path_operation(client_path_recover,
 						 argc, argv, cmd, _help_context, ctx);
 			break;
 		case TOK_ADD:
