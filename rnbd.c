@@ -2614,6 +2614,29 @@ static void help_recover_session(const char *program_name,
 	print_param_descr("help");
 }
 
+static void help_recover_path(const char *program_name,
+			      const struct param *cmd,
+			      const struct rnbd_ctx *ctx)
+{
+	if (!program_name)
+		program_name = "<path> ";
+
+	cmd_print_usage_descr(cmd, program_name, ctx);
+
+	printf("\nArguments:\n");
+	print_opt("[session]",
+		  "Optional session name to select a path in the case paths");
+	print_opt("", "with same addresses are used in multiple sessions.");
+	print_opt("<path>",
+		  "Name or identifier of a path:");
+	print_opt("", "[pathname], [sessname:port], etc.");
+
+	printf("\nOptions:\n");
+	print_param_descr("all");
+	print_param_descr("verbose");
+	print_param_descr("help");
+}
+
 static void help_reconnect_path(const char *program_name,
 				const struct param *cmd,
 				const struct rnbd_ctx *ctx)
@@ -2813,8 +2836,13 @@ static int client_path_recover(const char *session_name,
 
 	path = find_single_path(session_name, path_name, ctx, paths_clt, paths_clt_cnt);
 
-	if (!path)
-		return -ENOENT;
+	if (!path) {
+		if (!strcmp(path_name, "all"))
+			return session_do_all_paths(RNBD_CLIENT, session_name,
+						    client_path_recover, ctx);
+		else
+			return -ENOENT;
+	}
 
 	/*
 	 * Return success for connected paths
@@ -3094,6 +3122,13 @@ static struct param _cmd_reconnect_path =
 		"Disconnect and connect again a single path of a session",
 		"[session] <path>",
 		 NULL, help_reconnect_path};
+static struct param _cmd_recover_path =
+	{TOK_RECOVER, "recover",
+		"Recover a",
+		"",
+		"Recover a path: reconnect if not in connected state.",
+		"<path>|all",
+		 NULL, help_recover_path};
 static struct param _cmd_add =
 	{TOK_ADD, "add",
 		"Add a",
@@ -3382,6 +3417,7 @@ static struct param *cmds_client_paths[] = {
 	&_cmd_disconnect_path,
 	&_cmd_dis_path,
 	&_cmd_reconnect_path,
+	&_cmd_recover_path,
 	&_cmd_add,
 	&_cmd_delete,
 	&_cmd_del,
@@ -3395,6 +3431,7 @@ static struct param *cmds_client_paths_help[] = {
 	&_cmd_show_paths,
 	&_cmd_disconnect_path,
 	&_cmd_reconnect_path,
+	&_cmd_recover_path,
 	&_cmd_add,
 	&_cmd_delete,
 	&_cmd_readd,
