@@ -276,6 +276,21 @@ Options:
 
 .B
 
+rnbd client session recover <session>|all [OPTIONS]
+
+Recover a session: reconnect disconnected paths.
+
+Arguments:
+    <session>       Name or identifier of a session.
+
+Options:
+    all             Recover all
+    verbose         Verbose output
+    help            Display help and exit
+
+
+.B
+
 rnbd client path list [OPTIONS]
 
 List information on paths.
@@ -427,6 +442,24 @@ Arguments:
                     [pathname], [sessname:port], etc.
 
 Options:
+    verbose         Verbose output
+    help            Display help and exit
+
+
+.B
+
+rnbd client path recover <path>|all [OPTIONS]
+
+Recover a path: reconnect if not in connected state.
+
+Arguments:
+    [session]       Optional session name to select a path in the case paths
+                    with same addresses are used in multiple sessions.
+    <path>          Name or identifier of a path:
+                    [pathname], [sessname:port], etc.
+
+Options:
+    all             Recover all
     verbose         Verbose output
     help            Display help and exit
 
