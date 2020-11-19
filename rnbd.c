@@ -2104,14 +2104,16 @@ static struct rnbd_path *find_single_path(const char *session_name,
 					  const char *path_name,
 					  struct rnbd_ctx *ctx,
 					  struct rnbd_path **paths,
-					  int path_cnt)
+					  int path_cnt, bool print_err)
 {
 	struct rnbd_path **matching_paths, *res = NULL;
 	int match_count;
 
 	if (!path_cnt) {
-		ERR(ctx->trm,
-		    "Path '%s' not found: there exists no paths\n", path_name);
+		if (print_err)
+			ERR(ctx->trm,
+			    "Path '%s' not found: there exists no paths\n",
+			    path_name);
 		return NULL;
 	}
 
@@ -2126,11 +2128,12 @@ static struct rnbd_path *find_single_path(const char *session_name,
 	if (match_count == 1) {
 		res = *matching_paths;
 	} else {
-		ERR(ctx->trm, "%s '%s'.\n",
-		    (match_count > 1)  ?
-			"Please specify the path uniquely. There are multiple paths matching"
-			: "No path found matching",
-		    path_name);
+		if (print_err)
+			ERR(ctx->trm, "%s '%s'.\n",
+			    (match_count > 1)  ?
+				"Please specify the path uniquely. There are multiple paths matching"
+				: "No path found matching",
+			    path_name);
 	}
 
 	free(matching_paths);
@@ -2150,7 +2153,7 @@ static int client_devices_map(const char *from_name, const char *device_name,
 		/* User provided only a path to designate a session to use. */
 
 		path = find_single_path(NULL, ctx->paths[0].dst, ctx,
-					paths_clt, paths_clt_cnt);
+					paths_clt, paths_clt_cnt, true);
 		if (path) {
 			sess = path->sess;
 			INF(ctx->debug_set,
@@ -2789,7 +2792,7 @@ static int client_path_do(const char *session_name,
 	int ret;
 
 	path = find_single_path(session_name, path_name,
-				ctx, paths_clt, paths_clt_cnt);
+				ctx, paths_clt, paths_clt_cnt, true);
 
 	if (!path)
 		return -EINVAL;
@@ -2834,20 +2837,22 @@ static int client_path_recover(const char *session_name,
 {
 	struct rnbd_path *path;
 
-	path = find_single_path(session_name, path_name, ctx, paths_clt, paths_clt_cnt);
-
-	if (!path) {
-		if (!strcmp(path_name, "all")) {
-			if (!session_name) {
-				ERR(ctx->trm, "Please provide sessname to recover all paths\n");
-				return -EINVAL;
-			}
-
+	if (!session_name && !strcmp(path_name, "all")) {
+		ERR(ctx->trm, "Please provide session to recover all paths for\n");
+		return -EINVAL;
+	} else if (session_name && !strcmp(path_name, "all")) {
+		path = find_single_path(session_name, path_name, ctx, paths_clt,
+					paths_clt_cnt, false);
+		if (!path)
 			return session_do_all_paths(RNBD_CLIENT, session_name,
 						    client_path_recover, ctx);
-		} else
-			return -ENOENT;
+	} else {
+		path = find_single_path(session_name, path_name, ctx, paths_clt,
+					paths_clt_cnt, true);
 	}
+
+	if (!path)
+		return -ENOENT;
 
 	/*
 	 * Return success for connected paths
@@ -2886,7 +2891,8 @@ static int client_path_readd(const char *session_name,
 	struct rnbd_path *path;
 	int ret;
 
-	path = find_single_path(session_name, path_name, ctx, paths_clt, paths_clt_cnt);
+	path = find_single_path(session_name, path_name, ctx, paths_clt,
+				paths_clt_cnt, true);
 
 	if (!path)
 		return -EINVAL;
@@ -2930,7 +2936,8 @@ static int server_path_disconnect(const char *session_name,
 	struct rnbd_path *path;
 	int ret;
 
-	path = find_single_path(session_name, path_name, ctx, paths_srv, paths_srv_cnt);
+	path = find_single_path(session_name, path_name, ctx, paths_srv,
+				paths_srv_cnt, true);
 
 	if (!path)
 		return -EINVAL;
