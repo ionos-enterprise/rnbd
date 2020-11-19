@@ -4339,29 +4339,6 @@ int cmd_path_delete(int argc, const char *argv[], const struct param *cmd,
 	return client_path_delete(NULL, ctx->name, ctx);
 }
 
-int cmd_path_readd(int argc, const char *argv[], const struct param *cmd,
-		   const char *help_context, struct rnbd_ctx *ctx)
-{
-	int err = parse_name_help(argc--, argv++,
-				  help_context, cmd, ctx);
-	if (err < 0)
-		return err;
-
-	err = parse_cmd_parameters(argc, argv, params_default,
-				   ctx, cmd, help_context, 0);
-	if (err < 0)
-		return err;
-
-	argc -= err; argv += err;
-
-	if (argc > 0) {
-
-		handle_unknown_param(*argv, params_default, ctx);
-		return -EINVAL;
-	}
-	return client_path_readd(NULL, ctx->name, ctx);
-}
-
 int cmd_client_session_reconnect(int argc, const char *argv[], const struct param *cmd,
 				 const char *help_context, struct rnbd_ctx *ctx)
 {
