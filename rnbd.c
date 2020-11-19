@@ -2837,7 +2837,7 @@ static int client_path_recover(const char *session_name,
 	path = find_single_path(session_name, path_name, ctx, paths_clt, paths_clt_cnt);
 
 	if (!path) {
-		if (!strcmp(path_name, "all"))
+		if (!strcmp(path_name, "all")) {
 			if (!session_name) {
 				ERR(ctx->trm, "Please provide sessname to recover all paths\n");
 				return -EINVAL;
@@ -2845,7 +2845,7 @@ static int client_path_recover(const char *session_name,
 
 			return session_do_all_paths(RNBD_CLIENT, session_name,
 						    client_path_recover, ctx);
-		else
+		} else
 			return -ENOENT;
 	}
 
