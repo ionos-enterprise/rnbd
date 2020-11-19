@@ -2838,6 +2838,11 @@ static int client_path_recover(const char *session_name,
 
 	if (!path) {
 		if (!strcmp(path_name, "all"))
+			if (!session_name) {
+				ERR(ctx->trm, "Please provide sessname to recover all paths\n");
+				return -EINVAL;
+			}
+
 			return session_do_all_paths(RNBD_CLIENT, session_name,
 						    client_path_recover, ctx);
 		else
@@ -3127,7 +3132,7 @@ static struct param _cmd_recover_path =
 		"Recover a",
 		"",
 		"Recover a path: reconnect if not in connected state.",
-		"<path>|all",
+		"[session] <path>|all",
 		 NULL, help_recover_path};
 static struct param _cmd_add =
 	{TOK_ADD, "add",
