@@ -2648,6 +2648,24 @@ static void help_reconnect_session(const char *program_name,
 	print_param_descr("help");
 }
 
+static void help_recover_device(const char *program_name,
+				   const struct param *cmd,
+				   const struct rnbd_ctx *ctx)
+{
+	if (!program_name)
+		program_name = "<device> ";
+
+	cmd_print_usage_descr(cmd, program_name, ctx);
+
+	printf("\nArguments:\n");
+	print_opt("<device>", "Name or identifier of a device.");
+
+	printf("\nOptions:\n");
+	print_param_descr("all");
+	print_param_descr("verbose");
+	print_param_descr("help");
+}
+
 static void help_recover_session(const char *program_name,
 				   const struct param *cmd,
 				   const struct rnbd_ctx *ctx)
@@ -3135,6 +3153,13 @@ static struct param _cmd_close_device =
 		"Close a particular device for a given session",
 		"<device>",
 		 NULL, help_close_device};
+static struct param _cmd_client_recover_device =
+	{TOK_RECOVER, "recover",
+		"Recover a",
+		"",
+		"Recover a device: remap all closed devices.",
+		"<device>|all",
+		 NULL, help_recover_device};
 static struct param _cmd_disconnect_session =
 	{TOK_DISCONNECT, "disconnect",
 		"Disconnect a",
@@ -3486,6 +3511,7 @@ static struct param *cmds_client_devices[] = {
 	&_cmd_resize,
 	&_cmd_unmap,
 	&_cmd_remap,
+	&_cmd_client_recover_device,
 	&_cmd_help,
 	&_cmd_null
 };
@@ -4308,6 +4334,20 @@ int cmd_close_device(int argc, const char *argv[], const struct param *cmd,
 	return client_devices_remap(ctx->name, ctx);
 }
 
+int cmd_client_recover_device(int argc, const char *argv[],
+			       const struct param *cmd,
+			       const char *help_context, struct rnbd_ctx *ctx)
+{
+	int err;
+
+	err = parse_name_help(argc--, argv++,
+			      help_context, cmd, ctx);
+	if (err < 0)
+		return err;
+
+	return err;
+}
+
 int cmd_session_remap(int argc, const char *argv[], const struct param *cmd,
 		      const char *help_context, struct rnbd_ctx *ctx)
 {
@@ -5099,6 +5139,9 @@ int cmd_client_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			break;
 		case TOK_REMAP:
 			err = cmd_remap(argc, argv, cmd, false, _help_context_client, ctx);
+			break;
+		case TOK_RECOVER:
+			err = cmd_client_recover_device(argc, argv, cmd, _help_context_client, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, NULL, ctx);
