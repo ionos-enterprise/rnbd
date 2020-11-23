@@ -4338,12 +4338,51 @@ int cmd_client_recover_device(int argc, const char *argv[],
 			       const struct param *cmd,
 			       const char *help_context, struct rnbd_ctx *ctx)
 {
-	int err;
+	const struct rnbd_sess_dev *ds;
+	int i, err, tmp_err;
 
 	err = parse_name_help(argc--, argv++,
 			      help_context, cmd, ctx);
 	if (err < 0)
 		return err;
+
+	err = parse_cmd_parameters(argc, argv, params_default,
+				   ctx, cmd, help_context, 0);
+	if (err < 0)
+		return err;
+
+	argc -= err; argv += err; err = 0;
+
+	if (argc > 0) {
+		handle_unknown_param(*argv, params_default, ctx);
+		return -EINVAL;
+	}
+
+	if (!strcmp(ctx->name, "all")) {
+		for (i = 0; sds_clt[i]; i++) {
+			if (!strcmp(sds_clt[i]->dev->state, "closed")) {
+				tmp_err = client_device_remap(sds_clt[i]->dev, ctx);
+				if (!err)
+					err = tmp_err;
+			}
+		}
+	} else {
+		ds = find_single_device(ctx->name, ctx, sds_clt, sds_clt_cnt);
+		if (!ds)
+			return -EINVAL;
+
+		if (!strcmp(ds->dev->state, "closed")) {
+			err = client_device_remap(ds->dev, ctx);
+		} else {
+			INF(ctx->verbose_set,
+			    "Device is still open, no need to recover.\n");
+			err = 0;
+		}
+	}
+
+	if (err)
+		ERR(ctx->trm, "Failed to recover device: %s (%d)\n",
+		    strerror(-err), err);
 
 	return err;
 }
