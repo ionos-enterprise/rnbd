@@ -2852,7 +2852,7 @@ static int client_path_recover(const char *session_name,
 	}
 
 	if (!path)
-		return -ENOENT;
+		return -EINVAL;
 
 	/*
 	 * Return success for connected paths
