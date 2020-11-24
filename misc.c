@@ -692,6 +692,16 @@ char *trimstr(char *str, char token)
 	return trimmed;
 }
 
+union gid_buffer {
+	unsigned long long u64;
+	struct { /* intel only! */
+		unsigned short w0;
+		unsigned short w1;
+		unsigned short w2;
+		unsigned short w3;
+	};
+};
+
 int rnbd_resolve(const char *host, const char *hca, const char *port,
 		  const char *client_gid,
 		  struct path *path, int len,
@@ -704,15 +714,7 @@ int rnbd_resolve(const char *host, const char *hca, const char *port,
 	char cmd[512];
 	char buf[512];
 	char *output;
-	union {
-		unsigned long long u64;
-		struct { /* intel only! */
-			unsigned short w0;
-			unsigned short w1;
-			unsigned short w2;
-			unsigned short w3;
-		};
-	} val;
+	union gid_buffer val;
 
 	snprintf(cmd, sizeof(cmd),
 		 "saquery -C %s -P %s | grep -wB10 %s |grep port_guid | cut -d'x' -f2",
@@ -781,6 +783,58 @@ int resolve_host(const char *from_name, struct path *path,
 		err = gid_cnt;
 
 	free(ports);
+
+	return err;
+}
+
+int hostname_from_path(char *host, int host_len, const char *hca, int port,
+		       const char *server_gid, const struct rnbd_ctx *ctx)
+{
+	int err = 0;
+	union gid_buffer val;
+	int w3_i, w2_i, w1_i, w0_i;
+
+	char cmd[512];
+	char buf[512];
+	char *output;
+	FILE *pipe;
+	char *read_success = NULL;
+
+	if (strncmp(server_gid, "gid:", 4)) {
+		ERR(ctx->trm, "Destination address is not a GID '%s'\n", server_gid);
+		return -EINVAL;
+	}
+
+	sscanf(server_gid, "gid:fe80:0000:0000:0000:%x:%x:%x:%x",
+	       &w3_i, &w2_i, &w1_i, &w0_i);
+	val.w3 = w3_i; val.w2 = w2_i; val.w1 = w1_i; val.w0 = w0_i;
+
+	snprintf(cmd, sizeof(cmd),
+		 "saquery -C %s -P %d -U 0x%llx | awk '{ print $1 }'",
+		 hca, port, val.u64);
+
+	err = start_shell_exec(&pipe, cmd, ctx);
+	if (err)
+		return err;
+
+	do {
+		read_success = fgets(buf, sizeof(buf), pipe);
+		if (read_success) {
+			output = trimstr(trimstr(buf, '\n'), ' ');
+			strncpy(host, output, host_len);
+			break;
+		}
+	} while (read_success);
+
+	err = stop_shell_exec(pipe, ctx);
+	if (!read_success) {
+		return -EINVAL;
+	} else if (err) {
+		if (((err) < 0 && (err) >= -255))
+			return err;
+		else
+			return -1;
+	}
 
 	return err;
 }

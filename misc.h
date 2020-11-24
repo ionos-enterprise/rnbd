@@ -99,6 +99,7 @@ struct rnbd_ctx {
 	bool nototals_set;
 	bool force_set;
 	bool all_set;
+	bool add_missing_set;
 
 	struct path paths[MAX_PATHS_PER_SESSION]; /* lazy */
 	int path_cnt;
@@ -188,6 +189,9 @@ int sessname_from_host(const char *from_name, char *out_buf, size_t buf_len);
 
 int resolve_host(const char *from_name, struct path *path,
 		 const struct rnbd_ctx *ctx);
+
+int hostname_from_path(char *host, int host_len, const char *hca, int port,
+		       const char *server_gid, const struct rnbd_ctx *ctx);
 
 #define container_of(ptr, type, member) ({                      \
 		const typeof( ((type *)0)->member ) *__mptr = (ptr);    \

@@ -440,6 +440,9 @@ static struct param _params_all =
 static struct param _params_all_recover =
 	{TOK_ALL, "all", "", "", "Recover all",
 	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, all_set)};
+static struct param _params_recover_add_missing =
+	{TOK_ALL, "add-missing", "", "", "Add missing paths",
+	 NULL, parse_flag, NULL, offsetof(struct rnbd_ctx, add_missing_set)};
 
 static struct param _params_null =
 	{TOK_NONE, 0};
@@ -452,6 +455,7 @@ static struct param *params_options[] = {
 	&_params_help,
 	&_params_verbose,
 	&_params_all_recover,
+	&_params_recover_add_missing,
 	&_params_null
 };
 
@@ -1352,6 +1356,20 @@ static int find_paths(const char *session_name, const char *path_name,
 	return cnt;
 }
 
+static int find_paths_for_session(const char *session_name,
+				  struct rnbd_path **pp, struct rnbd_path **res)
+{
+	int i, cnt = 0;
+
+	for (i = 0; pp[i]; i++)
+		if (!strcmp(session_name, pp[i]->sess->sessname))
+			res[cnt++] = pp[i];
+
+	res[cnt] = NULL;
+
+	return cnt;
+}
+
 static int find_paths_all(const char *session_name,
 			  const char *path_name,
 			  enum rnbdmode rnbdmode,
@@ -2140,6 +2158,37 @@ static struct rnbd_path *find_single_path(const char *session_name,
 	return res;
 }
 
+static struct rnbd_path *find_first_path_for_session(const char *session_name,
+						     struct rnbd_ctx *ctx,
+						     struct rnbd_path **paths,
+						     int path_cnt)
+{
+	struct rnbd_path **matching_paths, *res = NULL;
+	int match_count;
+
+	if (!path_cnt) {
+		ERR(ctx->trm,
+		    "Path '%s' not found: there exists no paths\n",
+		    session_name);
+		return NULL;
+	}
+
+	matching_paths = calloc(path_cnt, sizeof(*matching_paths));
+
+	if (path_cnt && !matching_paths) {
+		ERR(ctx->trm, "Failed to alloc memory\n");
+		return NULL;
+	}
+	match_count = find_paths_for_session(session_name, paths, matching_paths);
+
+	if (match_count > 0)
+		res = *matching_paths;
+
+	free(matching_paths);
+
+	return res;
+}
+
 static int client_devices_map(const char *from_name, const char *device_name,
 			      struct rnbd_ctx *ctx)
 {
@@ -2609,10 +2658,11 @@ static void help_recover_session(const char *program_name,
 	cmd_print_usage_descr(cmd, program_name, ctx);
 
 	printf("\nArguments:\n");
-	print_opt("<session>", "Name or identifier of a session.");
+	print_opt("<session>|all", "Name or identifier of a session.");
+	print_opt("", "All recovers all sessions.");
 
 	printf("\nOptions:\n");
-	print_param_descr("all");
+	print_param_descr("add-missing");
 	print_param_descr("verbose");
 	print_param_descr("help");
 }
@@ -3125,7 +3175,7 @@ static struct param _cmd_recover_session =
 		"Recover a",
 		"",
 		"Recover a session: reconnect disconnected paths.",
-		"<session>|all",
+		"<session>|all [add-missing]",
 		 NULL, help_recover_session};
 static struct param _cmd_reconnect_path =
 	{TOK_RECONNECT, "reconnect",
@@ -3382,6 +3432,23 @@ static struct param *params_add_path_parameters[] = {
 	&_params_path_param,
 	&_params_verbose,
 	&_params_minus_v,
+	&_params_null
+};
+
+static struct param *params_recover_session_parameters[] = {
+	&_params_help,
+	&_params_verbose,
+	&_params_minus_v,
+	&_params_recover_add_missing,
+	&_params_null
+};
+
+static struct param *params_recover_session_parameters_help[] = {
+	&_params_help,
+	&_params_verbose,
+	&_params_minus_v,
+	&_params_all_recover,
+	&_params_recover_add_missing,
 	&_params_null
 };
 
@@ -4377,12 +4444,66 @@ int cmd_client_session_reconnect(int argc, const char *argv[], const struct para
 	return err;
 }
 
+static int client_session_add_missing_paths(const char *session_name,
+					    struct rnbd_ctx *ctx)
+{
+	int err = 0;
+	char hostname[NAME_MAX];
+	struct path paths[MAX_PATHS_PER_SESSION]; /* lazy */
+	struct rnbd_path *path;
+	int path_cnt = 0, i;
+	memset(paths, 0, sizeof(paths));
+		
+	INF(ctx->debug_set, "Looking for missing paths of session %s\n", session_name);
+	path = find_first_path_for_session(session_name, ctx,
+					   paths_clt, paths_clt_cnt);
+	err = hostname_from_path(hostname, sizeof(hostname),
+				 path->hca_name, path->hca_port,
+				 path->dst_addr, ctx);
+	if (err < 0) {
+		ERR(ctx->trm, "Could not look up hostname for path %s\n", path->pathname);
+		return err;
+	} else {
+		INF(ctx->debug_set, "Hostname is %s\n", hostname);
+	}
+	
+	err = resolve_host(hostname, paths, ctx);
+	if (err < 0) {
+		ERR(ctx->trm,
+		    "Failed to resolve host name for %s: %s (%d)\n",
+		    hostname, strerror(-err), err);
+	} else if (err == 0) {
+		INF(ctx->debug_set,
+		    "Found no paths to host %s.\n",
+		    hostname);
+	} else {
+		path_cnt = err;
+	}
+	if (path_cnt) {
+		for (i = 0; i < path_cnt; i++) {
+			path = find_single_path(session_name, paths[i].dst, ctx,
+						paths_clt, paths_clt_cnt, false);
+			if (path) {
+				INF(ctx->debug_set,
+				    "Path %s of session %s already exists.\n",
+				    session_name, paths[i].dst);
+			} else {
+				INF(ctx->debug_set,
+				    "Try to add path %s to session %s.\n",
+				    session_name, paths[i].dst);
+				err = 	client_session_add(session_name, paths+i, ctx);
+			}
+		}
+	}
+	return err;
+}
+
 int cmd_client_session_recover(int argc, const char *argv[],
 			       const struct param *cmd,
 			       const char *help_context, struct rnbd_ctx *ctx)
 {
 	struct rnbd_sess *sess;
-	int i, err;
+	int i, err, tmp_err;
 
 	err = parse_name_help(argc--, argv++,
 			      help_context, cmd, ctx);
@@ -4390,7 +4511,7 @@ int cmd_client_session_recover(int argc, const char *argv[],
 		return err;
 
 	err = parse_cmd_parameters(argc, argv,
-				   params_default,
+				   params_recover_session_parameters,
 				   ctx, cmd, help_context, 0);
 	if (err < 0)
 		return err;
@@ -4400,7 +4521,7 @@ int cmd_client_session_recover(int argc, const char *argv[],
 	if (argc > 0) {
 
 		handle_unknown_param(*argv,
-				     params_default, ctx);
+				     params_recover_session_parameters_help, ctx);
 		return -EINVAL;
 	}
 
@@ -4413,19 +4534,37 @@ int cmd_client_session_recover(int argc, const char *argv[],
 		 * recover all sessions
 		 */
 		if (!sess) {
-			for (i = 0; sess_clt[i]; i++)
-				err |= session_do_all_paths(RNBD_CLIENT,
+			for (i = 0; sess_clt[i]; i++) {
+				tmp_err = session_do_all_paths(RNBD_CLIENT,
 							sess_clt[i]->sessname,
 							client_path_recover,
 							ctx);
+				if (tmp_err < 0 && err >= 0)
+					err = tmp_err;
+				
+				if (ctx->add_missing_set) {
+
+					tmp_err = client_session_add_missing_paths(
+							sess_clt[i]->sessname, ctx);
+					if (tmp_err < 0 && err >= 0)
+						err = tmp_err;
+				}
+			}
 			return err;
 		}
 	}
-
 	err = session_do_all_paths(RNBD_CLIENT,
 				   ctx->name,
 				   client_path_recover,
 				   ctx);
+
+	if (ctx->add_missing_set) {
+
+		tmp_err = client_session_add_missing_paths(ctx->name, ctx);
+
+		if (tmp_err < 0 && err >= 0)
+			err = tmp_err;
+	}
 	return err;
 }
 
