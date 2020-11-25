@@ -4526,6 +4526,8 @@ int cmd_client_session_recover(int argc, const char *argv[],
 	}
 
 	if (!strcmp(ctx->name, "all")) {
+
+		err = 0;
 		sess = find_single_session(ctx->name, ctx,
 					   sess_clt, sess_clt_cnt,
 					   false);
