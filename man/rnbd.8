@@ -276,15 +276,16 @@ Options:
 
 .B
 
-rnbd client session recover <session>|all [OPTIONS]
+rnbd client session recover <session>|all [add-missing] [OPTIONS]
 
 Recover a session: reconnect disconnected paths.
 
 Arguments:
-    <session>       Name or identifier of a session.
+    <session>|all   Name or identifier of a session.
+                    All recovers all sessions.
 
 Options:
-    all             Recover all
+    add-missing     Add missing paths
     verbose         Verbose output
     help            Display help and exit
 
@@ -448,7 +449,7 @@ Options:
 
 .B
 
-rnbd client path recover <path>|all [OPTIONS]
+rnbd client path recover [session] <path>|all [OPTIONS]
 
 Recover a path: reconnect if not in connected state.
 
