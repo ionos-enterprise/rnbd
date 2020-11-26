@@ -2321,7 +2321,7 @@ static int client_devices_map(const char *from_name, const char *device_name,
 static struct rnbd_sess_dev *find_single_device(const char *name,
 						struct rnbd_ctx *ctx,
 						struct rnbd_sess_dev **devs,
-						int dev_cnt)
+						int dev_cnt, bool print_err)
 {
 	struct rnbd_sess_dev *res = NULL, **matching_devs;
 	int match_count;
@@ -2342,7 +2342,7 @@ static struct rnbd_sess_dev *find_single_device(const char *name,
 	if (match_count == 1) {
 
 		res = matching_devs[0];
-	} else {
+	} else if (print_err) {
 		ERR(ctx->trm, "%s '%s'.\n",
 		    (match_count > 1)  ?
 			"Please specify an unique device. There are multiple devices matching"
@@ -2361,7 +2361,7 @@ static int client_devices_resize(const char *device_name, uint64_t size_sect,
 	char tmp[PATH_MAX];
 	int ret;
 
-	ds = find_single_device(device_name, ctx, sds_clt, sds_clt_cnt);
+	ds = find_single_device(device_name, ctx, sds_clt, sds_clt_cnt, true/*print_err*/);
 	if (!ds)
 		return -EINVAL;
 
@@ -2423,7 +2423,7 @@ static int client_devices_unmap(const char *device_name, bool force,
 	char tmp[PATH_MAX];
 	int ret;
 
-	ds = find_single_device(device_name, ctx, sds_clt, sds_clt_cnt);
+	ds = find_single_device(device_name, ctx, sds_clt, sds_clt_cnt, true/*print_err*/);
 	if (!ds)
 		return -EINVAL;
 
@@ -2473,7 +2473,7 @@ static int client_devices_remap(const char *device_name, struct rnbd_ctx *ctx)
 {
 	const struct rnbd_sess_dev *ds;
 
-	ds = find_single_device(device_name, ctx, sds_clt, sds_clt_cnt);
+	ds = find_single_device(device_name, ctx, sds_clt, sds_clt_cnt, true/*print_err*/);
 	if (!ds)
 		return -EINVAL;
 
@@ -2703,7 +2703,29 @@ static void help_recover_path(const char *program_name,
 	print_opt("", "[pathname], [sessname:port], etc.");
 
 	printf("\nOptions:\n");
-	print_param_descr("all");
+	print_param_descr("verbose");
+	print_param_descr("help");
+}
+
+static void help_recover_device_session_or_path(const char *program_name,
+						const struct param *cmd,
+						const struct rnbd_ctx *ctx)
+{
+	if (!program_name)
+		program_name = "<path> ";
+
+	cmd_print_usage_descr(cmd, program_name, ctx);
+
+	printf("\nArguments:\n");
+	print_opt("<device>|<session>|<path>|all", "");
+	print_opt("",
+		  "Name of device, session, or path to recover");
+	print_opt("", "'all' will recover all sessions and devices.");
+
+	printf("\nOptions:\n");
+	print_opt("<path>",
+		  "Optional argument to identify a path in the context of a session");
+	print_param_descr("add-missing");
 	print_param_descr("verbose");
 	print_param_descr("help");
 }
@@ -3160,6 +3182,13 @@ static struct param _cmd_client_recover_device =
 		"Recover a device: remap all closed devices.",
 		"<device>|all",
 		 NULL, help_recover_device};
+static struct param _cmd_recover_device_session_or_path =
+	{TOK_RECOVER, "recover",
+		"Recover a",
+		"",
+		"Recover a device, session, or path.",
+		"<device>|<session>|<path>|all",
+		 NULL, help_recover_device_session_or_path};
 static struct param _cmd_disconnect_session =
 	{TOK_DISCONNECT, "disconnect",
 		"Disconnect a",
@@ -3324,6 +3353,7 @@ static struct param *params_both[] = {
 	&_cmd_resize,
 	&_cmd_unmap,
 	&_cmd_remap,
+	&_cmd_recover_device_session_or_path,
 	&_params_help,
 	&_params_null
 };
@@ -3353,6 +3383,7 @@ static struct param *params_object_type_client[] = {
 	&_cmd_resize,
 	&_cmd_unmap,
 	&_cmd_remap_device_or_session,
+	&_cmd_recover_device_session_or_path,
 	&_params_help,
 	&_params_null
 };
@@ -4364,17 +4395,21 @@ int cmd_client_recover_device(int argc, const char *argv[],
 				tmp_err = client_device_remap(sds_clt[i]->dev, ctx);
 				if (!err)
 					err = tmp_err;
+			} else {
+				INF(ctx->debug_set,
+				    "Device is still open, no need to recover.\n");
+				err = 0;
 			}
 		}
 	} else {
-		ds = find_single_device(ctx->name, ctx, sds_clt, sds_clt_cnt);
+		ds = find_single_device(ctx->name, ctx, sds_clt, sds_clt_cnt, true/*print_err*/);
 		if (!ds)
 			return -EINVAL;
 
 		if (!strcmp(ds->dev->state, "closed")) {
 			err = client_device_remap(ds->dev, ctx);
 		} else {
-			INF(ctx->verbose_set,
+			INF(ctx->debug_set,
 			    "Device is still open, no need to recover.\n");
 			err = 0;
 		}
@@ -4565,11 +4600,12 @@ static int client_session_add_missing_paths(const char *session_name,
 			if (path) {
 				INF(ctx->debug_set,
 				    "Path %s of session %s already exists.\n",
-				    session_name, paths[i].dst);
+				    paths[i].dst,
+				    session_name);
 			} else {
 				INF(ctx->debug_set,
 				    "Try to add path %s to session %s.\n",
-				    session_name, paths[i].dst);
+				    paths[i].dst, session_name);
 				err = 	client_session_add(session_name, paths+i, ctx);
 			}
 		}
@@ -4646,6 +4682,147 @@ int cmd_client_session_recover(int argc, const char *argv[],
 		if (tmp_err < 0 && err >= 0)
 			err = tmp_err;
 	}
+	return err;
+}
+
+int cmd_recover_device_session_or_path(int argc, const char *argv[],
+				       const struct param *cmd,
+				       const char *help_context, struct rnbd_ctx *ctx)
+{
+	const struct rnbd_sess_dev *ds = NULL;
+	const struct rnbd_sess *sess = NULL;
+	const struct rnbd_path *path = NULL;
+	int i, err, tmp_err;
+	int accepted = 0;
+
+	err = parse_name_help(argc--, argv++,
+			      help_context, cmd, ctx);
+	if (err < 0)
+		return err;
+
+	err = parse_map_parameters(argc, argv, &accepted,
+				   params_recover_session_parameters,
+				   ctx, cmd, help_context);
+	if (err < 0)
+		return err;
+
+	argc -= err; argv += err; err = 0;
+
+	if (argc > 0) {
+		handle_unknown_param(*argv, params_default, ctx);
+		return -EINVAL;
+	}
+
+	if (ctx->path_cnt > 1) {
+		ERR(ctx->trm, "Multiple paths specified\n");
+		err = -EINVAL;
+	}
+	if (!strcmp(ctx->name, "all")) {
+		for (i = 0; sess_clt[i]; i++) {
+			tmp_err = session_do_all_paths(RNBD_CLIENT,
+						       sess_clt[i]->sessname,
+						       client_path_recover,
+						       ctx);
+			if (tmp_err < 0 && err >= 0)
+				err = tmp_err;
+			
+			if (ctx->add_missing_set) {
+				
+				tmp_err = client_session_add_missing_paths(
+					sess_clt[i]->sessname, ctx);
+				if (tmp_err < 0 && err >= 0)
+						err = tmp_err;
+			}
+		}
+		for (i = 0; sds_clt[i]; i++) {
+			if (!strcmp(sds_clt[i]->dev->state, "closed")) {
+				tmp_err = client_device_remap(sds_clt[i]->dev, ctx);
+				if (!err)
+					err = tmp_err;
+			} else {
+				INF(ctx->debug_set,
+				    "Device is still open, no need to recover.\n");
+			}
+		}
+	} else {
+		ds = find_single_device(ctx->name, ctx, sds_clt, sds_clt_cnt, false/*print_err*/);
+		if (ds) {
+			INF(ctx->verbose_set,
+			    "Recovering device %s.\n", ctx->name);
+			if (!strcmp(ds->dev->state, "closed")) {
+				err = client_device_remap(ds->dev, ctx);
+			} else {
+				INF(ctx->debug_set,
+				    "Device is still open, no need to recover.\n");
+				err = 0;
+			}
+		} else {
+			if (ctx->path_cnt == 0)
+				sess = find_single_session(ctx->name, ctx,
+							   sess_clt,
+							   sess_clt_cnt,
+							   false);
+			if (sess) {
+				INF(ctx->verbose_set,
+				    "Recovering session %s.\n", ctx->name);
+
+				err = session_do_all_paths(RNBD_CLIENT,
+							   ctx->name,
+							   client_path_recover,
+							   ctx);
+				
+				if (ctx->add_missing_set) {
+					
+					tmp_err = client_session_add_missing_paths(
+							ctx->name, ctx);
+					
+					if (tmp_err < 0 && err >= 0)
+						err = tmp_err;
+				}
+			} else {
+				if (ctx->path_cnt == 0)
+					path = find_single_path(NULL, ctx->name,
+								ctx, paths_clt,
+								paths_clt_cnt,
+								false);
+				else
+					path = find_single_path(ctx->name,
+								ctx->paths[0].dst,
+								ctx, paths_clt,
+								paths_clt_cnt,
+								false);
+				if (path) {
+					if (!strcmp(path->state, "connected")) {
+						INF(ctx->debug_set,
+						    "Path '%s' is connected, skipping.\n",
+						    (ctx->path_cnt == 0) ? ctx->name : 
+						    ctx->paths[0].dst);
+					} else {
+
+						INF(ctx->verbose_set, "Path '%s' is '%s', recovering.\n",
+						    ctx->name, path->state);
+
+						err = client_path_do((ctx->path_cnt == 0) ? NULL : ctx->name,
+								     (ctx->path_cnt == 0) ? ctx->name : ctx->paths[0].dst,
+								     "reconnect",
+								     "Successfully reconnected path '%s' of session '%s'.\n",
+								     "Failed to reconnect path '%s' from session '%s': %s (%d)\n",
+								     ctx);
+					}
+				} else {
+					ERR(ctx->trm,
+					    "%s is neither a device, session, nor path.\n",
+					    ctx->name);
+				}
+			}
+		}
+	}
+
+	if (err)
+		ERR(ctx->trm, "Failed to recover %s: %s (%d)\n",
+		    (ds ? "device" : (sess ? "session" : "path")),
+		    strerror(-err), err);
+
 	return err;
 }
 
@@ -5180,7 +5357,8 @@ int cmd_client_devices(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = cmd_remap(argc, argv, cmd, false, _help_context_client, ctx);
 			break;
 		case TOK_RECOVER:
-			err = cmd_client_recover_device(argc, argv, cmd, _help_context_client, ctx);
+			err = cmd_client_recover_device(argc, argv, cmd,
+							_help_context_client, ctx);
 			break;
 		case TOK_HELP:
 			parse_help(argc, argv, NULL, ctx);
@@ -5593,6 +5771,10 @@ int cmd_client(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = cmd_remap(argc, argv, param, true,
 					_help_context, ctx);
 			break;
+		case TOK_RECOVER:
+			err = cmd_recover_device_session_or_path(argc, argv, param,
+								 _help_context, ctx);
+			break;
 		case TOK_HELP:
 			if (ctx->pname_with_mode
 			    && (help_print_flags(ctx) || help_print_all(ctx))) {
@@ -5797,6 +5979,10 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		case TOK_REMAP:
 			err = cmd_remap(argc, argv, param, false,
 					"device", ctx);
+			break;
+		case TOK_RECOVER:
+			err = cmd_recover_device_session_or_path(argc, argv, param,
+								 "client", ctx);
 			break;
 		case TOK_HELP:
 			help_param(ctx->pname, params_both_help, ctx);
