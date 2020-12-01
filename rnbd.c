@@ -2057,6 +2057,25 @@ static void help_show_sessions(const char *program_name,
 	print_opt("help", "Display help and exit. [fields|all]");
 }
 
+static void help_default_paths(const char *program_name,
+			       const struct param *cmd,
+			       const struct rnbd_ctx *ctx)
+{
+	printf("\nArguments:\n");
+	print_opt("[session]",
+		  "Optional session name to select a path in the case paths");
+	print_opt("", "with same addresses are used in multiple sessions.");
+	print_opt("<path>",
+		  "Name or identifier of a path:");
+	print_opt("", "[pathname], [sessname:port]");
+	print_opt("", "");
+	print_opt("<hca_name>:<port>", "");
+	print_opt("<hca_name>", "");
+	print_opt("<port>", "alternative to path a hca/port specification");
+	print_opt("", "might be provided.");
+	print_opt("", "This requires that session name has been provided.");
+}
+
 static void help_show_paths(const char *program_name,
 			    const struct param *cmd,
 			    const struct rnbd_ctx *ctx)
@@ -2068,14 +2087,7 @@ static void help_show_paths(const char *program_name,
 
 	if (!help_print_fields(ctx)) {
 
-		printf("\nArguments:\n");
-		print_opt("[session]",
-			  "Optional session name to select a path in the case paths");
-		print_opt("",
-			  "with same addresses are used in multiple sessions.");
-		print_opt("<path>",
-			  "To display path information a path name or identifier");
-		print_opt("", "has to be provided, i.e. st401b-2:1.");
+		help_default_paths(program_name, cmd, ctx);
 
 		printf("\nOptions:\n");
 	}
@@ -2757,13 +2769,7 @@ static void help_recover_path(const char *program_name,
 
 	cmd_print_usage_descr(cmd, program_name, ctx);
 
-	printf("\nArguments:\n");
-	print_opt("[session]",
-		  "Optional session name to select a path in the case paths");
-	print_opt("", "with same addresses are used in multiple sessions.");
-	print_opt("<path>",
-		  "Name or identifier of a path:");
-	print_opt("", "[pathname], [sessname:port], etc.");
+	help_default_paths(program_name, cmd, ctx);
 
 	printf("\nOptions:\n");
 	print_param_descr("verbose");
@@ -2802,13 +2808,7 @@ static void help_reconnect_path(const char *program_name,
 
 	cmd_print_usage_descr(cmd, program_name, ctx);
 
-	printf("\nArguments:\n");
-	print_opt("[session]",
-		  "Optional session name to select a path in the case paths");
-	print_opt("", "with same addresses are used in multiple sessions.");
-	print_opt("<path>",
-		  "Name or identifier of a path:");
-	print_opt("", "[pathname], [sessname:port], etc.");
+	help_default_paths(program_name, cmd, ctx);
 
 	printf("\nOptions:\n");
 	print_param_descr("verbose");
@@ -2841,12 +2841,7 @@ static void help_disconnect_path(const char *program_name,
 
 	cmd_print_usage_descr(cmd, program_name, ctx);
 
-	printf("\nArguments:\n");
-	print_opt("[session]",
-		  "Optional session name to select a path in the case paths");
-	print_opt("", "with same addresses are used in multiple sessions.");
-	print_opt("<identifier>", "Name or identifier of of a path:");
-	print_opt("", "[pathname], [sessname:port], etc.");
+	help_default_paths(program_name, cmd, ctx);
 
 	printf("\nOptions:\n");
 	print_param_descr("verbose");
@@ -2921,13 +2916,7 @@ static void help_delpath(const char *program_name,
 
 	cmd_print_usage_descr(cmd, program_name, ctx);
 
-	printf("\nArguments:\n");
-	print_opt("[session]",
-		  "Optional session name to select a path in the case paths");
-	print_opt("", "with same addresses are used in multiple sessions.");
-	print_opt("<path>",
-		  "Name or any unique identifier of a path:");
-	print_opt("", "[pathname], [sessname:port], etc.");
+	help_default_paths(program_name, cmd, ctx);
 
 	printf("\nOptions:\n");
 	print_param_descr("verbose");

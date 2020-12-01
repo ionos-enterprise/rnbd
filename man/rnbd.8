@@ -1,4 +1,4 @@
-.TH RNBD "8" "November 2020" "rnbd 1.0.8" "System Administration Utilities"
+.TH RNBD "8" "December 2020" "rnbd 1.0.8" "System Administration Utilities"
 .SH NAME
 rnbd - Configuration tool for RNBD driver and RTRS library.
 .SH SYNOPSIS
@@ -176,13 +176,13 @@ Options:
 
 rnbd client device recover <device>|all [OPTIONS]
 
-Remap the device if it is in closed state.
+Recover a device: remap all closed devices.
 
 Arguments:
-    <identifier>    Identifier of a device to be recovered.
+    <device>        Name or identifier of a device.
 
 Options:
-    all             Recover all allowed devicse
+    all             Recover all
     verbose         Verbose output
     help            Display help and exit
 
@@ -349,8 +349,14 @@ Show information about an rnbd transport path.
 Arguments:
     [session]       Optional session name to select a path in the case paths
                     with same addresses are used in multiple sessions.
-    <path>          To display path information a path name or identifier
-                    has to be provided, i.e. st401b-2:1.
+    <path>          Name or identifier of a path:
+                    [pathname], [sessname:port]
+
+    <hca_name>:<port>
+    <hca_name>
+    <port>          alternative to path a hca/port specification
+                    might be provided.
+                    This requires that session name has been provided.
 
 Options:
     {fields}        Comma separated list of fields to be printed.
@@ -387,8 +393,14 @@ Disconnect a path of a given session
 Arguments:
     [session]       Optional session name to select a path in the case paths
                     with same addresses are used in multiple sessions.
-    <identifier>    Name or identifier of of a path:
-                    [pathname], [sessname:port], etc.
+    <path>          Name or identifier of a path:
+                    [pathname], [sessname:port]
+
+    <hca_name>:<port>
+    <hca_name>
+    <port>          alternative to path a hca/port specification
+                    might be provided.
+                    This requires that session name has been provided.
 
 Options:
     verbose         Verbose output
@@ -405,7 +417,13 @@ Arguments:
     [session]       Optional session name to select a path in the case paths
                     with same addresses are used in multiple sessions.
     <path>          Name or identifier of a path:
-                    [pathname], [sessname:port], etc.
+                    [pathname], [sessname:port]
+
+    <hca_name>:<port>
+    <hca_name>
+    <port>          alternative to path a hca/port specification
+                    might be provided.
+                    This requires that session name has been provided.
 
 Options:
     verbose         Verbose output
@@ -437,8 +455,14 @@ Delete a given path from the corresponding session
 Arguments:
     [session]       Optional session name to select a path in the case paths
                     with same addresses are used in multiple sessions.
-    <path>          Name or any unique identifier of a path:
-                    [pathname], [sessname:port], etc.
+    <path>          Name or identifier of a path:
+                    [pathname], [sessname:port]
+
+    <hca_name>:<port>
+    <hca_name>
+    <port>          alternative to path a hca/port specification
+                    might be provided.
+                    This requires that session name has been provided.
 
 Options:
     verbose         Verbose output
@@ -454,8 +478,14 @@ Delete and add again a given path to the corresponding session
 Arguments:
     [session]       Optional session name to select a path in the case paths
                     with same addresses are used in multiple sessions.
-    <path>          Name or any unique identifier of a path:
-                    [pathname], [sessname:port], etc.
+    <path>          Name or identifier of a path:
+                    [pathname], [sessname:port]
+
+    <hca_name>:<port>
+    <hca_name>
+    <port>          alternative to path a hca/port specification
+                    might be provided.
+                    This requires that session name has been provided.
 
 Options:
     verbose         Verbose output
@@ -472,10 +502,15 @@ Arguments:
     [session]       Optional session name to select a path in the case paths
                     with same addresses are used in multiple sessions.
     <path>          Name or identifier of a path:
-                    [pathname], [sessname:port], etc.
+                    [pathname], [sessname:port]
+
+    <hca_name>:<port>
+    <hca_name>
+    <port>          alternative to path a hca/port specification
+                    might be provided.
+                    This requires that session name has been provided.
 
 Options:
-    all             Recover all
     verbose         Verbose output
     help            Display help and exit
 
@@ -669,8 +704,14 @@ Show information about an rnbd transport path.
 Arguments:
     [session]       Optional session name to select a path in the case paths
                     with same addresses are used in multiple sessions.
-    <path>          To display path information a path name or identifier
-                    has to be provided, i.e. st401b-2:1.
+    <path>          Name or identifier of a path:
+                    [pathname], [sessname:port]
+
+    <hca_name>:<port>
+    <hca_name>
+    <port>          alternative to path a hca/port specification
+                    might be provided.
+                    This requires that session name has been provided.
 
 Options:
     {fields}        Comma separated list of fields to be printed.
@@ -704,8 +745,14 @@ Disconnect a path of a given session
 Arguments:
     [session]       Optional session name to select a path in the case paths
                     with same addresses are used in multiple sessions.
-    <identifier>    Name or identifier of of a path:
-                    [pathname], [sessname:port], etc.
+    <path>          Name or identifier of a path:
+                    [pathname], [sessname:port]
+
+    <hca_name>:<port>
+    <hca_name>
+    <port>          alternative to path a hca/port specification
+                    might be provided.
+                    This requires that session name has been provided.
 
 Options:
     verbose         Verbose output
