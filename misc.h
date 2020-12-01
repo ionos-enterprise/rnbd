@@ -11,6 +11,7 @@
 #define __H_MISC
 
 #include <ctype.h>	/* for isspace() */
+#include <dirent.h>	/* for opendir() */
 #include <stddef.h>
 
 #define ARRSIZE(x) (sizeof(x) / sizeof(*x))
@@ -46,6 +47,12 @@ struct path {
 	const char *dst;
 };
 
+struct port_desc {
+	char hca[NAME_MAX];
+	char port[NAME_MAX];
+	char gid[NAME_MAX];
+};
+
 struct rnbd_ctx {
 	const char *pname;
 	const char *name;
@@ -70,6 +77,9 @@ struct rnbd_ctx {
 
 	const char *help_arg;
 	bool help_arg_set;
+
+	struct port_desc port_desc_arg;
+	bool port_desc_set;
 
 	struct table_column *clms_devices_clt[CLM_MAX_CNT];
 	struct table_column *clms_devices_srv[CLM_MAX_CNT];
@@ -103,6 +113,9 @@ struct rnbd_ctx {
 
 	struct path paths[MAX_PATHS_PER_SESSION]; /* lazy */
 	int path_cnt;
+
+	struct port_desc port_descs[MAX_PATHS_PER_SESSION];
+	int port_cnt;
 
 	const char *from;
 	bool from_set;
@@ -184,6 +197,8 @@ int path_to_norm(char *str, size_t len, const struct rnbd_ctx *ctx,
 		 enum color *clr, void *v, bool humanize);
 
 bool match_path_addr(const char *left, const char *right);
+
+int read_port_descs(struct port_desc *port_descs, int max_ports);
 
 int sessname_from_host(const char *from_name, char *out_buf, size_t buf_len);
 

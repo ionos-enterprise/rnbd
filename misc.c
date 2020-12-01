@@ -563,12 +563,6 @@ int sessname_from_host(const char *from_name, char *out_buf, size_t buf_len)
 	return 0; /* not res, will be > 0 when snprintf succeeds */
 }
 
-struct port_desc {
-	char hca[NAME_MAX];
-	char port[NAME_MAX];
-	char gid[NAME_MAX];
-};
-
 int read_port_descs(struct port_desc *port_descs, int max_ports)
 {
 	int cnt = 0;
@@ -753,36 +747,23 @@ int rnbd_resolve(const char *host, const char *hca, const char *port,
 int resolve_host(const char *from_name, struct path *path,
 		 const struct rnbd_ctx *ctx)
 {
-	int err = 0, i, port_cnt, gid_cnt;
+	int err = 0, i, gid_cnt;
 
-	struct port_desc *ports = calloc(MAX_PATHS_PER_SESSION,
-					 sizeof(struct port_desc));
-
-	if (!ports)
-		return -ENOMEM;
-
-	err = read_port_descs(ports, MAX_PATHS_PER_SESSION);
-	if (err < 0) {
-
-		free(ports);
-		return err;
-	}
-	port_cnt = err; err = 0;
 	gid_cnt = 0;
 
-	for (i = 0; i < port_cnt && err >= 0; i++) {
+	for (i = 0; i < ctx->port_cnt && err >= 0; i++) {
 
-		err = rnbd_resolve(from_name, ports[i].hca, ports[i].port,
-				    ports[i].gid,
-				    path+gid_cnt, MAX_PATHS_PER_SESSION-gid_cnt,
-				    ctx);
+		err = rnbd_resolve(from_name,
+				   ctx->port_descs[i].hca,
+				   ctx->port_descs[i].port,
+				   ctx->port_descs[i].gid,
+				   path+gid_cnt, MAX_PATHS_PER_SESSION-gid_cnt,
+				   ctx);
 		if (err >= 0)
 			gid_cnt += err;
 	}
 	if (err >= 0)
 		err = gid_cnt;
-
-	free(ports);
 
 	return err;
 }

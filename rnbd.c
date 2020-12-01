@@ -73,6 +73,47 @@ static int parse_fmt(int argc, const char *argv[],
 	return 1;
 }
 
+static bool is_hca(const char *name, int len, const struct rnbd_ctx *ctx)
+{
+	int i;
+	for (i = 0; i < ctx->port_cnt; i++)
+		if (strncmp(name, ctx->port_descs[i].hca, len) == 0)
+			return true;
+	return false;
+}
+
+static int parse_port_desc(const char *arg,
+			   struct rnbd_ctx *ctx)
+{
+	int port;
+	char *at;
+
+	at = strrchr(arg, ':');
+
+	if (at) {
+		/* <hca_name>:<port> */
+		if ((sscanf(at+1, "%d\n", &port) == 1)
+		    && is_hca(arg, at-arg, ctx)) {
+			strncpy(ctx->port_desc_arg.hca, arg,
+				NAME_MAX < at-arg ? NAME_MAX : at-arg);
+			strncpy(ctx->port_desc_arg.port, at+1, NAME_MAX);
+		} else {
+			return -EINVAL;
+		}
+	} else {
+		/* either a hca name or a port number */
+		if (is_hca(arg, strlen(arg), ctx))
+			strncpy(ctx->port_desc_arg.hca, arg, NAME_MAX);
+		else if (sscanf(arg, "%d\n", &port) == 1)
+			strncpy(ctx->port_desc_arg.port, arg, NAME_MAX);
+		else
+			return -EINVAL;
+	}
+	ctx->port_desc_set = true;
+
+	return 0;
+}
+
 enum lstmode {
 	LST_DEVICES,
 	LST_SESSIONS,
@@ -1341,16 +1382,32 @@ static bool match_path(struct rnbd_path *p, const char *name)
 }
 
 static int find_paths(const char *session_name, const char *path_name,
+		      struct rnbd_ctx *ctx,
 		      struct rnbd_path **pp, struct rnbd_path **res)
 {
-	int i, cnt = 0;
+	int i, port, cnt = 0;
 
-	for (i = 0; pp[i]; i++)
-		if (match_path(pp[i], path_name)
-		    && (session_name == NULL
-			|| !strcmp(session_name, pp[i]->sess->sessname)))
-			res[cnt++] = pp[i];
-
+	for (i = 0; pp[i]; i++) {
+		if (path_name != NULL && !ctx->port_desc_set) {
+			if (match_path(pp[i], path_name)
+			    && (session_name == NULL
+				|| !strcmp(session_name, pp[i]->sess->sessname)))
+				res[cnt++] = pp[i];
+		} else {
+			if (!strcmp(session_name, pp[i]->sess->sessname)) {
+				if (ctx->port_desc_arg.hca[0]
+				    && strcmp(ctx->port_desc_arg.hca, pp[i]->hca_name))
+					continue;
+				if (ctx->port_desc_arg.port[0])
+				{
+					sscanf(ctx->port_desc_arg.port, "%d\n", &port);
+					if (pp[i]->hca_port != port)
+						continue;
+				}
+				res[cnt++] = pp[i];
+			}
+		}
+	}
 	res[cnt] = NULL;
 
 	return cnt;
@@ -1372,17 +1429,17 @@ static int find_paths_for_session(const char *session_name,
 
 static int find_paths_all(const char *session_name,
 			  const char *path_name,
-			  enum rnbdmode rnbdmode,
+			  struct rnbd_ctx *ctx,
 			  struct rnbd_path **pp_clt,
 			  int *pp_clt_cnt, struct rnbd_path **pp_srv,
 			  int *pp_srv_cnt)
 {
 	int cnt_clt = 0, cnt_srv = 0;
 
-	if (rnbdmode & RNBD_CLIENT)
-		cnt_clt = find_paths(session_name, path_name, paths_clt, pp_clt);
-	if (rnbdmode & RNBD_SERVER)
-		cnt_srv = find_paths(session_name, path_name, paths_srv, pp_srv);
+	if (ctx->rnbdmode & RNBD_CLIENT)
+		cnt_clt = find_paths(session_name, path_name, ctx, paths_clt, pp_clt);
+	if (ctx->rnbdmode & RNBD_SERVER)
+		cnt_srv = find_paths(session_name, path_name, ctx, paths_srv, pp_srv);
 
 	*pp_clt_cnt = cnt_clt;
 	*pp_srv_cnt = cnt_srv;
@@ -1534,8 +1591,8 @@ static int show_all(const char *name, struct rnbd_ctx *ctx)
 		if (ctx->path_cnt > 1)
 			ERR(ctx->trm, "Multiple paths specified\n");
 	}
-	c_pp = find_paths_all(session_name, path_name,
-			      ctx->rnbdmode, pp_clt, &c_pp_clt, pp_srv,
+	c_pp = find_paths_all(session_name, path_name, ctx,
+			      pp_clt, &c_pp_clt, pp_srv,
 			      &c_pp_srv);
 	if (!(c_pp && ctx->path_cnt == 1))
 		c_ss = find_sess_match_all(name, ctx->rnbdmode, ss_clt,
@@ -1783,17 +1840,23 @@ static int show_paths(const char *name, struct rnbd_ctx *ctx)
 		ret = -ENOMEM;
 		goto out;
 	}
+	if (ctx->path_cnt >= 1 && ctx->port_desc_set) {
+		ERR(ctx->trm, "You can only specify a path or a port but not both!\n");
+		ret = -EINVAL;
+	}
 	if (ctx->path_cnt == 1) {
 		session_name = name;
 		path_name = ctx->paths[0].provided;
+	} else if (ctx->port_desc_set) {
+		session_name = name;
+		path_name = NULL;
 	} else {
 		session_name = NULL;
 		path_name = name;
 		if (ctx->path_cnt > 1)
 			ERR(ctx->trm, "Multiple paths specified\n");
 	}
-	c_pp = find_paths_all(session_name, path_name,
-			      ctx->rnbdmode, pp_clt,
+	c_pp = find_paths_all(session_name, path_name, ctx, pp_clt,
 			      &c_pp_clt, pp_srv, &c_pp_srv);
 
 	if (c_pp > 1) {
@@ -2141,7 +2204,7 @@ static struct rnbd_path *find_single_path(const char *session_name,
 		ERR(ctx->trm, "Failed to alloc memory\n");
 		return NULL;
 	}
-	match_count = find_paths(session_name, path_name, paths, matching_paths);
+	match_count = find_paths(session_name, path_name, ctx, paths, matching_paths);
 
 	if (match_count == 1) {
 		res = *matching_paths;
@@ -2274,7 +2337,7 @@ static int client_devices_map(const char *from_name, const char *device_name,
 	if (!sess && !ctx->path_cnt) {
 		ERR(ctx->trm,
 		    "No client session '%s' found and '%s' can not be resolved as host name.\n"
-		    "Please provide at least one path to establish a new session.\n",
+		    "Please provide a host name or at least one path to establish a new session.\n",
 		    from_name, from_name);
 		return -EINVAL;
 	}
@@ -4044,7 +4107,13 @@ int parse_list_parameters(int argc, const char *argv[], struct rnbd_ctx *ctx,
 			err = parse_path(*argv, ctx);
 
 		if (err == 0) {
+			argc--; argv++;
+			continue;
+		}
+		if (err == -EINVAL && allow_paths)
+			err = parse_port_desc(*argv, ctx);
 
+		if (err == 0) {
 			argc--; argv++;
 		}
 	}
@@ -4113,7 +4182,8 @@ int parse_all_parameters(int argc, const char *argv[],
  */
 int parse_map_parameters(int argc, const char *argv[], int *accepted,
 			 struct param *const params[], struct rnbd_ctx *ctx,
-			 const struct param *cmd, const char *program_name)
+			 const struct param *cmd, const char *program_name,
+			 int allow_port_desc)
 {
 	int err = 0; int start_argc = argc;
 	const struct param *param;
@@ -4124,8 +4194,13 @@ int parse_map_parameters(int argc, const char *argv[], int *accepted,
 			err = param->parse(argc, argv, param, ctx);
 		} else {
 			err = parse_path(*argv, ctx);
-			if (err == 0)
+			if (err == 0) {
 				err = 1;
+			} else if (allow_port_desc) {
+				err = parse_port_desc(*argv, ctx);
+				if (err == 0)
+					err = 1;
+			}
 		}
 		if (err <= 0)
 			break;
@@ -4206,7 +4281,8 @@ int cmd_map(int argc, const char *argv[], const struct param *cmd,
 
 	err = parse_map_parameters(argc, argv, &accepted,
 				   params_map_parameters,
-				   ctx, cmd, help_context);
+				   ctx, cmd, help_context,
+				   0 /* allow_port_desc */);
 	if (!ctx->from_set && ctx->path_cnt == 0) {
 
 		cmd_print_usage_short(cmd, help_context, ctx);
@@ -4457,7 +4533,8 @@ int cmd_path_add(int argc, const char *argv[], const struct param *cmd,
 
 	err = parse_map_parameters(argc, argv, &accepted,
 				   params_add_path_parameters,
-				   ctx, cmd, help_context);
+				   ctx, cmd, help_context,
+				   0 /* allow_port_desc */);
 	if (accepted == 0) {
 
 		cmd_print_usage_short(cmd, help_context, ctx);
@@ -4702,7 +4779,8 @@ int cmd_recover_device_session_or_path(int argc, const char *argv[],
 
 	err = parse_map_parameters(argc, argv, &accepted,
 				   params_recover_session_parameters,
-				   ctx, cmd, help_context);
+				   ctx, cmd, help_context,
+				   0 /* allow_port_desc */);
 	if (err < 0)
 		return err;
 
@@ -4997,7 +5075,8 @@ int cmd_path_operation(int (*operation)(const char *session_name,
 
 	err = parse_map_parameters(argc, argv, &accepted,
 				   params_default,
-				   ctx, cmd, help_context);
+				   ctx, cmd, help_context,
+				   1 /* allow_port_desc */);
 	if (err < 0)
 		return err;
 
@@ -5008,10 +5087,13 @@ int cmd_path_operation(int (*operation)(const char *session_name,
 		handle_unknown_param(*argv, params_default, ctx);
 		return -EINVAL;
 	}
-	if (ctx->path_cnt == 0) {
-		err = (*operation)(NULL, ctx->name, ctx);
-	} else if (ctx->path_cnt == 1) {
+	if (ctx->path_cnt >= 1 && ctx->port_desc_set) {
+		ERR(ctx->trm, "You can only specify a path or a port but not both!\n");
+		err = -EINVAL;
+	} else if (ctx->path_cnt == 1 || ctx->port_desc_set) {
 		err = (*operation)(ctx->name, ctx->paths[0].provided, ctx);
+	} else if (ctx->path_cnt == 0) {
+		err = (*operation)(NULL, ctx->name, ctx);
 	} else {
 		ERR(ctx->trm, "Multiple paths specified\n");
 		err = -EINVAL;
@@ -6121,6 +6203,13 @@ int main(int argc, const char *argv[])
 	qsort(sds_clt, sds_clt_cnt - 1, sizeof(*sds_clt), compar_sds_sess);
 	qsort(sds_srv, sds_srv_cnt - 1, sizeof(*sds_srv), compar_sds_sess);
 
+	ret = read_port_descs(ctx.port_descs, MAX_PATHS_PER_SESSION);
+	if (ret < 0) {
+
+		ERR(ctx.trm, "Failed to read port descriptions entries: %d\n", ret);
+		goto free;
+	}
+	ctx.port_cnt = ret; ret = 0;
 
 	rnbd_ctx_default(&ctx);
 
