@@ -76,6 +76,7 @@ static int parse_fmt(int argc, const char *argv[],
 static bool is_hca(const char *name, int len, const struct rnbd_ctx *ctx)
 {
 	int i;
+
 	for (i = 0; i < ctx->port_cnt; i++)
 		if (strncmp(name, ctx->port_descs[i].hca, len) == 0)
 			return true;
@@ -95,7 +96,7 @@ static int parse_port_desc(const char *arg,
 		if ((sscanf(at+1, "%d\n", &port) == 1)
 		    && is_hca(arg, at-arg, ctx)) {
 			strncpy(ctx->port_desc_arg.hca, arg,
-				NAME_MAX < at-arg ? NAME_MAX : at-arg);
+				at-arg > NAME_MAX ? NAME_MAX : at-arg);
 			strncpy(ctx->port_desc_arg.port, at+1, NAME_MAX);
 		} else {
 			return -EINVAL;
@@ -4632,8 +4633,9 @@ static int client_session_add_missing_paths(const char *session_name,
 	struct path paths[MAX_PATHS_PER_SESSION]; /* lazy */
 	struct rnbd_path *path;
 	int path_cnt = 0, i;
+
 	memset(paths, 0, sizeof(paths));
-		
+
 	INF(ctx->debug_set, "Looking for missing paths of session %s\n", session_name);
 	path = find_first_path_for_session(session_name, ctx,
 					   paths_clt, paths_clt_cnt);
@@ -4646,7 +4648,7 @@ static int client_session_add_missing_paths(const char *session_name,
 	} else {
 		INF(ctx->debug_set, "Hostname is %s\n", hostname);
 	}
-	
+
 	err = resolve_host(hostname, paths, ctx);
 	if (err < 0) {
 		ERR(ctx->trm,
@@ -4672,7 +4674,7 @@ static int client_session_add_missing_paths(const char *session_name,
 				INF(ctx->debug_set,
 				    "Try to add path %s to session %s.\n",
 				    paths[i].dst, session_name);
-				err = 	client_session_add(session_name, paths+i, ctx);
+				err = client_session_add(session_name, paths+i, ctx);
 			}
 		}
 	}
@@ -4724,7 +4726,7 @@ int cmd_client_session_recover(int argc, const char *argv[],
 							ctx);
 				if (tmp_err < 0 && err >= 0)
 					err = tmp_err;
-				
+
 				if (ctx->add_missing_set) {
 
 					tmp_err = client_session_add_missing_paths(
@@ -4792,9 +4794,9 @@ int cmd_recover_device_session_or_path(int argc, const char *argv[],
 						       ctx);
 			if (tmp_err < 0 && err >= 0)
 				err = tmp_err;
-			
+
 			if (ctx->add_missing_set) {
-				
+
 				tmp_err = client_session_add_missing_paths(
 					sess_clt[i]->sessname, ctx);
 				if (tmp_err < 0 && err >= 0)
@@ -4837,12 +4839,12 @@ int cmd_recover_device_session_or_path(int argc, const char *argv[],
 							   ctx->name,
 							   client_path_recover,
 							   ctx);
-				
+
 				if (ctx->add_missing_set) {
-					
+
 					tmp_err = client_session_add_missing_paths(
 							ctx->name, ctx);
-					
+
 					if (tmp_err < 0 && err >= 0)
 						err = tmp_err;
 				}
@@ -4862,7 +4864,7 @@ int cmd_recover_device_session_or_path(int argc, const char *argv[],
 					if (!strcmp(path->state, "connected")) {
 						INF(ctx->debug_set,
 						    "Path '%s' is connected, skipping.\n",
-						    (ctx->path_cnt == 0) ? ctx->name : 
+						    (ctx->path_cnt == 0) ? ctx->name :
 						    ctx->paths[0].dst);
 					} else {
 
@@ -4884,7 +4886,6 @@ int cmd_recover_device_session_or_path(int argc, const char *argv[],
 			}
 		}
 	}
-
 	if (err)
 		ERR(ctx->trm, "Failed to recover %s: %s (%d)\n",
 		    (ds ? "device" : (sess ? "session" : "path")),
