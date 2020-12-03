@@ -576,7 +576,7 @@ int read_port_descs(struct port_desc *port_descs, int max_ports)
 
 	hca_dirp = opendir(HCA_DIR);
 	if (!hca_dirp)
-		return -errno;
+		return 0;
 
 	for (hca_entry = readdir(hca_dirp);
 	     hca_entry;
