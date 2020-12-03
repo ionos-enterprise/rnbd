@@ -1,3 +1,18 @@
+rnbd-tool (1.0.9) jessie stretch buster; urgency=medium
+
+  * command line: improve help messages on path operations
+  * rnbd: a path within a session can not be designated by hca and port
+  * debian: Drop unneeded dependencies patch and lsb-base
+  * rnbd: smart recover which works on device, session, or path
+  * rnbd: implement recover device
+  * manual: update rnbd man page for session recover
+  * manual: add entries for path and session recover commands
+  * rnbd: implement client path recover
+  * rnbd: implement client session recover
+  * bash-completion: add recover command
+
+ -- Lutz Pogrell <lutz.pogrell@cloud.ionos.com>  Thu, 03 Dec 2020 15:13:37 +0200
+
 rnbd-tool (1.0.8) jessie stretch buster; urgency=medium
 
   * comand line: improve error message when kernel modules are not loaded
