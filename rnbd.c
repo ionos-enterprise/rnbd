@@ -2139,6 +2139,9 @@ static void help_map(const char *program_name,
 		  "Access permission on server side: ro|rw|migration. Default: rw");
 	print_param_descr("verbose");
 	print_param_descr("help");
+
+	printf("\nExample:\n");
+	print_opt("", "rnbd map 600144f0-e284-4932-8853-e86d54aaefe7 from st401a-8");
 }
 
 static int parse_path(const char *arg,
@@ -2705,6 +2708,9 @@ static void help_close_device(const char *program_name,
 	print_param_descr("force");
 	print_param_descr("verbose");
 	print_param_descr("help");
+
+	printf("\nExample:\n");
+	print_opt("", "rnbd close 600144f0-e284-4932-8853-e86d54aaefe7");
 }
 
 static void help_reconnect_session(const char *program_name,
@@ -2740,6 +2746,9 @@ static void help_recover_device(const char *program_name,
 	print_param_descr("all");
 	print_param_descr("verbose");
 	print_param_descr("help");
+
+	printf("\nExample:\n");
+	print_opt("", "rnbd recover 600144f0-e284-4932-8853-e86d54aaefe7");
 }
 
 static void help_recover_session(const char *program_name,
@@ -2759,6 +2768,9 @@ static void help_recover_session(const char *program_name,
 	print_param_descr("add-missing");
 	print_param_descr("verbose");
 	print_param_descr("help");
+
+	printf("\nExample:\n");
+	print_opt("", "rnbd recover ps402a-905@st401a-8");
 }
 
 static void help_recover_path(const char *program_name,
@@ -2798,6 +2810,13 @@ static void help_recover_device_session_or_path(const char *program_name,
 	print_param_descr("add-missing");
 	print_param_descr("verbose");
 	print_param_descr("help");
+
+	printf("\nExample:\n");
+	print_opt("", "rnbd recover all");
+	print_opt("recover a device:", "");
+	print_opt("", "rnbd recover 600144f0-e284-4932-8853-e86d54aaefe7");
+	print_opt("recover a session:", "");
+	print_opt("", "rnbd recover ps402a-905@st401a-8");
 }
 
 static void help_reconnect_path(const char *program_name,

@@ -1,4 +1,4 @@
-.TH RNBD "8" "December 2020" "rnbd 1.0.9" "System Administration Utilities"
+.TH RNBD "8" "January 2021" "rnbd 1.0.10" "System Administration Utilities"
 .SH NAME
 rnbd - Configuration tool for RNBD driver and RTRS library.
 .SH SYNOPSIS
@@ -125,6 +125,9 @@ Options:
     verbose         Verbose output
     help            Display help and exit
 
+Example:
+                    rnbd map 600144f0-e284-4932-8853-e86d54aaefe7 from st401a-8
+
 
 .B
 
@@ -185,6 +188,9 @@ Options:
     all             Recover all
     verbose         Verbose output
     help            Display help and exit
+
+Example:
+                    rnbd recover 600144f0-e284-4932-8853-e86d54aaefe7
 
 
 .B
@@ -303,6 +309,9 @@ Options:
     add-missing     Add missing paths
     verbose         Verbose output
     help            Display help and exit
+
+Example:
+                    rnbd recover ps402a-905@st401a-8
 
 
 .B
@@ -590,6 +599,9 @@ Options:
     force           Force operation
     verbose         Verbose output
     help            Display help and exit
+
+Example:
+                    rnbd close 600144f0-e284-4932-8853-e86d54aaefe7
 
 
 .B
