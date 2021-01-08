@@ -4259,6 +4259,25 @@ int cmd_dump_all(int argc, const char *argv[], const struct param *cmd,
 	return err;
 }
 
+int check_root(const struct rnbd_ctx *ctx)
+{
+	int err = 0;
+	uid_t uid;
+
+	uid = geteuid();
+	/* according to man page "this function is always successful" */
+	if (ctx->simulate_set) {
+		INF((uid != 0 && ctx->verbose_set),
+		    "warning: Modifying operations require root permission.\n");
+		return err;
+	}
+	if (uid != 0) {
+		ERR(ctx->trm, "Modifying operations require root permission.\n");
+		err = -EPERM;
+	}
+	return err;
+}
+
 int cmd_map(int argc, const char *argv[], const struct param *cmd,
 	    const char *help_context, struct rnbd_ctx *ctx)
 {
@@ -4290,6 +4309,10 @@ int cmd_map(int argc, const char *argv[], const struct param *cmd,
 
 		return -EINVAL;
 	}
+	err = check_root(ctx);
+	if (err < 0)
+		return err;
+
 	return err = client_devices_map(ctx->from, ctx->name, ctx);
 }
 
@@ -4351,6 +4374,10 @@ int cmd_resize(int argc, const char *argv[], const struct param *cmd,
 		handle_unknown_param(*argv, params_default, ctx);
 		return -EINVAL;
 	}
+	err = check_root(ctx);
+	if (err < 0)
+		return err;
+
 	return client_devices_resize(ctx->name, ctx->size_sect, ctx);
 }
 
@@ -4376,6 +4403,10 @@ int cmd_unmap(int argc, const char *argv[], const struct param *cmd,
 				     params_unmap_parameters, ctx);
 		return -EINVAL;
 	}
+	err = check_root(ctx);
+	if (err < 0)
+		return err;
+
 	return client_devices_unmap(ctx->name, ctx->force_set, ctx);
 }
 
@@ -4399,6 +4430,10 @@ int cmd_remap(int argc, const char *argv[], const struct param *cmd,
 		handle_unknown_param(*argv, params_default, ctx);
 		return -EINVAL;
 	}
+	err = check_root(ctx);
+	if (err < 0)
+		return err;
+
 	if (allowSession
 	    && find_single_session(ctx->name, ctx, sess_clt,
 				   sds_clt_cnt, false))
@@ -4428,6 +4463,10 @@ int cmd_close_device(int argc, const char *argv[], const struct param *cmd,
 		return -EINVAL;
 	}
 
+	err = check_root(ctx);
+	if (err < 0)
+		return err;
+
 	return client_devices_remap(ctx->name, ctx);
 }
 
@@ -4454,6 +4493,10 @@ int cmd_client_recover_device(int argc, const char *argv[],
 		handle_unknown_param(*argv, params_default, ctx);
 		return -EINVAL;
 	}
+
+	err = check_root(ctx);
+	if (err < 0)
+		return err;
 
 	if (!strcmp(ctx->name, "all")) {
 		for (i = 0; sds_clt[i]; i++) {
@@ -4509,6 +4552,10 @@ int cmd_session_remap(int argc, const char *argv[], const struct param *cmd,
 		handle_unknown_param(*argv, params_default, ctx);
 		return -EINVAL;
 	}
+	err = check_root(ctx);
+	if (err < 0)
+		return err;
+
 	return client_session_remap(ctx->name, ctx);
 }
 
@@ -4561,6 +4608,10 @@ int cmd_path_add(int argc, const char *argv[], const struct param *cmd,
 		    "You provided %d paths. Please provide exactly one path to add to session '%s'.\n",
 		    ctx->path_cnt, ctx->name);
 	}
+	err = check_root(ctx);
+	if (err < 0)
+		return err;
+
 	return client_session_add(ctx->name, ctx->paths, ctx);
 }
 
@@ -4584,6 +4635,10 @@ int cmd_path_delete(int argc, const char *argv[], const struct param *cmd,
 		handle_unknown_param(*argv, params_default, ctx);
 		return -EINVAL;
 	}
+	err = check_root(ctx);
+	if (err < 0)
+		return err;
+
 	return client_path_delete(NULL, ctx->name, ctx);
 }
 
@@ -4609,6 +4664,10 @@ int cmd_client_session_reconnect(int argc, const char *argv[], const struct para
 				     params_default, ctx);
 		return -EINVAL;
 	}
+	err = check_root(ctx);
+	if (err < 0)
+		return err;
+
 	/* We want the session to change it's state to */
 	/* disconnected. So disconnect all paths first.*/
 	err = session_do_all_paths(RNBD_CLIENT, ctx->name,
@@ -4708,6 +4767,10 @@ int cmd_client_session_recover(int argc, const char *argv[],
 		return -EINVAL;
 	}
 
+	err = check_root(ctx);
+	if (err < 0)
+		return err;
+
 	if (!strcmp(ctx->name, "all")) {
 
 		err = 0;
@@ -4786,6 +4849,10 @@ int cmd_recover_device_session_or_path(int argc, const char *argv[],
 		ERR(ctx->trm, "Multiple paths specified\n");
 		err = -EINVAL;
 	}
+	err = check_root(ctx);
+	if (err < 0)
+		return err;
+
 	if (!strcmp(ctx->name, "all")) {
 		for (i = 0; sess_clt[i]; i++) {
 			tmp_err = session_do_all_paths(RNBD_CLIENT,
@@ -4912,6 +4979,10 @@ int cmd_server_session_disconnect(int argc, const char *argv[], const struct par
 
 	if (argc > 0)
 		return -EINVAL;
+
+	err = check_root(ctx);
+	if (err < 0)
+		return err;
 
 	return session_do_all_paths(RNBD_SERVER, ctx->name,
 				    server_path_disconnect,
@@ -5041,6 +5112,10 @@ int cmd_server_devices_force_close(int argc, const char *argv[], const struct pa
 	    "Will be closed for session %s.\n",
 	    ds_match->sess->sessname);
 
+	err = check_root(ctx);
+	if (err < 0)
+		goto cleanup_err;
+
 	return server_devices_force_close(ds_match->dev->devname,
 					  ds_match->sess->sessname, ctx);
 cleanup_err:
@@ -5077,6 +5152,10 @@ int cmd_path_operation(int (*operation)(const char *session_name,
 		handle_unknown_param(*argv, params_default, ctx);
 		return -EINVAL;
 	}
+	err = check_root(ctx);
+	if (err < 0)
+		return err;
+
 	if (ctx->path_cnt >= 1 && ctx->port_desc_set) {
 		ERR(ctx->trm, "You can only specify a path or a port but not both!\n");
 		err = -EINVAL;
