@@ -1,3 +1,10 @@
+rnbd-tool (1.0.10) jessie stretch buster; urgency=medium
+
+  * manual: Add examples to help and man page for some common commands
+  * error handling: Improve error message when volume mapping failes
+
+ -- Lutz Pogrell <lutz.pogrell@cloud.ionos.com>  Thu, 14 Jan 2021 08:23:56 +0100
+
 rnbd-tool (1.0.9) jessie stretch buster; urgency=medium
 
   * command line: improve help messages on path operations
