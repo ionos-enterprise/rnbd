@@ -1,3 +1,9 @@
+rnbd-tool (1.0.11) jessie stretch buster bullseye; urgency=medium
+
+  * debian: build for bullseye
+
+ -- Lutz Pogrell <lutz.pogrell@cloud.ionos.com>  Fri, 05 Feb 2021 10:51:36 +0100
+
 rnbd-tool (1.0.10) jessie stretch buster; urgency=medium
 
   * manual: Add examples to help and man page for some common commands
