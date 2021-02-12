@@ -3105,7 +3105,13 @@ static int client_path_readd(const char *session_name,
 		 get_sysfs_info(ctx)->path_sess_clt,
 		 path->sess->sessname);
 
-	ret = printf_sysfs(sysfs_path, "add_path", ctx, "%s", path->pathname);
+	if (strncmp("ip:fe80:", path_name, 8) == 0 && strchr(path_name, '%') != NULL) {
+		/* for a link local IPv6 address use the original address string */
+		/* only here not for remove_path */
+		ret = printf_sysfs(sysfs_path, "add_path", ctx, "%s", path_name);
+	} else {
+		ret = printf_sysfs(sysfs_path, "add_path", ctx, "%s", path->pathname);
+	}
 	if (ret)
 		ERR(ctx->trm,
 		    "Failed to readd path '%s' to session '%s': %s (%d)\n",
