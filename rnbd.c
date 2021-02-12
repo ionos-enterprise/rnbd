@@ -1436,12 +1436,28 @@ static int find_paths_all(const char *session_name,
 			  int *pp_srv_cnt)
 {
 	int cnt_clt = 0, cnt_srv = 0;
+	char *base_path_name;
 
 	if (ctx->rnbdmode & RNBD_CLIENT)
 		cnt_clt = find_paths(session_name, path_name, ctx, paths_clt, pp_clt);
 	if (ctx->rnbdmode & RNBD_SERVER)
 		cnt_srv = find_paths(session_name, path_name, ctx, paths_srv, pp_srv);
-
+	if (cnt_clt + cnt_srv == 0 && strchr(path_name, '%') != NULL) {
+		INF(ctx->debug_set,
+		    "Retry match for path name %s ignoring interface name.\n",
+		    path_name);
+		base_path_name = strdup(path_name);
+		if (base_path_name) {
+			*strchr(base_path_name, '%') = '\0';
+			if (ctx->rnbdmode & RNBD_CLIENT)
+				cnt_clt = find_paths(session_name,base_path_name,
+						     ctx, paths_clt, pp_clt);
+			if (ctx->rnbdmode & RNBD_SERVER)
+				cnt_srv = find_paths(session_name, base_path_name,
+						     ctx, paths_srv, pp_srv);
+			free(base_path_name);
+		}
+	}
 	*pp_clt_cnt = cnt_clt;
 	*pp_srv_cnt = cnt_srv;
 
@@ -2205,6 +2221,7 @@ static struct rnbd_path *find_single_path(const char *session_name,
 {
 	struct rnbd_path **matching_paths, *res = NULL;
 	int match_count;
+	char *base_path_name;
 
 	if (!path_cnt) {
 		if (print_err)
@@ -2221,7 +2238,17 @@ static struct rnbd_path *find_single_path(const char *session_name,
 		return NULL;
 	}
 	match_count = find_paths(session_name, path_name, ctx, paths, matching_paths);
-
+	if (match_count == 0 && strchr(path_name, '%') != NULL) {
+		INF(ctx->debug_set,
+		    "Retry to find path for name %s ignoring interface.\n",
+		    path_name);
+		base_path_name = strdup(path_name);
+		if (base_path_name) {
+			*strchr(base_path_name, '%') = '\0';
+			match_count = find_paths(session_name, base_path_name, ctx, paths, matching_paths);
+			free(base_path_name);
+		}
+	}
 	if (match_count == 1) {
 		res = *matching_paths;
 	} else {
