@@ -10,7 +10,9 @@ Homepage: https://gitlab.pb.local/ibnbd/ibnbd-tool.git
 
 Package: rnbd-tool
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Depends: bash-completion,
+		 ${misc:Depends},
+		 ${shlibs:Depends}
 Description: Command line tool for RNBD
  This package contains ibnbd tool to manage RTRS connections
  and RNBD devices.
