@@ -1,3 +1,10 @@
+rnbd-tool (1.0.12) jessie stretch buster bullseye; urgency=medium
+
+  * debian: add dependency to bash-completion
+  * rnbd: Path expressions for link local IPv6 addresses shall handle interface name smart
+
+ -- Lutz Pogrell <lutz.pogrell@cloud.ionos.com>  Tue, 23 Feb 2021 15:02:23 +0100
+
 rnbd-tool (1.0.11) jessie stretch buster bullseye; urgency=medium
 
   * debian: build for bullseye
