@@ -2522,16 +2522,11 @@ static void help_unmap(const char *program_name,
 	print_param_descr("help");
 }
 
-static int client_devices_unmap(const char *device_name, bool force,
+static int _client_devices_unmap(const struct rnbd_sess_dev *ds, bool force,
 				struct rnbd_ctx *ctx)
 {
-	const struct rnbd_sess_dev *ds;
 	char tmp[PATH_MAX];
 	int ret;
-
-	ds = find_single_device(device_name, ctx, sds_clt, sds_clt_cnt, true/*print_err*/);
-	if (!ds)
-		return -EINVAL;
 
 	sprintf(tmp, "/sys/block/%s/%s", ds->dev->devname,
 		get_sysfs_info(ctx)->path_dev_name);
@@ -2547,6 +2542,18 @@ static int client_devices_unmap(const char *device_name, bool force,
 		    ds->dev->devname);
 
 	return ret;
+}
+
+static int client_devices_unmap(const char *device_name, bool force,
+				struct rnbd_ctx *ctx)
+{
+	const struct rnbd_sess_dev *ds;
+
+	ds = find_single_device(device_name, ctx, sds_clt, sds_clt_cnt, true/*print_err*/);
+	if (!ds)
+		return -EINVAL;
+
+	return _client_devices_unmap(ds, force, ctx);
 }
 
 static int client_device_remap(const struct rnbd_dev *dev,
@@ -2590,27 +2597,75 @@ static int client_session_remap(const char *session_name,
 				struct rnbd_ctx *ctx)
 {
 	int tmp_err, err = 0;
+	int cnt, i;
 	struct rnbd_sess_dev *const *sds_iter;
 	const struct rnbd_sess *sess;
+	char cmd[4096];
+
+	if (!ctx->sysfs_avail)
+		ERR(ctx->trm, "Not possible to remap devices: modules not loaded.\n");
 
 	if (!sds_clt_cnt) {
 		ERR(ctx->trm,
 		    "No devices mapped. Nothing to be done!\n");
 		return -EINVAL;
 	}
-
 	sess = find_single_session(session_name, ctx, sess_clt,
 				   sds_clt_cnt, true);
 	if (!sess)
 		return -EINVAL;
 
+	if (!ctx->force_set) {
+		for (sds_iter = sds_clt; *sds_iter; sds_iter++) {
+
+			if ((*sds_iter)->sess == sess) {
+				tmp_err = client_device_remap((*sds_iter)->dev, ctx);
+				/*  intentional continue on error */
+				if (!err && tmp_err)
+					err = tmp_err;
+			}
+		}
+		return err;
+	}
 	for (sds_iter = sds_clt; *sds_iter; sds_iter++) {
 
 		if ((*sds_iter)->sess == sess) {
-			tmp_err = client_device_remap((*sds_iter)->dev, ctx);
+			tmp_err = _client_devices_unmap((*sds_iter), 0, ctx);
 			/*  intentional continue on error */
-			if (!err && tmp_err)
-				err = tmp_err;
+			if (tmp_err)
+				ERR(ctx->trm, "Failed to unmap device: %s, %s (%d)\n",
+				    (*sds_iter)->dev->devname, strerror(-tmp_err), tmp_err);
+		}
+	}
+	/* All devices should be unmapped now and */
+	/* therefor session should be closed.     */
+	/* We have a race condition here with     */
+	/* simultanous map/unmap commands         */
+	/* which involve the same hosts.          */
+	for (sds_iter = sds_clt; *sds_iter; sds_iter++) {
+
+		if ((*sds_iter)->sess == sess) {
+			cnt = snprintf(cmd, sizeof(cmd), "sessname=%s", sess->sessname);
+			cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, " device_path=%s",
+					(*sds_iter)->mapping_path);
+			for (i = 0; i < sess->path_cnt; i++)
+				cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt,
+						" path=%s@%s", sess->paths[i]->src_addr,
+						sess->paths[i]->dst_addr);
+			cnt += snprintf(cmd + cnt, sizeof(cmd) - cnt, " access_mode=%s",
+					(*sds_iter)->access_mode);
+			tmp_err = printf_sysfs(get_sysfs_info(ctx)->path_dev_clt,
+					       "map_device", ctx, "%s", cmd);
+			
+			if (tmp_err) {
+				ERR(ctx->trm, "Failed to map device: %s (%d)\n",
+				    strerror(-tmp_err), tmp_err);
+				if (!err)
+					err = tmp_err;
+			}  else { 
+				INF(ctx->verbose_set, "Successfully mapped '%s' from '%s'.\n",
+				    (*sds_iter)->dev->devname, sess->sessname);
+			}
 		}
 	}
 	return err;
@@ -4470,7 +4525,7 @@ int cmd_remap(int argc, const char *argv[], const struct param *cmd,
 	if (err < 0)
 		return err;
 
-	err = parse_cmd_parameters(argc, argv, params_default,
+	err = parse_cmd_parameters(argc, argv, params_unmap_parameters,
 				   ctx, cmd, help_context, 0);
 	if (err < 0)
 		return err;
@@ -4592,7 +4647,7 @@ int cmd_session_remap(int argc, const char *argv[], const struct param *cmd,
 		return err;
 
 	err = parse_cmd_parameters(argc, argv,
-				   params_default,
+				   params_unmap_parameters,
 				   ctx, cmd, help_context, 0);
 	if (err < 0)
 		return err;
