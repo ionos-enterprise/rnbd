@@ -3256,21 +3256,21 @@ static struct param _cmd_remap =
 	{TOK_REMAP, "remap",
 		"Remap a",
 		"",
-		"Unmap and map again an imported device",
+		"Remap an imported device",
 		"<device>",
 		 NULL, help_remap};
 static struct param _cmd_remap_device_or_session =
 	{TOK_REMAP, "remap",
 		"Remap a",
 		"",
-		"Unmap and map again a devices or all devices of a given session",
+		"Remap a devices or all devices of a given session",
 		"<device|session>",
 		 NULL, help_remap_device_or_session};
 static struct param _cmd_remap_session =
 	{TOK_REMAP, "remap",
 		"Remap all devicess on a",
 		"",
-		"Unmap and map again all devices of a given session",
+		"Remap all devices of a given session",
 		"<session>",
 		 NULL, help_remap_session};
 static struct param _cmd_close_device =
