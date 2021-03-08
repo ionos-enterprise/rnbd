@@ -179,7 +179,7 @@ Options:
 
 rnbd client device recover <device>|all [OPTIONS]
 
-Recover a device: remap all closed devices.
+Recover a device: recover a device when it is not open.
 
 Arguments:
     <device>        Name or identifier of a device.
@@ -277,6 +277,8 @@ Arguments:
 
 Options:
     force           Force operation
+                    When provided, all devices will be unmapped and mapped again.
+
     verbose         Verbose output
     help            Display help and exit
 

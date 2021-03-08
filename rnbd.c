@@ -2748,6 +2748,9 @@ static void help_remap_device_or_session(const char *program_name,
 
 	printf("\nOptions:\n");
 	print_param_descr("force");
+	print_opt("",
+		  "When provided, all devices will be unmapped and mapped again.");
+	printf("\n");
 	print_param_descr("verbose");
 	print_param_descr("help");
 }
@@ -2767,8 +2770,12 @@ static void help_remap_session(const char *program_name,
 
 	printf("\nOptions:\n");
 	print_param_descr("force");
+	print_opt("",
+		  "When provided, all devices will be unmapped and mapped again.");
+	printf("\n");
 	print_param_descr("verbose");
 	print_param_descr("help");
+
 }
 
 static void help_close_device(const char *program_name,
@@ -3339,7 +3346,7 @@ static struct param _cmd_client_recover_device =
 	{TOK_RECOVER, "recover",
 		"Recover a",
 		"",
-		"Recover a device: remap all closed devices.",
+		"Recover a device: recover a device when it is not open.",
 		"<device>|all",
 		 NULL, help_recover_device};
 static struct param _cmd_recover_device_session_or_path =
