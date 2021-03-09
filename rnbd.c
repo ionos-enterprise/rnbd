@@ -2925,7 +2925,7 @@ static int client_session_add(const char *session_name,
 	if (ret)
 		ERR(ctx->trm,
 		    "Failed to add path '%s' to session '%s': %s (%d)\n",
-		    sess->sessname, address_string, strerror(-ret), ret);
+		    address_string, sess->sessname, strerror(-ret), ret);
 	else
 		INF(ctx->verbose_set, "Successfully added path '%s' to '%s'.\n",
 		    address_string, sess->sessname);
