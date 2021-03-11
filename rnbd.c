@@ -2979,7 +2979,7 @@ static int client_session_add(const char *session_name,
 		 get_sysfs_info(ctx)->path_sess_clt, sess->sessname);
 	if (path->src)
 		snprintf(address_string, sizeof(address_string),
-			 "%s@%s", path->src, path->dst);
+			 "%s,%s", path->src, path->dst);
 	else
 		snprintf(address_string, sizeof(address_string),
 			 "%s", path->dst);
