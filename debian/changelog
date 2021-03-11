@@ -1,3 +1,12 @@
+rnbd-tool (1.0.13) jessie stretch buster bullseye; urgency=medium
+
+  * rnbd: Correct error message when adding path
+  * rnbd: Unmap and map again all the devices on session to reestablish it
+  * manual: Correnct help text for device/session remap
+  * json: The output of rnbd device list json isn't a valid json string
+
+ -- Lutz Pogrell <lutz.pogrell@cloud.ionos.com>  Thu, 11 Mar 2021 15:59:53 +0100
+
 rnbd-tool (1.0.12) jessie stretch buster bullseye; urgency=medium
 
   * debian: add dependency to bash-completion
