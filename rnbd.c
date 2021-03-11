@@ -930,10 +930,9 @@ static int list_devices(struct rnbd_sess_dev **d_clt, int d_clt_cnt,
 		if (d_clt_cnt)
 			list_devices_json(d_clt, ctx->clms_devices_clt, ctx);
 		else
-			printf("null,\n");
+			printf("null");
 
-
-		printf("\t\"exports\": ");
+		printf(",\n\t\"exports\": ");
 
 		if (d_srv_cnt)
 			list_devices_json(d_srv, ctx->clms_devices_srv, ctx);
