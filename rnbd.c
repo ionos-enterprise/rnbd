@@ -1303,7 +1303,9 @@ static int parse_path1(const char *arg,
 	char *src, *dst;
 	const char *d; int d_pos;
 
-	d = strchr(arg, '@');
+	d = strchr(arg, ',');
+	if (!d)
+		d = strchr(arg, '@');
 	if (d) {
 		d_pos = d - arg;
 		src = strndup(arg, d_pos+1);
