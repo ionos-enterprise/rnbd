@@ -1,3 +1,9 @@
+rnbd-tool (1.0.14) jessie stretch buster bullseye; urgency=medium
+
+  * rnbd: support path with ',' as separator
+
+ -- Lutz Pogrell <lutz.pogrell@cloud.ionos.com>  Wed, 24 Mar 2021 08:45:09 +0100
+
 rnbd-tool (1.0.13) jessie stretch buster bullseye; urgency=medium
 
   * rnbd: Correct error message when adding path
