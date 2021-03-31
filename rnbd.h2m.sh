@@ -56,8 +56,8 @@ echo -e "List imported on client devices, show only mapping_path and devpath, ou
 echo -e ".B rnbd client devices list mapping_path,devpath json\n"
 
 echo ".SH COPYRIGHT"
-echo "Copyright \(co 2019 - 2020 IONOS Cloud GmbH. All Rights Reserved"
+echo "Copyright \(co 2019 - 2021 IONOS Cloud GmbH. All Rights Reserved"
 echo ".SH AUTHORS"
-echo "Danil Kipnis <danil.kipnis@cloud.ionos.com>"
+echo "Danil Kipnis <danil.kipnis@ionos.com>"
 echo ".RE"
-echo "Lutz Pogrell <lutz.pogrell@cloud.ionos.com>"
+echo "Lutz Pogrell <lutz.pogrell@ionos.com>"
