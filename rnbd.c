@@ -4813,6 +4813,12 @@ static int client_session_add_missing_paths(const char *session_name,
 	INF(ctx->debug_set, "Looking for missing paths of session %s\n", session_name);
 	path = find_first_path_for_session(session_name, ctx,
 					   paths_clt, paths_clt_cnt);
+	if (!path) {
+		INF(ctx->trm, "No paths in session %s, not possible to recover\n",
+			      session_name);
+		return 0;
+	}
+
 	err = hostname_from_path(hostname, sizeof(hostname),
 				 path->hca_name, path->hca_port,
 				 path->dst_addr, ctx);
