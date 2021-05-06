@@ -1,3 +1,9 @@
+rnbd-tool (1.0.16) jessie stretch buster bullseye; urgency=medium
+
+  * rnbd: fix recovering session with no paths
+
+ -- Danil Kipnis <danil.kipnis@cloud.ionos.com>  Thu, 06 May 2021 11:03:06 +0200
+
 rnbd-tool (1.0.15) jessie stretch buster bullseye; urgency=medium
 
   * rnbd: adopt email adresses
