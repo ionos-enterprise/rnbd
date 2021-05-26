@@ -1132,7 +1132,8 @@ static int list_paths(struct rnbd_path **p_clt, int clt_p_num,
 
 		if (clt_p_num)
 			list_paths_term(p_clt, clt_p_num,
-					ctx->clms_paths_clt, 0, ctx);
+					ctx->clms_paths_clt, 0, ctx,
+					compar_paths_sessname);
 
 		if (clt_p_num && srv_p_num && is_dump)
 			printf("\n");
@@ -1144,7 +1145,8 @@ static int list_paths(struct rnbd_path **p_clt, int clt_p_num,
 
 		if (srv_p_num)
 			list_paths_term(p_srv, srv_p_num,
-					ctx->clms_paths_srv, 0, ctx);
+					ctx->clms_paths_srv, 0, ctx,
+					compar_paths_sessname);
 		break;
 	}
 
@@ -1565,7 +1567,8 @@ static int show_session(struct rnbd_sess **ss_clt, struct rnbd_sess **ss_srv,
 			printf(" %s(%s)%s",
 			       CLR(ctx->trm, CBLD, ss[0]->mp_short));
 		printf("\n");
-		list_paths_term(ss[0]->paths, ss[0]->path_cnt, ps, 1, ctx);
+		list_paths_term(ss[0]->paths, ss[0]->path_cnt, ps, 1, ctx,
+				compar_paths_hca_src);
 
 		break;
 	}

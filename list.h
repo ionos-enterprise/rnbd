@@ -48,7 +48,8 @@ void list_sessions_xml(struct rnbd_sess **sessions,
 
 int list_paths_term(struct rnbd_path **paths, int path_cnt,
 		    struct table_column **cs, int tree,
-		    const struct rnbd_ctx *ctx);
+		    const struct rnbd_ctx *ctx,
+		    int (*comp)(const void *p1, const void *p2));
 
 void list_paths_csv(struct rnbd_path **paths,
 		    struct table_column **cs,
@@ -62,3 +63,6 @@ void list_paths_xml(struct rnbd_path **paths,
 		    struct table_column **cs,
 		    const struct rnbd_ctx *ctx);
 
+/* add more path comparation */
+int compar_paths_hca_src(const void *p1, const void *p2);
+int compar_paths_sessname(const void *p1, const void *p2);

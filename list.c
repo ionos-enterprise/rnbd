@@ -195,7 +195,8 @@ int list_sessions_term(struct rnbd_sess **sessions,
 		if (!ctx->notree_set)
 			list_paths_term(sorted_sessions[i]->paths,
 					sorted_sessions[i]->path_cnt,
-					clms_paths_shortdesc, 1, ctx);
+					clms_paths_shortdesc, 1, ctx,
+					compar_paths_hca_src);
 	}
 
 	if (!ctx->nototals_set && table_has_num(cs)) {
@@ -256,9 +257,48 @@ void list_sessions_xml(struct rnbd_sess **sessions,
 	}
 }
 
+int compar_paths_hca_src(const void *p1, const void *p2)
+{
+	const struct rnbd_path *const *path1 = p1, *const *path2 = p2;
+
+	return strcmp((*path1)->hca_name, (*path2)->hca_name) ?
+		: strcmp((*path1)->src_addr, (*path2)->src_addr);
+}
+
+int compar_paths_sessname(const void *p1, const void *p2)
+{
+	const struct rnbd_path *const *path1 = p1, *const *path2 = p2;
+
+	return strcmp((*path1)->sess->sessname, (*path2)->sess->sessname);
+}
+
+static struct rnbd_path **alloc_sorted_paths(struct rnbd_path **paths,
+					     int path_cnt,
+					     int (*comp)(const void *p1, const void *p2))
+{
+	struct rnbd_path **sorted_paths;
+
+	sorted_paths = calloc(path_cnt, sizeof(*paths));
+	if (!sorted_paths)
+		return NULL;
+	memcpy(sorted_paths, paths, sizeof(*paths) * path_cnt);
+
+	if (comp) {
+		/* sort the list according to the first column */
+		qsort(sorted_paths, path_cnt, sizeof(*paths), comp);
+	}
+	return sorted_paths;
+}
+
+static void free_sorted_paths(struct rnbd_path **sorted_paths)
+{
+	free(sorted_paths);
+}
+
 int list_paths_term(struct rnbd_path **paths, int path_cnt,
 		    struct table_column **cs, int tree,
-		    const struct rnbd_ctx *ctx)
+		    const struct rnbd_ctx *ctx,
+		    int (*comp)(const void *p1, const void *p2))
 {
 	struct rnbd_path total = {
 		.rx_bytes = 0,
@@ -268,6 +308,7 @@ int list_paths_term(struct rnbd_path **paths, int path_cnt,
 	};
 	int i, cs_cnt, fld_cnt = 0;
 	struct table_fld *flds;
+	struct rnbd_path **sorted_paths;
 
 	cs_cnt = table_clm_cnt(cs);
 
@@ -277,19 +318,28 @@ int list_paths_term(struct rnbd_path **paths, int path_cnt,
 		return -ENOMEM;
 	}
 
+	sorted_paths = alloc_sorted_paths(paths, path_cnt, comp);
+	if (!sorted_paths) {
+		free(flds);
+		ERR(ctx->trm, "not enough memory\n");
+		return -EFAULT;
+	}
+
 	for (i = 0; i < path_cnt; i++) {
-		if (!paths[i]) {
+		if (!sorted_paths[i]) {
+			free_sorted_paths(sorted_paths);
+			free(flds);
 			ERR(ctx->trm, "inconsistent internal data path_cnt <-> paths\n");
 			return -EFAULT;
 		}
-		table_row_stringify(paths[i], flds + fld_cnt, cs, ctx, true, 0);
+		table_row_stringify(sorted_paths[i], flds + fld_cnt, cs, ctx, true, 0);
 
 		fld_cnt += cs_cnt;
 
-		total.rx_bytes += paths[i]->rx_bytes;
-		total.tx_bytes += paths[i]->tx_bytes;
-		total.inflights += paths[i]->inflights;
-		total.reconnects += paths[i]->reconnects;
+		total.rx_bytes += sorted_paths[i]->rx_bytes;
+		total.tx_bytes += sorted_paths[i]->tx_bytes;
+		total.inflights += sorted_paths[i]->inflights;
+		total.reconnects += sorted_paths[i]->reconnects;
 	}
 
 	if (!ctx->nototals_set)
@@ -312,6 +362,7 @@ int list_paths_term(struct rnbd_path **paths, int path_cnt,
 		table_flds_print_term("", flds + fld_cnt, cs, ctx->trm, 0);
 	}
 
+	free_sorted_paths(sorted_paths);
 	free(flds);
 
 	return 0;
