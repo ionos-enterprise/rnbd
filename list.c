@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <errno.h>
+#include <string.h>
 
 #include "list.h"
 
@@ -126,6 +127,13 @@ void list_devices_xml(struct rnbd_sess_dev **sds,
 	}
 }
 
+static int compar_sess_sessname(const void *p1, const void *p2)
+{
+	const struct rnbd_sess *const *sess1 = p1, *const *sess2 = p2;
+
+	return strcmp((*sess1)->sessname, (*sess2)->sessname);
+}
+
 int list_sessions_term(struct rnbd_sess **sessions,
 		       struct table_column **cs,
 		       const struct rnbd_ctx *ctx)
@@ -140,27 +148,37 @@ int list_sessions_term(struct rnbd_sess **sessions,
 	};
 	int i, cs_cnt, sess_num;
 	struct table_fld *flds;
+	struct rnbd_sess **sorted_sessions;
 
 	cs_cnt = table_clm_cnt(cs);
 	for (sess_num = 0; sessions[sess_num]; sess_num++)
 		;
 
+	sorted_sessions = calloc(sess_num + 1, sizeof(*sessions));
+	if (!sorted_sessions) {
+		ERR(ctx->trm, "not enough memory\n");
+		return -ENOMEM;
+	}
+	memcpy(sorted_sessions, sessions, sizeof(*sessions) * sess_num);
+	qsort(sorted_sessions, sess_num, sizeof(*sorted_sessions), compar_sess_sessname);
+
 	flds = calloc((sess_num + 1) * cs_cnt, sizeof(*flds));
 	if (!flds) {
+		free(sorted_sessions);
 		ERR(ctx->trm, "not enough memory\n");
 		return -ENOMEM;
 	}
 
-	for (i = 0; sessions[i]; i++) {
-		table_row_stringify(sessions[i], flds + i * cs_cnt, cs,
+	for (i = 0; sorted_sessions[i]; i++) {
+		table_row_stringify(sorted_sessions[i], flds + i * cs_cnt, cs,
 				    ctx, true, 0);
 
-		total.act_path_cnt += sessions[i]->act_path_cnt;
-		total.path_cnt += sessions[i]->path_cnt;
-		total.rx_bytes += sessions[i]->rx_bytes;
-		total.tx_bytes += sessions[i]->tx_bytes;
-		total.inflights += sessions[i]->inflights;
-		total.reconnects += sessions[i]->reconnects;
+		total.act_path_cnt += sorted_sessions[i]->act_path_cnt;
+		total.path_cnt += sorted_sessions[i]->path_cnt;
+		total.rx_bytes += sorted_sessions[i]->rx_bytes;
+		total.tx_bytes += sorted_sessions[i]->tx_bytes;
+		total.inflights += sorted_sessions[i]->inflights;
+		total.reconnects += sorted_sessions[i]->reconnects;
 	}
 
 	if (!ctx->nototals_set) {
@@ -171,12 +189,12 @@ int list_sessions_term(struct rnbd_sess **sessions,
 	if (!ctx->noheaders_set)
 		table_header_print_term("", cs, ctx->trm);
 
-	for (i = 0; sessions[i]; i++) {
+	for (i = 0; sorted_sessions[i]; i++) {
 		table_flds_print_term("", flds + i * cs_cnt,
 				      cs, ctx->trm, 0);
 		if (!ctx->notree_set)
-			list_paths_term(sessions[i]->paths,
-					sessions[i]->path_cnt,
+			list_paths_term(sorted_sessions[i]->paths,
+					sorted_sessions[i]->path_cnt,
 					clms_paths_shortdesc, 1, ctx);
 	}
 
@@ -187,6 +205,7 @@ int list_sessions_term(struct rnbd_sess **sessions,
 				      cs, ctx->trm, 0);
 	}
 
+	free(sorted_sessions);
 	free(flds);
 
 	return 0;
