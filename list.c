@@ -312,6 +312,12 @@ int list_paths_term(struct rnbd_path **paths, int path_cnt,
 
 	cs_cnt = table_clm_cnt(cs);
 
+	for (i = 0; i < path_cnt; i++) {
+		if (!paths[i]) {
+			ERR(ctx->trm, "inconsistent internal data path_cnt <-> paths\n");
+			return -EFAULT;
+		}
+	}
 	flds = calloc((path_cnt + 1) * cs_cnt, sizeof(*flds));
 	if (!flds) {
 		ERR(ctx->trm, "not enough memory\n");
