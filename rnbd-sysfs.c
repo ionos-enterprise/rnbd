@@ -557,6 +557,8 @@ static int rnbd_sysfs_read_srv_sess_path(
 	for (sess_ent = readdir(sp); sess_ent; sess_ent = readdir(sp)) {
 		if (sess_ent->d_name[0] == '.')
 			continue;
+		if (strcmp(sess_ent->d_name, "ctl") == 0)
+			continue;
 
 		 find_or_add_sess(sess_ent->d_name, sess, paths, RNBD_SERVER);
 	}
