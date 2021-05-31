@@ -500,17 +500,50 @@ static struct rnbd_sess_dev *add_sess_dev(const char *devname,
 	return sds[i];
 }
 
+static int rnbd_sysfs_read_sess_path(
+		struct rnbd_sess **sess,
+		struct rnbd_path **paths,
+		enum rnbdmode side)
+{
+	struct dirent *sess_ent;
+	DIR *sp;
+
+	if (side == RNBD_CLIENT)
+		sp = opendir(use_sysfs_info->path_sess_clt);
+	else
+		sp = opendir(use_sysfs_info->path_sess_srv);
+	if (!sp)
+		return 0;
+
+	for (sess_ent = readdir(sp); sess_ent; sess_ent = readdir(sp)) {
+		if (sess_ent->d_name[0] == '.')
+			continue;
+		if (strcmp(sess_ent->d_name, "ctl") == 0)
+			continue;
+
+		 find_or_add_sess(sess_ent->d_name, sess, paths, side);
+	}
+	closedir(sp);
+
+	return 0;
+}
+
 static int rnbd_sysfs_read_clt(struct rnbd_sess_dev **sds,
 				struct rnbd_sess **sess,
 				struct rnbd_path **paths,
 				struct rnbd_dev **devs)
 {
 	char path[PATH_MAX], sessname[NAME_MAX];
+	int res;
 	struct dirent *dent;
 	struct rnbd_sess_dev *sd;
 	struct rnbd_sess *s;
 	struct rnbd_dev *d;
 	DIR *ddir;
+
+	res = rnbd_sysfs_read_sess_path(sess, paths, RNBD_CLIENT);
+	if (res)
+		return res;
 
 	sprintf(path, "%s/devices/", use_sysfs_info->path_dev_clt);
 	ddir = opendir(path);
@@ -543,30 +576,6 @@ static int rnbd_sysfs_read_clt(struct rnbd_sess_dev **sds,
 	return 0;
 }
 
-static int rnbd_sysfs_read_srv_sess_path(
-		struct rnbd_sess **sess,
-		struct rnbd_path **paths)
-{
-	struct dirent *sess_ent;
-	DIR *sp;
-
-	sp = opendir(use_sysfs_info->path_sess_srv);
-	if (!sp)
-		return 0;
-
-	for (sess_ent = readdir(sp); sess_ent; sess_ent = readdir(sp)) {
-		if (sess_ent->d_name[0] == '.')
-			continue;
-		if (strcmp(sess_ent->d_name, "ctl") == 0)
-			continue;
-
-		 find_or_add_sess(sess_ent->d_name, sess, paths, RNBD_SERVER);
-	}
-	closedir(sp);
-
-	return 0;
-}
-
 static int rnbd_sysfs_read_srv(struct rnbd_sess_dev **sds,
 				struct rnbd_sess **sess,
 				struct rnbd_path **paths,
@@ -580,7 +589,7 @@ static int rnbd_sysfs_read_srv(struct rnbd_sess_dev **sds,
 	struct rnbd_dev *d;
 	DIR *ddir, *sdir;
 
-	res = rnbd_sysfs_read_srv_sess_path(sess, paths);
+	res = rnbd_sysfs_read_sess_path(sess, paths, RNBD_SERVER);
 	if (res)
 		return res;
 	
