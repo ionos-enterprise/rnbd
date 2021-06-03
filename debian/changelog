@@ -1,3 +1,12 @@
+rnbd-tool (1.0.17) jessie stretch buster bullseye; urgency=medium
+
+  * rnbd: RNBD shows unsorted path state
+  * rnbd: RNBD tool displays rtrs sessions and paths for rmr
+  * bugfix: RNBD tool erronously dislpays "ctl" as session
+  * bugfix: rnbd dump crashes when rmr is used instead of rnbd
+
+ -- Lutz Pogrell <lutz.pogrell@ionos.com>  Thu, 03 Jun 2021 08:06:31 +0200
+
 rnbd-tool (1.0.16) jessie stretch buster bullseye; urgency=medium
 
   * rnbd: fix recovering session with no paths
