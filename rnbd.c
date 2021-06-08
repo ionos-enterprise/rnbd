@@ -3176,7 +3176,7 @@ static int client_path_readd(const char *session_name,
 		/* only here not for remove_path */
 		ret = printf_sysfs(sysfs_path, "add_path", ctx, "%s", path_name);
 	} else {
-		ret = printf_sysfs(sysfs_path, "add_path", ctx, "%s", path->pathname);
+		ret = printf_sysfs(sysfs_path, "add_path", ctx, "%s@%s", path->src_addr, path->dst_addr);
 	}
 	if (ret)
 		ERR(ctx->trm,
