@@ -120,6 +120,8 @@ static struct table_column *def_clms_devices_srv[] = {
 
 CLM_S(sessname, "Session name", FLD_STR, NULL, 'l', CNRM, CBLD,
 	"Name of the session");
+CLM_S(hostname, "Hostname", FLD_STR, NULL, 'l', CNRM, CBLD,
+	"Hostname of the counterpart");
 CLM_S(mp_short, "MP", FLD_STR, NULL, 'l', CNRM, CNRM,
 	"Multipath policy (short)");
 CLM_S(mp, "MP Policy", FLD_STR, NULL, 'l', CNRM, CNRM,
@@ -165,6 +167,7 @@ static struct table_column *all_clms_sessions[] = {
 	&clm_rnbd_sess_reconnects,
 	&clm_rnbd_sess_side,
 	&clm_rnbd_sess_srvname,
+	&clm_rnbd_sess_hostname,
 	NULL
 };
 
@@ -182,6 +185,7 @@ static struct table_column *all_clms_sessions_clt[] = {
 	&clm_rnbd_sess_reconnects,
 	&clm_rnbd_sess_side,
 	&clm_rnbd_sess_srvname,
+	&clm_rnbd_sess_hostname,
 	NULL
 };
 
@@ -192,6 +196,7 @@ static struct table_column *all_clms_sessions_srv[] = {
 	&clm_rnbd_sess_tx_bytes,
 	&clm_rnbd_sess_inflights,
 	&clm_rnbd_sess_side,
+	&clm_rnbd_sess_hostname,
 	NULL
 };
 

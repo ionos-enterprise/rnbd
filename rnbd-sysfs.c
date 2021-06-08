@@ -414,6 +414,11 @@ static struct rnbd_sess *find_or_add_sess(const char *sessname,
 	s->side = side;
 	scanf_sysfs(path, "mpath_policy", "%s (%2s: %*d)", s->mp, s->mp_short);
 
+	if (side == RNBD_CLIENT)
+		scanf_sysfs(path, "srv_hostname", "%s", s->hostname);
+	else
+		scanf_sysfs(path, "clt_hostname", "%s", s->hostname);
+
 	strcat(path, "/paths/");
 	s->path_cnt = dir_cnt(path);
 	if (!s->path_cnt)
