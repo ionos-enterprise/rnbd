@@ -1,4 +1,4 @@
-.TH RNBD "8" "March 2021" "rnbd 1.0.15" "System Administration Utilities"
+.TH RNBD "8" "June 2021" "rnbd 1.0.17" "System Administration Utilities"
 .SH NAME
 rnbd - Configuration tool for RNBD driver and RTRS library.
 .SH SYNOPSIS
@@ -218,6 +218,7 @@ Options:
                     reconnects      Reconnects     Reconnects
                     direction       Direction      Direction of the session: incoming or outgoing
                     srvname         Server Name    Server name
+                    hostname        Hostname       Hostname of the counterpart
 
                     Default: sessname,state,path_uu,mp_short,tx_bytes,rx_bytes,reconnects
 
@@ -258,6 +259,7 @@ Options:
                     reconnects      Reconnects     Reconnects
                     direction       Direction      Direction of the session: incoming or outgoing
                     srvname         Server Name    Server name
+                    hostname        Hostname       Hostname of the counterpart
 
                     Default: sessname,state,path_uu,mp_short,tx_bytes,rx_bytes,reconnects
 
@@ -624,6 +626,7 @@ Options:
                     tx_bytes        TX             Bytes send
                     inflights       Inflights      Inflights
                     direction       Direction      Direction of the session: incoming or outgoing
+                    hostname        Hostname       Hostname of the counterpart
                     Default: sessname,path_cnt,tx_bytes,rx_bytes,inflights
 
     {format}        Output format: csv|json|xml
@@ -656,6 +659,7 @@ Options:
                     tx_bytes        TX             Bytes send
                     inflights       Inflights      Inflights
                     direction       Direction      Direction of the session: incoming or outgoing
+                    hostname        Hostname       Hostname of the counterpart
                     Default: sessname,path_cnt,tx_bytes,rx_bytes,inflights
 
     {format}        Output format: csv|json|xml
