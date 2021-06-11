@@ -1,3 +1,11 @@
+rnbd (1.0.18) jessie stretch buster bullseye; urgency=medium
+
+  * rnbd: add support for hostname
+  * rnbd: add hostname description to man page
+  * rnbd: rename debian package to rnbd
+
+ -- Grzegorz Prajsner <grzegorz.prajsner@ionos.com>  Fri, 11 Jun 2021 13:19:08 +0200
+
 rnbd-tool (1.0.17) jessie stretch buster bullseye; urgency=medium
 
   * rnbd: RNBD shows unsorted path state
