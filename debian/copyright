@@ -1,5 +1,5 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: rnbd-tool
+Upstream-Name: rnbd
 
 Files: *
 Copyright: 2019 - 2020 IONOS Cloud GmbH. All Rights Reserved

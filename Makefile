@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
-# Makefile for building rnbd-tool
+# Makefile for building rnbd
 
 # dpkg-parsechangelog is significantly slow
 CHANGELOG = $(shell head -n 1 ./debian/changelog)
