@@ -13,6 +13,7 @@ Architecture: any
 Depends: bash-completion,
 		 ${misc:Depends},
 		 ${shlibs:Depends}
+Conflicts: rnbd-tool
 Replaces: rnbd-tool
 Description: Command line tool for RNBD
  This package contains tool to manage RTRS connections
@@ -23,5 +24,6 @@ Architecture: any
 Section: debug
 Priority: extra
 Depends: rnbd (= ${binary:Version}), ${misc:Depends}
+Conflicts: rnbd-tool-dbg
 Replaces: rnbd-tool-dbg
 Description: Debug symbols for rnbd package
