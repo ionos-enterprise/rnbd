@@ -4,6 +4,7 @@ rnbd (1.0.18) jessie stretch buster bullseye; urgency=medium
   * rnbd: add hostname description to man page
   * rnbd: rename debian package to rnbd
   * rnbd: path readd shall use source address and dest adress instead of the path name
+  * manual: provide md format for man page and generate man page from it
 
  -- Grzegorz Prajsner <grzegorz.prajsner@ionos.com>  Fri, 11 Jun 2021 13:19:08 +0200
 
