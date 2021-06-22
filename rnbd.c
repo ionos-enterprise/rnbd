@@ -3315,7 +3315,7 @@ static struct param _cmd_unmap =
 	{TOK_UNMAP, "unmap",
 		"Unmap an imported",
 		"",
-		"Umap a given imported device",
+		"Unmap a given imported device",
 		"<device>",
 		NULL, help_unmap};
 static struct param _cmd_remap =

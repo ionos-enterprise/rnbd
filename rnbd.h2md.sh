@@ -20,7 +20,7 @@ objects_formatted=$(echo "**$objects**" | sed 's/ /** | **/g')
 cmds_formatted=$(echo "**$cmds**" | sed 's/ /** | **/g')
 
 echo "---
-title: RNDB
+title: RNBD
 section: 8
 header: System Administration Utilities
 footer: $VER
@@ -30,7 +30,7 @@ date: $DATE
 rnbd - configuration tool for RNBD driver and RTRS library
 
 # SYNOPSIS
-**rndb** *[MODE]* *[TARGET]* *<COMMAND\>* *[OPTIONS]*
+**rnbd** *[MODE]* *[TARGET]* *<COMMAND\>* *[OPTIONS]*
 
 *MODE* := { $modes_formatted }
 
@@ -41,9 +41,9 @@ rnbd - configuration tool for RNBD driver and RTRS library
 *OPTIONS* are command specific.
 
 # DESCRIPTION
-RNDB \(RDMA Network Block Device\) is a pair of kernel modules \(client and server\) that allow for remote access of a block device on the server over RTRS protocol using the RDMA \(InfiniBand, RoCE, iWARP\) transport. After being mapped, the remote block devices can be accessed on the client side as local block devices.
+RNBD \(RDMA Network Block Device\) is a pair of kernel modules \(client and server\) that allow for remote access of a block device on the server over RTRS protocol using the RDMA \(InfiniBand, RoCE, iWARP\) transport. After being mapped, the remote block devices can be accessed on the client side as local block devices.
 
-**rndb** is a tool which allows user to control said kernel modules in a convienient way.
+**rnbd** is a tool which allows user to control said kernel modules in a convenient way.
 
 # OPTIONS
 "
