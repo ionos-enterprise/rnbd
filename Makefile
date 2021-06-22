@@ -17,6 +17,9 @@ OBJ = $(SRC:.c=.o)
 TARGETS_OBJ = rnbd.o
 TARGETS = $(TARGETS_OBJ:.o=)
 
+MANPAGE_MD = $(TARGETS_OBJ:.o=.md)
+MANPAGE_8 = man/$(TARGETS_OBJ:.o=.8)
+
       rnbd_OBJ = levenshtein.o misc.o table.o rnbd-sysfs.o list.o
 
 .PHONY: all
@@ -24,6 +27,14 @@ all: $(TARGETS)
 
 $(TARGETS): $(OBJ)
 	$(CC) -o $@ $@.o $($@_OBJ) $(LIBS)
+
+man: $(MANPAGE_8)
+
+$(MANPAGE_8): $(MANPAGE_MD)
+	pandoc rnbd.8.md -s -t man -o man/rnbd.8
+
+$(MANPAGE_MD): $(TARGETS_OBJ:.o=)
+	./rnbd.h2md.sh > $@
 
 ifneq ($(MAKECMDGOALS),clean)
 # do not include for 'clean' goal. make won’t create *.d only to
