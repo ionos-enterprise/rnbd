@@ -10,3 +10,5 @@ remote access to a block device over RDMA (InfiniBand, RoCE, iWARP).
 
 **rndb** is a tool which allows user to configure said kernel modules
 in a convienient way.
+
+For the description of the interface see [Manpage](https://github.com/ionos-enterprise/rnbd/blob/master/rnbd.8.md).
