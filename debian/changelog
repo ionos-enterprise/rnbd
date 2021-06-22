@@ -1,3 +1,11 @@
+rnbd (1.0.19) jessie stretch buster bullseye; urgency=medium
+
+  * README: extend description
+  * README: add links to kernel modules
+  * README: add link to manpage
+
+ -- Danil Kipnis <danil.kipnis@cloud.ionos.com>  Tue, 22 Jun 2021 09:43:28 +0200
+
 rnbd (1.0.18) jessie stretch buster bullseye; urgency=medium
 
   * rnbd: add support for hostname
