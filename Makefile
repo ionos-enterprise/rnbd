@@ -17,7 +17,7 @@ OBJ = $(SRC:.c=.o)
 TARGETS_OBJ = rnbd.o
 TARGETS = $(TARGETS_OBJ:.o=)
 
-MANPAGE_MD = $(TARGETS_OBJ:.o=.md)
+MANPAGE_MD = $(TARGETS_OBJ:.o=.8.md)
 MANPAGE_8 = man/$(TARGETS_OBJ:.o=.8)
 
       rnbd_OBJ = levenshtein.o misc.o table.o rnbd-sysfs.o list.o
