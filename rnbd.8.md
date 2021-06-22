@@ -1,15 +1,15 @@
 ---
-title: RNDB
+title: RNBD
 section: 8
 header: System Administration Utilities
-footer: 1.0.18
+footer: 1.0.19
 date: June 2021
 ---
 # NAME
 rnbd - configuration tool for RNBD driver and RTRS library
 
 # SYNOPSIS
-**rndb** *[MODE]* *[TARGET]* *<COMMAND\>* *[OPTIONS]*
+**rnbd** *[MODE]* *[TARGET]* *<COMMAND\>* *[OPTIONS]*
 
 *MODE* := { **client** | **server** }
 
@@ -20,9 +20,9 @@ rnbd - configuration tool for RNBD driver and RTRS library
 *OPTIONS* are command specific.
 
 # DESCRIPTION
-RNDB \(RDMA Network Block Device\) is a pair of kernel modules \(client and server\) that allow for remote access of a block device on the server over RTRS protocol using the RDMA \(InfiniBand, RoCE, iWARP\) transport. After being mapped, the remote block devices can be accessed on the client side as local block devices.
+RNBD \(RDMA Network Block Device\) is a pair of kernel modules \(client and server\) that allow for remote access of a block device on the server over RTRS protocol using the RDMA \(InfiniBand, RoCE, iWARP\) transport. After being mapped, the remote block devices can be accessed on the client side as local block devices.
 
-**rndb** is a tool which allows user to control said kernel modules in a convienient way.
+**rnbd** is a tool which allows user to control said kernel modules in a convenient way.
 
 # OPTIONS
 
@@ -118,7 +118,7 @@ Options:
     help            Display help and exit
 **rnbd client device unmap <device\>** *[OPTIONS]*
 
-Umap a given imported device
+Unmap a given imported device
 
 Arguments:
 
