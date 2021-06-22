@@ -35,6 +35,8 @@ $(MANPAGE_8): $(MANPAGE_MD)
 
 $(MANPAGE_MD): $(TARGETS_OBJ:.o=)
 	./rnbd.h2md.sh > $@
+	@echo "Words misspelled in manual:"
+	@spell rnbd.8.md -d spell.ignore | sort | uniq
 
 ifneq ($(MAKECMDGOALS),clean)
 # do not include for 'clean' goal. make won’t create *.d only to
