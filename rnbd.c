@@ -4024,11 +4024,9 @@ static void help_start(const struct rnbd_ctx *ctx)
 {
 	if (help_print_flags(ctx)) {
 		help_param(ctx->pname, params_flags_help, ctx);
-		if (ctx->help_set)
-			printf("\n\n");
-	} else {
-		help_param(ctx->pname, params_mode_help, ctx);
+		printf("\n\n");
 	}
+	help_param(ctx->pname, params_mode_help, ctx);
 
 	if (ctx->help_set) {
 
@@ -5952,12 +5950,10 @@ int cmd_client(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		case TOK_HELP:
 			if (ctx->pname_with_mode && help_print_flags(ctx)) {
 				help_param(ctx->pname, params_flags_help, ctx);
-				if (ctx->help_set)
-					printf("\n\n");
-			} else {
-				help_mode("client",
-					  params_object_type_help_client, ctx);
+				printf("\n\n");
 			}
+			help_mode("client",
+				  params_object_type_help_client, ctx);
 			break;
 		default:
 			usage_param("rnbd client",
@@ -6049,13 +6045,11 @@ int cmd_server(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		case TOK_HELP:
 			if (ctx->pname_with_mode && help_print_flags(ctx)) {
 				help_param(ctx->pname, params_flags_help, ctx);
-				if (ctx->help_set)
-					printf("\n\n");
-			} else {
-				help_mode("server",
-					  params_object_type_help_server,
-					  ctx);
+				printf("\n\n");
 			}
+			help_mode("server",
+				  params_object_type_help_server,
+				  ctx);
 			break;
 		default:
 			usage_param("rnbd server",
