@@ -592,25 +592,9 @@ static void print_usage(const char *sub_name, struct param * const cmds[],
 	}
 }
 
-static bool help_print_all(const struct rnbd_ctx *ctx)
-{
-	if (ctx->help_arg_set && strncmp(ctx->help_arg, "all", 3) == 0)
-		return true;
-	else
-		return false;
-}
-
 static bool help_print_flags(const struct rnbd_ctx *ctx)
 {
 	if (ctx->help_arg_set && strncmp(ctx->help_arg, "flags", 3) == 0)
-		return true;
-	else
-		return false;
-}
-
-static bool help_print_fields(const struct rnbd_ctx *ctx)
-{
-	if (ctx->help_arg_set && strncmp(ctx->help_arg, "fields", 4) == 0)
 		return true;
 	else
 		return false;
@@ -651,21 +635,8 @@ static void print_help(const char *program_name,
 
 	printf("\nSubcommands:\n");
 	do {
-		if (help_print_all(ctx)) {
-			printf("\n\n");
-			(*sub_cmds)->help(program_name, *sub_cmds, ctx);
-		} else {
-			if (program_name)
-				printf("     %-*s%s %s%s\n", 20,
-				       (*sub_cmds)->param_str,
-				       (*sub_cmds)->short_d,
-				       program_name,
-				       (*sub_cmds)->short_d2);
-			else
-				printf("     %-*s%s\n", 20,
-				       (*sub_cmds)->param_str,
-				       (*sub_cmds)->short_d);
-		}
+		printf("\n\n");
+		(*sub_cmds)->help(program_name, *sub_cmds, ctx);
 	} while ((*++sub_cmds)->param_str);
 }
 
@@ -747,35 +718,29 @@ static void help_dump_all(const char *program_name,
 	printf("\nOptions:\n");
 	help_fields();
 
-	if (help_print_all(ctx) || help_print_fields(ctx)) {
+	printf("%s%s%s%s\n", HPRE,
+	       CLR(ctx->trm, CDIM, "Device Fields"));
+	print_fields(ctx, def_clms_devices_clt,
+		     def_clms_devices_srv,
+		     all_clms_devices_clt,
+		     all_clms_devices_srv,
+		     all_clms_devices, RNBD_BOTH);
 
-		printf("%s%s%s%s\n", HPRE,
-		       CLR(ctx->trm, CDIM, "Device Fields"));
-		print_fields(ctx, def_clms_devices_clt,
-			     def_clms_devices_srv,
-			     all_clms_devices_clt,
-			     all_clms_devices_srv,
-			     all_clms_devices, RNBD_BOTH);
+	printf("%s%s%s%s\n", HPRE,
+	       CLR(ctx->trm, CDIM, "Session Fields"));
+	print_fields(ctx, def_clms_sessions_clt,
+		     def_clms_sessions_srv,
+		     all_clms_sessions_clt,
+		     all_clms_sessions_srv,
+		     all_clms_sessions, RNBD_BOTH);
 
-		printf("%s%s%s%s\n", HPRE,
-		       CLR(ctx->trm, CDIM, "Session Fields"));
-		print_fields(ctx, def_clms_sessions_clt,
-			     def_clms_sessions_srv,
-			     all_clms_sessions_clt,
-			     all_clms_sessions_srv,
-			     all_clms_sessions, RNBD_BOTH);
-
-		printf("%s%s%s%s\n", HPRE,
-		       CLR(ctx->trm, CDIM, "Path Fields"));
-		print_fields(ctx, def_clms_paths_clt,
-			     def_clms_paths_srv,
-			     all_clms_paths_clt,
-			     all_clms_paths_srv,
-			     all_clms_paths, RNBD_BOTH);
-
-		if (help_print_fields(ctx))
-			return;
-	}
+	printf("%s%s%s%s\n", HPRE,
+	       CLR(ctx->trm, CDIM, "Path Fields"));
+	print_fields(ctx, def_clms_paths_clt,
+		     def_clms_paths_srv,
+		     all_clms_paths_clt,
+		     all_clms_paths_srv,
+		     all_clms_paths, RNBD_BOTH);
 
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
@@ -794,25 +759,15 @@ static void help_list_devices(const char *program_name,
 
 	cmd_print_usage_descr(cmd, program_name, ctx);
 
-	if (!help_print_fields(ctx))
-		printf("\nOptions:\n");
+	printf("\nOptions:\n");
 
 	help_fields();
 
-	if (help_print_all(ctx) || help_print_fields(ctx)) {
-
-		print_fields(ctx, def_clms_devices_clt,
-			     def_clms_devices_srv,
-			     all_clms_devices_clt,
-			     all_clms_devices_srv,
-			     all_clms_devices, ctx->rnbdmode);
-
-		if (help_print_fields(ctx))
-			return;
-	}
-	if (!help_print_all(ctx))
-		printf("%sProvide 'all' to print all available fields\n\n",
-		       HPRE);
+	print_fields(ctx, def_clms_devices_clt,
+		     def_clms_devices_srv,
+		     all_clms_devices_clt,
+		     all_clms_devices_srv,
+		     all_clms_devices, ctx->rnbdmode);
 
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
@@ -831,26 +786,15 @@ static void help_list_sessions(const char *program_name,
 
 	cmd_print_usage_descr(cmd, program_name, ctx);
 
-	if (!help_print_fields(ctx))
-		printf("\nOptions:\n");
+	printf("\nOptions:\n");
 
 	help_fields();
 
-	if (help_print_all(ctx) || help_print_fields(ctx)) {
-
-		print_fields(ctx, def_clms_sessions_clt,
-			     def_clms_sessions_srv,
-			     all_clms_sessions_clt,
-			     all_clms_sessions_srv,
-			     all_clms_sessions, ctx->rnbdmode);
-
-		if (help_print_fields(ctx))
-			return;
-	}
-
-	if (!help_print_all(ctx))
-		printf("%sProvide 'all' to print all available fields\n\n",
-		       HPRE);
+	print_fields(ctx, def_clms_sessions_clt,
+		     def_clms_sessions_srv,
+		     all_clms_sessions_clt,
+		     all_clms_sessions_srv,
+		     all_clms_sessions, ctx->rnbdmode);
 
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
@@ -869,26 +813,15 @@ static void help_list_paths(const char *program_name,
 
 	cmd_print_usage_descr(cmd, program_name, ctx);
 
-	if (!help_print_fields(ctx))
-		printf("\nOptions:\n");
+	printf("\nOptions:\n");
 
 	help_fields();
 
-	if (help_print_all(ctx) || help_print_fields(ctx)) {
-
-		print_fields(ctx, def_clms_paths_clt,
-			     def_clms_paths_srv,
-			     all_clms_paths_clt,
-			     all_clms_paths_srv,
-			     all_clms_paths, ctx->rnbdmode);
-
-		if (help_print_fields(ctx))
-			return;
-	}
-
-	if (!help_print_all(ctx))
-		printf("%sProvide 'all' to print all available fields\n\n",
-		       HPRE);
+	print_fields(ctx, def_clms_paths_clt,
+		     def_clms_paths_srv,
+		     all_clms_paths_clt,
+		     all_clms_paths_srv,
+		     all_clms_paths, ctx->rnbdmode);
 
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
@@ -1953,38 +1886,31 @@ static void help_show(const char *program_name,
 {
 	cmd_print_usage_descr(cmd, "", ctx);
 
-	if (!help_print_fields(ctx)) {
+	printf("\nArguments:\n");
+	print_opt("<name>",
+		  "Name of an rnbd device, session, or path.");
 
-		printf("\nArguments:\n");
-		print_opt("<name>",
-			  "Name of an rnbd device, session, or path.");
+	printf("\nOptions:\n");
 
-		printf("\nOptions:\n");
-	}
 	help_fields();
 
-	if (help_print_all(ctx) || help_print_fields(ctx)) {
+	print_fields(ctx, def_clms_devices_clt,
+		     def_clms_devices_srv,
+		     all_clms_devices_clt,
+		     all_clms_devices_srv,
+		     all_clms_devices, ctx->rnbdmode);
+	print_fields(ctx, def_clms_sessions_clt,
+		     def_clms_sessions_srv,
+		     all_clms_sessions_clt,
+		     all_clms_sessions_srv,
+		     all_clms_sessions, ctx->rnbdmode);
+	print_fields(ctx, def_clms_paths_clt,
+		     def_clms_paths_srv,
+		     all_clms_paths_clt,
+		     all_clms_paths_srv,
+		     all_clms_paths, ctx->rnbdmode);
 
-		print_fields(ctx, def_clms_devices_clt,
-			     def_clms_devices_srv,
-			     all_clms_devices_clt,
-			     all_clms_devices_srv,
-			     all_clms_devices, ctx->rnbdmode);
-		print_fields(ctx, def_clms_sessions_clt,
-			     def_clms_sessions_srv,
-			     all_clms_sessions_clt,
-			     all_clms_sessions_srv,
-			     all_clms_sessions, ctx->rnbdmode);
-		print_fields(ctx, def_clms_paths_clt,
-			     def_clms_paths_srv,
-			     all_clms_paths_clt,
-			     all_clms_paths_srv,
-			     all_clms_paths, ctx->rnbdmode);
-		if (help_print_fields(ctx))
-			return;
-	}
-
-	if (!help_print_all(ctx))
+	if (!ctx->help_set)
 		printf("%sProvide 'all' to print all available fields\n\n",
 		       HPRE);
 
@@ -2003,32 +1929,21 @@ static void help_show_devices(const char *program_name,
 
 	cmd_print_usage_descr(cmd, program_name, ctx);
 
-	if (!help_print_fields(ctx)) {
+	printf("\nArguments:\n");
+	print_opt("<device>",
+		  "Name of a local or a remote block device.");
+	print_opt("",
+		  "I.e. rnbd0, /dev/rnbd0, d12aef94-4110-4321-9373-3be8494a557b.");
 
-		printf("\nArguments:\n");
-		print_opt("<device>",
-			  "Name of a local or a remote block device.");
-		print_opt("",
-			  "I.e. rnbd0, /dev/rnbd0, d12aef94-4110-4321-9373-3be8494a557b.");
+	printf("\nOptions:\n");
 
-		printf("\nOptions:\n");
-	}
 	help_fields();
 
-	if (help_print_all(ctx) || help_print_fields(ctx)) {
-
-		print_fields(ctx, def_clms_devices_clt,
-			     def_clms_devices_srv,
-			     all_clms_devices_clt,
-			     all_clms_devices_srv,
-			     all_clms_devices, ctx->rnbdmode);
-		if (help_print_fields(ctx))
-			return;
-	}
-
-	if (!help_print_all(ctx))
-		printf("%sProvide 'all' to print all available fields\n\n",
-		       HPRE);
+	print_fields(ctx, def_clms_devices_clt,
+		     def_clms_devices_srv,
+		     all_clms_devices_clt,
+		     all_clms_devices_srv,
+		     all_clms_devices, ctx->rnbdmode);
 
 	print_opt("{format}", "Output format: csv|json|xml");
 	print_opt("{unit}", "Units to use for size (in binary): B|K|M|G|T|P|E");
@@ -2045,30 +1960,23 @@ static void help_show_sessions(const char *program_name,
 
 	cmd_print_usage_descr(cmd, program_name, ctx);
 
-	if (!help_print_fields(ctx)) {
+	printf("\nArguments:\n");
+	print_opt("<session>",
+		  "Session name or remote hostname.");
+	print_opt("",
+		  "I.e. ps401a-1@st401b-2, st401b-2, <ip1>@<ip2>, etc.");
 
-		printf("\nArguments:\n");
-		print_opt("<session>",
-			  "Session name or remote hostname.");
-		print_opt("",
-			  "I.e. ps401a-1@st401b-2, st401b-2, <ip1>@<ip2>, etc.");
+	printf("\nOptions:\n");
 
-		printf("\nOptions:\n");
-	}
 	help_fields();
 
-	if (help_print_all(ctx) || help_print_fields(ctx)) {
+	print_fields(ctx, def_clms_sessions_clt,
+		     def_clms_sessions_srv,
+		     all_clms_sessions_clt,
+		     all_clms_sessions_srv,
+		     all_clms_sessions, ctx->rnbdmode);
 
-		print_fields(ctx, def_clms_sessions_clt,
-			     def_clms_sessions_srv,
-			     all_clms_sessions_clt,
-			     all_clms_sessions_srv,
-			     all_clms_sessions, ctx->rnbdmode);
-		if (help_print_fields(ctx))
-			return;
-	}
-
-	if (!help_print_all(ctx))
+	if (!ctx->help_set)
 		printf("%sProvide 'all' to print all available fields\n\n",
 		       HPRE);
 
@@ -2106,28 +2014,19 @@ static void help_show_paths(const char *program_name,
 
 	cmd_print_usage_descr(cmd, program_name, ctx);
 
-	if (!help_print_fields(ctx)) {
+	help_default_paths(program_name, cmd, ctx);
 
-		help_default_paths(program_name, cmd, ctx);
-
-		printf("\nOptions:\n");
-	}
+	printf("\nOptions:\n");
 
 	help_fields();
 
-	if (help_print_all(ctx) || help_print_fields(ctx)) {
+	print_fields(ctx, def_clms_paths_clt,
+		     def_clms_paths_srv,
+		     all_clms_paths_clt,
+		     all_clms_paths_srv,
+		     all_clms_paths, ctx->rnbdmode);
 
-		print_fields(ctx, def_clms_paths_clt,
-			     def_clms_paths_srv,
-			     all_clms_paths_clt,
-			     all_clms_paths_srv,
-			     all_clms_paths, ctx->rnbdmode);
-
-		if (help_print_fields(ctx))
-			return;
-	}
-
-	if (!help_print_all(ctx))
+	if (!ctx->help_set)
 		printf("%sProvide 'all' to print all available fields\n\n",
 		       HPRE);
 
@@ -4123,15 +4022,15 @@ static void help_mode(const char *mode, struct param *const params[],
 
 static void help_start(const struct rnbd_ctx *ctx)
 {
-	if (help_print_flags(ctx) || help_print_all(ctx)) {
+	if (help_print_flags(ctx)) {
 		help_param(ctx->pname, params_flags_help, ctx);
-		if (help_print_all(ctx))
+		if (ctx->help_set)
 			printf("\n\n");
-	}
-	if (!help_print_flags(ctx))
+	} else {
 		help_param(ctx->pname, params_mode_help, ctx);
+	}
 
-	if (help_print_all(ctx)) {
+	if (ctx->help_set) {
 
 		printf("\n\n");
 		help_mode("client",
@@ -6051,15 +5950,14 @@ int cmd_client(int argc, const char *argv[], struct rnbd_ctx *ctx)
 								 _help_context, ctx);
 			break;
 		case TOK_HELP:
-			if (ctx->pname_with_mode
-			    && (help_print_flags(ctx) || help_print_all(ctx))) {
+			if (ctx->pname_with_mode && help_print_flags(ctx)) {
 				help_param(ctx->pname, params_flags_help, ctx);
-				if (help_print_all(ctx))
+				if (ctx->help_set)
 					printf("\n\n");
-			}
-			if (!ctx->pname_with_mode || !help_print_flags(ctx))
+			} else {
 				help_mode("client",
 					  params_object_type_help_client, ctx);
+			}
 			break;
 		default:
 			usage_param("rnbd client",
@@ -6149,16 +6047,15 @@ int cmd_server(int argc, const char *argv[], struct rnbd_ctx *ctx)
 			err = show_all(ctx->name, ctx);
 			break;
 		case TOK_HELP:
-			if (ctx->pname_with_mode
-			    && (help_print_flags(ctx) || help_print_all(ctx))) {
+			if (ctx->pname_with_mode && help_print_flags(ctx)) {
 				help_param(ctx->pname, params_flags_help, ctx);
-				if (help_print_all(ctx))
+				if (ctx->help_set)
 					printf("\n\n");
-			}
-			if (!ctx->pname_with_mode || !help_print_flags(ctx))
+			} else {
 				help_mode("server",
 					  params_object_type_help_server,
 					  ctx);
+			}
 			break;
 		default:
 			usage_param("rnbd server",
@@ -6262,7 +6159,7 @@ int cmd_both(int argc, const char *argv[], struct rnbd_ctx *ctx)
 		case TOK_HELP:
 			help_param(ctx->pname, params_both_help, ctx);
 
-			if (help_print_all(ctx)) {
+			if (ctx->help_set) {
 
 				help_mode("client",
 					  params_object_type_help_client, ctx);
