@@ -4705,30 +4705,46 @@ static int client_session_add_missing_paths(const char *session_name,
 	int err = 0;
 	char hostname[NAME_MAX];
 	struct path paths[MAX_PATHS_PER_SESSION]; /* lazy */
+	struct rnbd_sess *sess;
 	struct rnbd_path *path;
 	int path_cnt = 0, i;
 
 	memset(paths, 0, sizeof(paths));
 
 	INF(ctx->debug_set, "Looking for missing paths of session %s\n", session_name);
-	path = find_first_path_for_session(session_name, ctx,
-					   paths_clt, paths_clt_cnt);
-	if (!path) {
-		INF(ctx->trm, "No paths in session %s, not possible to recover\n",
-			      session_name);
-		return 0;
-	}
 
-	err = hostname_from_path(hostname, sizeof(hostname),
-				 path->hca_name, path->hca_port,
-				 path->dst_addr, ctx);
-	if (err < 0) {
-		ERR(ctx->trm, "Could not look up hostname for path %s\n", path->pathname);
-		return err;
+	sess = find_single_session(session_name, ctx,
+				   sess_clt, sess_clt_cnt,
+				   false);
+	if (sess && strlen(sess->hostname)) {
+
+		strncpy(hostname, sess->hostname, sizeof(hostname));
+		INF(ctx->debug_set,
+		    "Using counterpart hostname %s from session %s.\n",
+		    hostname, session_name);
 	} else {
-		INF(ctx->debug_set, "Hostname is %s\n", hostname);
-	}
 
+		INF(ctx->debug_set,
+		    "No hostname for session, attempting to use existing path(s)\n");
+
+		path = find_first_path_for_session(session_name, ctx,
+						   paths_clt, paths_clt_cnt);
+		if (!path) {
+			INF(ctx->trm, "No paths in session %s, not possible to recover\n",
+			    session_name);
+			return 0;
+		}
+		
+		err = hostname_from_path(hostname, sizeof(hostname),
+					 path->hca_name, path->hca_port,
+					 path->dst_addr, ctx);
+		if (err < 0) {
+			ERR(ctx->trm, "Could not look up hostname for path %s\n", path->pathname);
+			return err;
+		} else {
+			INF(ctx->debug_set, "Hostname is %s\n", hostname);
+		}
+	}
 	err = resolve_host(hostname, paths, ctx);
 	if (err < 0) {
 		ERR(ctx->trm,
