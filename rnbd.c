@@ -1325,7 +1325,23 @@ static int find_paths(const char *session_name, const char *path_name,
 	int i, port, cnt = 0;
 
 	for (i = 0; pp[i]; i++) {
-		if (path_name != NULL && !ctx->port_desc_set) {
+		if (session_name && path_name && ctx->port_desc_set) {
+			if (!strcmp(session_name, pp[i]->sess->sessname)) {
+				if (ctx->port_desc_arg.hca[0]
+				    && strcmp(ctx->port_desc_arg.hca, pp[i]->hca_name))
+					continue;
+				if (ctx->port_desc_arg.port[0])
+				{
+					sscanf(ctx->port_desc_arg.port, "%d\n", &port);
+					if (pp[i]->hca_port != port)
+						continue;
+				}
+				if (!match_path(pp[i], path_name))
+					continue;
+
+				res[cnt++] = pp[i];
+			}
+		} else if (path_name != NULL && !ctx->port_desc_set) {
 			if (match_path(pp[i], path_name)
 			    && (session_name == NULL
 				|| !strcmp(session_name, pp[i]->sess->sessname)))
@@ -1793,10 +1809,6 @@ static int show_paths(const char *name, struct rnbd_ctx *ctx)
 		ERR(ctx->trm, "Failed to alloc memory\n");
 		ret = -ENOMEM;
 		goto out;
-	}
-	if (ctx->path_cnt >= 1 && ctx->port_desc_set) {
-		ERR(ctx->trm, "You can only specify a path or a port but not both!\n");
-		ret = -EINVAL;
 	}
 	if (ctx->path_cnt == 1) {
 		session_name = name;
@@ -5188,7 +5200,7 @@ int cmd_path_operation(int (*operation)(const char *session_name,
 	if (err < 0)
 		return err;
 
-	argc -= err; argv += err;
+	argc -= accepted; argv += accepted;
 
 	if (argc > 0) {
 
@@ -5199,10 +5211,7 @@ int cmd_path_operation(int (*operation)(const char *session_name,
 	if (err < 0)
 		return err;
 
-	if (ctx->path_cnt >= 1 && ctx->port_desc_set) {
-		ERR(ctx->trm, "You can only specify a path or a port but not both!\n");
-		err = -EINVAL;
-	} else if (ctx->path_cnt == 1 || ctx->port_desc_set) {
+	if (ctx->path_cnt == 1 || ctx->port_desc_set) {
 		err = (*operation)(ctx->name, ctx->paths[0].provided, ctx);
 	} else if (ctx->path_cnt == 0) {
 		err = (*operation)(NULL, ctx->name, ctx);
