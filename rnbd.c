@@ -1378,7 +1378,7 @@ static int find_paths_all(const char *session_name,
 		cnt_clt = find_paths(session_name, path_name, ctx, paths_clt, pp_clt);
 	if (ctx->rnbdmode & RNBD_SERVER)
 		cnt_srv = find_paths(session_name, path_name, ctx, paths_srv, pp_srv);
-	if (cnt_clt + cnt_srv == 0 && strchr(path_name, '%') != NULL) {
+	if (cnt_clt + cnt_srv == 0 && path_name && strchr(path_name, '%') != NULL) {
 		INF(ctx->debug_set,
 		    "Retry match for path name %s ignoring interface name.\n",
 		    path_name);
@@ -2141,7 +2141,7 @@ static struct rnbd_path *find_single_path(const char *session_name,
 		return NULL;
 	}
 	match_count = find_paths(session_name, path_name, ctx, paths, matching_paths);
-	if (match_count == 0 && strchr(path_name, '%') != NULL) {
+	if (match_count == 0 && path_name && strchr(path_name, '%') != NULL) {
 		INF(ctx->debug_set,
 		    "Retry to find path for name %s ignoring interface.\n",
 		    path_name);
@@ -2155,12 +2155,18 @@ static struct rnbd_path *find_single_path(const char *session_name,
 	if (match_count == 1) {
 		res = *matching_paths;
 	} else {
-		if (print_err)
-			ERR(ctx->trm, "%s '%s'.\n",
-			    (match_count > 1)  ?
-				"Please specify the path uniquely. There are multiple paths matching"
-				: "No path found matching",
-			    path_name);
+		if (print_err) {
+			if (path_name)
+				ERR(ctx->trm, "%s '%s'.\n",
+				    (match_count > 1)  ?
+				    "Please specify the path uniquely. There are multiple paths matching"
+				    : "No path found matching",
+				    path_name);
+			else
+				ERR(ctx->trm, "%s '%s'.\n",
+				    "Please specify the path for session",
+				    session_name);
+		}
 	}
 
 	free(matching_paths);
