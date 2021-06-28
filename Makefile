@@ -3,7 +3,6 @@
 
 PREFIX ?= /usr/local
 VERSION := 1.0.20
-DIST := rnbd man/rnbd.8 bash-completion/rnbd
 
 CC = gcc
 DEFINES = -DVERSION='"$(VERSION)"'
@@ -12,6 +11,9 @@ LIBS =
 
 SRC = $(wildcard *.c)
 OBJ = $(SRC:.c=.o)
+SRC_H = $(wildcard *.h)
+
+DIST := dist man/rnbd.8 bash-completion/rnbd README.md rnbd.h2md.sh Makefile $(SRC) $(SRC_H)
 
 TARGETS_OBJ = rnbd.o
 TARGETS = $(TARGETS_OBJ:.o=)
