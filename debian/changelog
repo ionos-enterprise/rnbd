@@ -1,3 +1,36 @@
+rnbd (1.0.20) jessie stretch buster bullseye; urgency=medium
+
+  [ Lutz Pogrell ]
+  * add make targets to generate man page
+
+  [ Grzegorz Prajsner ]
+  * make: add spell-check for manual
+  * man: remove rnbd.h2m.sh
+  * make: fix filename of the Markdown version of man
+  * man: fix typos in various parts of the man
+  * man: update man pages
+
+  [ Danil Kipnis ]
+  * README: add howto release using makefile
+  * NEWS: add release 1.0.20 information
+  * Makefile: add version, dist and install targets
+  * rnbd: make help always print everything
+  * rnbd: remove ... from output of rnbd help
+  * rnbd: less code when printing hidden --flags
+
+  [ Lutz Pogrell ]
+  * Add support for recovering a session without paths
+  * bugfix: core dump in rnbd path show
+  * allow name, path, and port description as path
+
+  [ Danil Kipnis ]
+  * Makefile: fix destination path for bash completion
+  * Makefile: use only the version define
+  * Makefile: put sources into dist tar archive
+  * man: update version number
+
+ -- Danil Kipnis <danil.kipnis@ionos.com>  Mon, 28 Jun 2021 15:41:44 +0200
+
 rnbd (1.0.19) jessie stretch buster bullseye; urgency=medium
 
   * README: extend description
