@@ -303,7 +303,7 @@ static int parse_flag(int argc, const char *argv[],
 static void print_version(const struct rnbd_ctx *ctx)
 {
 	printf("%s version %s%s%s\n", ctx->pname,
-	       CLR(ctx->trm, CBLD, PACKAGE_VERSION));
+	       CLR(ctx->trm, CBLD, VERSION));
 }
 
 static int parse_version(int argc, const char *argv[],

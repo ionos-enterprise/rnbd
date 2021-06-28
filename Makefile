@@ -3,11 +3,10 @@
 
 PREFIX ?= /usr/local
 VERSION := 1.0.20
-GITVER = $(shell cat ./.git/HEAD 2>/dev/null | sed -n 's/\(ref: refs\/heads\/\)\?\(.*\)/\2/p' | tr -d '\n')
 DIST := rnbd man/rnbd.8 bash-completion/rnbd
 
 CC = gcc
-DEFINES = -DPACKAGE_VERSION='"$(VERSION)"' -DGIT_BRANCH='"$(GITVER)"'
+DEFINES = -DVERSION='"$(VERSION)"'
 CFLAGS = -fPIC -Wall -Werror -Wno-stringop-truncation -O2 -g -Iinclude $(DEFINES)
 LIBS =
 
