@@ -38,7 +38,7 @@ version:
 
 install: all
 	install -D -m 755 rnbd $(DESTDIR)$(PREFIX)/sbin/rnbd
-	install -D -m 644 bash-completion/rnbd /etc/bash_completion.d/rnbd
+	install -D -m 644 bash-completion/rnbd $(DESTDIR)/etc/bash_completion.d/rnbd
 	install -D -m 644 man/rnbd.8 $(DESTDIR)$(PREFIX)/share/man/man8/rnbd.8
 
 $(TARGETS): $(OBJ)
