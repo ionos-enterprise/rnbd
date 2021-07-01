@@ -1,3 +1,11 @@
+rnbd (1.0.21) jessie stretch buster bullseye; urgency=medium
+
+  * scripts: add release.sh script
+  * rnbd: fix resize writing u64 as int
+  * rnbd: release 1.0.21
+
+ -- Danil Kipnis <danil.kipnis@ionos.com>  Thu, 01 Jul 2021 22:13:44 +0200
+
 rnbd (1.0.20) jessie stretch buster bullseye; urgency=medium
 
   [ Lutz Pogrell ]
