@@ -2394,13 +2394,13 @@ static int client_devices_resize(const char *device_name, uint64_t size_sect,
 
 	sprintf(tmp, "/sys/block/%s/%s", ds->dev->devname,
 		get_sysfs_info(ctx)->path_dev_name);
-	ret = printf_sysfs(tmp, "resize", ctx, "%d", size_sect);
+	ret = printf_sysfs(tmp, "resize", ctx, "%" PRIu64, size_sect);
 	if (ret)
-		ERR(ctx->trm, "Failed to resize %s: %s (%d)\n",
-		    ds->dev->devname, strerror(-ret), ret);
+		ERR(ctx->trm, "Failed to resize %s to %" PRIu64 ": %s (%d)\n",
+		    ds->dev->devname, size_sect, strerror(-ret), ret);
 	else
 		INF(ctx->verbose_set,
-		    "Device '%s' resized sucessfully to %lu sectors.\n",
+		    "Device '%s' resized sucessfully to %" PRIu64 " sectors.\n",
 		    ds->dev->devname, size_sect);
 
 	return ret;
