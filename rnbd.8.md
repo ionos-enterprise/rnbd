@@ -2,8 +2,8 @@
 title: RNBD
 section: 8
 header: System Administration Utilities
-footer: 1.0.20
-date: June 2021
+footer: 1.0.21
+date: July 2021
 ---
 # NAME
 rnbd - configuration tool for RNBD driver and RTRS library
