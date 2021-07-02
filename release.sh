@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 #!/bin/bash
-set -e
+set -ex
 
 version="$1"
 
@@ -15,6 +15,8 @@ fi
 sed -i "s/^VERSION.*/VERSION := $version/" Makefile
 
 # Update the man page
+rm rnbd.8.md
+rm man/rnbd.8
 make man/rnbd.8
 
 # Commit the changes
