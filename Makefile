@@ -2,7 +2,7 @@
 # Makefile for building rnbd
 
 PREFIX ?= /usr/local
-VERSION := 1.0.21
+VERSION := 1.0.22
 
 CC = gcc
 DEFINES = -DVERSION='"$(VERSION)"'
