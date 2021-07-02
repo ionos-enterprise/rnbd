@@ -1,3 +1,9 @@
+rnbd (1.0.23) jessie stretch buster bullseye; urgency=medium
+
+  * deb: Let rnbd-tool depends on same version of rnbd
+
+ -- Jack Wang <jinpu.wang@ionos.com>  Fri, 02 Jul 2021 13:18:20 +0200
+
 rnbd (1.0.22) jessie stretch buster bullseye; urgency=medium
 
   * deb: build rnbd-tool package
