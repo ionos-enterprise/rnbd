@@ -8,6 +8,22 @@ Build-Depends: debhelper (>= 7),
 Standards-Version: 3.9.5
 Homepage: https://gitlab.pb.local/ibnbd/ibnbd-tool.git
 
+Package: rnbd-tool
+Architecture: any
+Depends: bash-completion,
+		 ${misc:Depends},
+		 ${shlibs:Depends}
+Description: Command line tool for RNBD
+ This package contains tool to manage RTRS connections
+ and RNBD devices.
+
+Package: rnbd-tool-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends: rnbd-tool (= ${binary:Version}), ${misc:Depends}
+Description: Debug symbols for rnbd-tool package
+
 Package: rnbd
 Architecture: any
 Depends: bash-completion,
