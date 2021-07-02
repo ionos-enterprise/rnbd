@@ -9,28 +9,20 @@ Standards-Version: 3.9.5
 Homepage: https://gitlab.pb.local/ibnbd/ibnbd-tool.git
 
 Package: rnbd-tool
-Architecture: any
-Depends: bash-completion,
-		 ${misc:Depends},
-		 ${shlibs:Depends}
-Description: Command line tool for RNBD
- This package contains tool to manage RTRS connections
- and RNBD devices.
-
-Package: rnbd-tool-dbg
-Architecture: any
-Section: debug
-Priority: extra
-Depends: rnbd-tool (= ${binary:Version}), ${misc:Depends}
-Description: Debug symbols for rnbd-tool package
+Depends: rnbd, ${misc:Depends}
+Architecture: all
+Priority: optional
+Section: oldlibs
+Description: transitional package
+ This is a transitional package. It can safely be removed.
 
 Package: rnbd
 Architecture: any
 Depends: bash-completion,
 		 ${misc:Depends},
 		 ${shlibs:Depends}
-Conflicts: rnbd-tool
-Replaces: rnbd-tool
+Replaces: rnbd-tool (<= 1.0.18)
+Breaks: rnbd-tool (<= 1.0.18)
 Description: Command line tool for RNBD
  This package contains tool to manage RTRS connections
  and RNBD devices.
@@ -40,6 +32,6 @@ Architecture: any
 Section: debug
 Priority: extra
 Depends: rnbd (= ${binary:Version}), ${misc:Depends}
-Conflicts: rnbd-tool-dbg
-Replaces: rnbd-tool-dbg
+Replaces: rnbd-tool-dbg (<= 1.0.18)
+Breaks: rnbd-tool-dbg (<= 1.0.18)
 Description: Debug symbols for rnbd package
