@@ -1,3 +1,12 @@
+rnbd (1.0.22) jessie stretch buster bullseye; urgency=medium
+
+  * deb: build rnbd-tool package
+  * scripts: remove manpage md before generating a new one
+  * rnbd: release 1.0.22
+  * deb: follow transition package method for renaming
+
+ -- Danil Kipnis <danil.kipnis@ionos.com>  Fri, 02 Jul 2021 09:52:11 +0200
+
 rnbd (1.0.21) jessie stretch buster bullseye; urgency=medium
 
   * scripts: add release.sh script
