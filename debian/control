@@ -9,7 +9,7 @@ Standards-Version: 3.9.5
 Homepage: https://gitlab.pb.local/ibnbd/ibnbd-tool.git
 
 Package: rnbd-tool
-Depends: rnbd, ${misc:Depends}
+Depends: rnbd (= ${binary:Version}), ${misc:Depends}
 Architecture: all
 Priority: optional
 Section: oldlibs
