@@ -99,8 +99,10 @@ int rnbd_sysfs_read_all(struct rnbd_sess_dev **sds_clt,
 struct rnbd_ctx;
 
 int printf_sysfs(const char *dir, const char *entry,
-		 const struct rnbd_ctx *ctx, const char *format, ...);
-int scanf_sysfs(const char *dir, const char *entry, const char *format, ...);
+		 const struct rnbd_ctx *ctx, const char *format, ...)
+	__attribute__ ((format (printf, 4, 5)));
+int scanf_sysfs(const char *dir, const char *entry, const char *format, ...)
+	__attribute__ ((format (scanf, 3, 4)));
 
 enum rnbdmode mode_for_host(void);
 const char *mode_to_string(enum rnbdmode mode);
