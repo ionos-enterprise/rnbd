@@ -339,7 +339,7 @@ static struct rnbd_dev *find_or_add_dev(const char *syspath,
 
 	strcpy(devs[i]->devname, devname);
 	sprintf(devs[i]->devpath, "/dev/%s", devname);
-	scanf_sysfs(rpath, "stat", "%*d %*d %d %*d %*d %*d %d", &devs[i]->rx_sect,
+	scanf_sysfs(rpath, "stat", "%*d %*d %ld %*d %*d %*d %ld", &devs[i]->rx_sect,
 		    &devs[i]->tx_sect);
 
 	if (side == RNBD_CLIENT) {
@@ -376,7 +376,7 @@ static struct rnbd_path *add_path(const char *sdir,
 	scanf_sysfs(ppath, "hca_port", "%d", &p->hca_port);
 	scanf_sysfs(ppath, "state", "%s", p->state);
 
-	scanf_sysfs(ppath, "/stats/rdma", "%*llu %llu %*llu %llu %d %*d",
+	scanf_sysfs(ppath, "/stats/rdma", "%*u %lu %*u %lu %d %*d",
 		    &p->rx_bytes, &p->tx_bytes, &p->inflights);
 	scanf_sysfs(ppath, "/stats/reconnects", "%d %*d", &p->reconnects);
 
