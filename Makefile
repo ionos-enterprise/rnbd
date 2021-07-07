@@ -2,7 +2,7 @@
 # Makefile for building rnbd
 
 PREFIX ?= /usr/local
-VERSION := 1.0.22
+VERSION := 1.0.23
 
 CC = gcc
 DEFINES = -DVERSION='"$(VERSION)"'
@@ -51,7 +51,7 @@ $(MANPAGE_8): $(MANPAGE_MD)
 	pandoc rnbd.8.md -s -t man -o man/rnbd.8
 
 $(MANPAGE_MD): $(TARGETS_OBJ:.o=)
-	./rnbd.h2md.sh > $@
+	./rnbd.h2md.sh ${VERSION}> $@
 	@echo "Words misspelled in manual:"
 	@spell rnbd.8.md -d spell.ignore | sort | uniq
 

@@ -8,7 +8,7 @@
 ############################################
 
 PATH=$PATH:./
-VER=$(egrep -oe "[0-9,.]+" -m 1 debian/changelog)
+VER=$1
 DATE=$(LANG=en_us_8859_1 && date +"%B %Y")
 
 modes="client server"
