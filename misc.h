@@ -169,8 +169,14 @@ int rnbd_path_state_to_str(char *str, size_t len, const struct rnbd_ctx *ctx,
 int path_to_sessname(char *str, size_t len, const struct rnbd_ctx *ctx,
 		     enum color *clr, void *v, bool humanize);
 
+int path_to_hostname(char *str, size_t len, const struct rnbd_ctx *ctx,
+		     enum color *clr, void *v, bool humanize);
+
 int sd_sess_to_direction(char *str, size_t len, const struct rnbd_ctx *ctx,
 			 enum color *clr, void *v, bool humanize);
+
+int sd_sess_to_hostname(char *str, size_t len, const struct rnbd_ctx *ctx,
+			enum color *clr, void *v, bool humanize);
 
 int act_path_cnt_to_state(char *str, size_t len, const struct rnbd_ctx *ctx,
 			  enum color *clr, void *v, bool humanize);

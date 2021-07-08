@@ -46,6 +46,7 @@ Options:
                     rx_sect         RX             Amount of data read from the device
                     tx_sect         TX             Amount of data written to the device
                     direction       Direction      Direction of data transfer: imported or exported
+                    hostname        Hostname       Hostname of the remote peer
 
                     Default: sessname,mapping_path,devname,state,access_mode
 
@@ -80,6 +81,7 @@ Options:
                     rx_sect         RX             Amount of data read from the device
                     tx_sect         TX             Amount of data written to the device
                     direction       Direction      Direction of data transfer: imported or exported
+                    hostname        Hostname       Hostname of the remote peer
 
                     Default: sessname,mapping_path,devname,state,access_mode
 
@@ -289,6 +291,7 @@ Options:
                     inflights       Inflights      Inflights
                     reconnects      Reconnects     Reconnects
                     direction       Direction      Direction of the path: incoming or outgoing
+                    hostname        Hostname       Hostname of the remote peer
 
                     Default: sessname,hca_name,hca_port,dst_addr,state,tx_bytes,rx_bytes
 
@@ -334,6 +337,7 @@ Options:
                     inflights       Inflights      Inflights
                     reconnects      Reconnects     Reconnects
                     direction       Direction      Direction of the path: incoming or outgoing
+                    hostname        Hostname       Hostname of the remote peer
 
                     Default: sessname,hca_name,hca_port,dst_addr,state,tx_bytes,rx_bytes
 
@@ -478,6 +482,7 @@ Options:
                     rx_sect         RX             Amount of data read from the device
                     tx_sect         TX             Amount of data written to the device
                     direction       Direction      Direction of data transfer: imported or exported
+                    hostname        Hostname       Hostname of the remote peer
                     Default: sessname,mapping_path,devname,access_mode
 
     {format}        Output format: csv|json|xml
@@ -510,6 +515,7 @@ Options:
                     rx_sect         RX             Amount of data read from the device
                     tx_sect         TX             Amount of data written to the device
                     direction       Direction      Direction of data transfer: imported or exported
+                    hostname        Hostname       Hostname of the remote peer
                     Default: sessname,mapping_path,devname,access_mode
 
     {format}        Output format: csv|json|xml
@@ -616,6 +622,7 @@ Options:
                     tx_bytes        TX             Bytes send
                     inflights       Inflights      Inflights
                     direction       Direction      Direction of the path: incoming or outgoing
+                    hostname        Hostname       Hostname of the remote peer
                     Default: sessname,hca_name,hca_port,src_addr,tx_bytes,rx_bytes
 
     {format}        Output format: csv|json|xml
@@ -658,6 +665,7 @@ Options:
                     tx_bytes        TX             Bytes send
                     inflights       Inflights      Inflights
                     direction       Direction      Direction of the path: incoming or outgoing
+                    hostname        Hostname       Hostname of the remote peer
                     Default: sessname,hca_name,hca_port,src_addr,tx_bytes,rx_bytes
 
     {format}        Output format: csv|json|xml

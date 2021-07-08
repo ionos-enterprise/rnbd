@@ -54,6 +54,11 @@ static struct table_column clm_rnbd_sess_dev_direction =
 		sd_sess_to_direction, 'l', CNRM, CNRM,
 		"Direction of data transfer: imported or exported");
 
+static struct table_column clm_rnbd_sess_dev_hostname =
+	_CLM_SD("hostname", sess, "Hostname", FLD_STR,
+		sd_sess_to_hostname, 'l', CNRM, CNRM,
+		"Hostname of the remote peer");
+
 static struct table_column *all_clms_devices[] = {
 	&clm_rnbd_sess_dev_sessname,
 	&clm_rnbd_sess_dev_mapping_path,
@@ -64,6 +69,7 @@ static struct table_column *all_clms_devices[] = {
 	&clm_rnbd_dev_rx_sect,
 	&clm_rnbd_dev_tx_sect,
 	&clm_rnbd_sess_dev_direction,
+	&clm_rnbd_sess_dev_hostname,
 	NULL
 };
 
@@ -77,6 +83,7 @@ static struct table_column *all_clms_devices_clt[] = {
 	&clm_rnbd_dev_rx_sect,
 	&clm_rnbd_dev_tx_sect,
 	&clm_rnbd_sess_dev_direction,
+	&clm_rnbd_sess_dev_hostname,
 	NULL
 };
 
@@ -89,6 +96,7 @@ static struct table_column *all_clms_devices_srv[] = {
 	&clm_rnbd_dev_rx_sect,
 	&clm_rnbd_dev_tx_sect,
 	&clm_rnbd_sess_dev_direction,
+	&clm_rnbd_sess_dev_hostname,
 	NULL
 };
 
@@ -248,6 +256,10 @@ static struct table_column clm_rnbd_path_sessname =
 	_CLM_P("sessname", sess, "Sessname", FLD_STR, path_to_sessname, 'l',
 	       CNRM, CNRM, "Name of the session.");
 
+static struct table_column clm_rnbd_path_hostname =
+	_CLM_P("hostname", sess, "Hostname", FLD_STR, path_to_hostname, 'l',
+	       CNRM, CNRM, "Hostname of the remote peer");
+
 static struct table_column clm_rnbd_path_shortdesc =
 	_CLM_P("shortdesc", sess, "Short", FLD_STR,
 	       path_to_shortdesc, 'l', CNRM, CNRM, "Short description");
@@ -270,6 +282,7 @@ static struct table_column *all_clms_paths[] = {
 	&clm_rnbd_path_inflights,
 	&clm_rnbd_path_reconnects,
 	&clm_rnbd_path_direction,
+	&clm_rnbd_path_hostname,
 	NULL
 };
 
@@ -286,6 +299,7 @@ static struct table_column *all_clms_paths_clt[] = {
 	&clm_rnbd_path_inflights,
 	&clm_rnbd_path_reconnects,
 	&clm_rnbd_path_direction,
+	&clm_rnbd_path_hostname,
 	NULL
 };
 
@@ -300,6 +314,7 @@ static struct table_column *all_clms_paths_srv[] = {
 	&clm_rnbd_path_tx_bytes,
 	&clm_rnbd_path_inflights,
 	&clm_rnbd_path_direction,
+	&clm_rnbd_path_hostname,
 	NULL
 };
 

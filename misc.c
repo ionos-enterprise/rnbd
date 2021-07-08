@@ -312,6 +312,19 @@ int path_to_sessname(char *str, size_t len, const struct rnbd_ctx *ctx,
 		return snprintf(str, len, "%s", "");
 }
 
+int path_to_hostname(char *str, size_t len, const struct rnbd_ctx *ctx,
+		     enum color *clr, void *v, bool humanize)
+{
+	struct rnbd_path *p = container_of(v, struct rnbd_path, sess);
+
+	*clr = CNRM;
+
+	if (p->sess)
+		return snprintf(str, len, "%s", p->sess->hostname);
+	else
+		return snprintf(str, len, "%s", "");
+}
+
 int sd_sess_to_direction(char *str, size_t len, const struct rnbd_ctx *ctx,
 			 enum color *clr, void *v, bool humanize)
 {
@@ -330,6 +343,19 @@ int sd_sess_to_direction(char *str, size_t len, const struct rnbd_ctx *ctx,
 	default:
 		return snprintf(str, len, "?");
 	}
+}
+
+int sd_sess_to_hostname(char *str, size_t len, const struct rnbd_ctx *ctx,
+			enum color *clr, void *v, bool humanize)
+{
+	struct rnbd_sess_dev *p = container_of(v, struct rnbd_sess_dev, sess);
+
+	*clr = CNRM;
+
+	if (p->sess)
+		return snprintf(str, len, "%s", p->sess->hostname);
+	else
+		return snprintf(str, len, "%s", "");
 }
 
 int i_to_byte_unit(char *str, size_t len, const struct rnbd_ctx *ctx,
