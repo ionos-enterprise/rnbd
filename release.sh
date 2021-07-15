@@ -25,15 +25,6 @@ git commit -asm "rnbd: release $version"
 # Tag the version of the source code package
 git tag $version
 
-# Add new debian/changelog entry
-gbp dch --new-version=$version --git-author --ignore-branch --distribution="jessie stretch buster bullseye" --force-distribution
-
-# Commit the change
-git commit -asm "deb: release rnbd-$version"
-
-# Tag the debian release
-git tag rnbd-$version
-
 # Push
 git log -2
 echo "Now please do \$git push --tags"
